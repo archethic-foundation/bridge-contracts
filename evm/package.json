@@ -1,0 +1,21 @@
+{
+  "name": "bridge-truffle-contracts",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "truffle test"
+  },
+  "author": "Archethic's Foundation",
+  "license": "AGPL-3",
+  "description": "",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^4.9.2",
+    "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "@openzeppelin/truffle-upgrades": "^1.19.0",
+    "ethers": "^6.6.2",
+    "keccak256": "^1.0.6",
+    "openzeppelin-solidity": "^3.4.2",
+    "secp256k1": "^5.0.0",
+    "truffle": "^5.1.16-truffleLogger.0",
+    "truffle-contract-size": "^2.0.1"
+  }
+}

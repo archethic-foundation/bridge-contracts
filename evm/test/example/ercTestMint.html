@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test bridge</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+</head>
+<body>
+    <script>
+        if (typeof window.ethereum !== "undefined") {
+            console.log("MetaMask is installed!");
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+            provider.send("eth_requestAccounts", [])
+                .then(async () => {
+
+                    const secret = new Uint8Array(32);
+                    crypto.getRandomValues(secret)
+
+                    let secretDigest = await crypto.subtle.digest("SHA-256", secret);
+                    secretDigest = new Uint8Array(secretDigest);
+                    const secretDigestHex = uint8ArrayToHex(secretDigest)
+
+                    const lpContract = await getLPContract('0x531F4c66AcDfC913196451EfaFC757D42A87571b', provider)
+                    const signer = provider.getSigner();
+                    const signedLpContract = await lpContract.connect(signer)
+
+                    console.log(signedLpContract)
+
+                    const amount = ethers.utils.parseUnits("1.0", "ether");
+                    const htlcTx = await signedLpContract.mintHTLC(`0x${secretDigestHex}`, amount, 60)
+                    await htlcTx.wait()
+
+                    const htlcAddress = await signedLpContract.mintedSwaps(`0x${secretDigestHex}`)
+                    console.log(htlcAddress)
+
+                    const tokenAddress = await signedLpContract.token()
+
+                    const tokenContract = await getTokenContract(tokenAddress)
+                    const signedTokenContract = await tokenContract.connect(signer)
+
+                    const provisionTx = await signedTokenContract.transfer(htlcAddress, ethers.utils.parseEther("1.0"))
+                    await provisionTx.wait()
+
+                    console.log(provisionTx.hash, 'provision tx')
+
+                    const htlcContract = await getHTLCContract(htlcAddress, provider)
+                    const signedHtlcContract = await htlcContract.connect(signer)
+
+                    const withdrawTx = await signedHtlcContract.withdraw(`0x${uint8ArrayToHex(secret)}`)
+                    await withdrawTx.wait()
+                    console.log(withdrawTx.hash, 'withdraw tx')
+                })
+        }
+
+        function getLPContract(address, provider) {
+            return fetch("IPool.json")
+                .then(r => r.json())
+                .then(r => r.abi)
+                .then(abi => {
+                   return new ethers.Contract(address, abi, provider)
+                })
+                .catch(console.error)
+        }
+
+        function getHTLCContract(address, provider) {
+            return fetch("IHTLC.json")
+                .then(r => r.json())
+                .then(r => r.abi)
+                .then(abi => {
+                   return new ethers.Contract(address, abi, provider)
+                })
+                .catch(console.error)
+        }
+
+        function getTokenContract(address, provider) {
+            return fetch("IERC20.json")
+                .then(r => r.json())
+                .then(r => r.abi)
+                .then(abi => {
+                   return new ethers.Contract(address, abi, provider)
+                })
+                .catch(console.error)
+        }
+
+        function uint8ArrayToHex(bytes) {
+            return [...new Uint8Array(bytes)]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('');
+        }
+
+    </script>
+</body>
+</html>
