@@ -25,7 +25,7 @@ async function main(endpoint, userSeed, factorySeed) {
   const amount = parseFloat(args[3])
 
   const poolSeed = Crypto.hash(token).slice(1)
-  const tokenAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
+  const tokenAddress = (token == "UCO") ? "UCO" : Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
 
   const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
   const factoryGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(factorySeed, 0))

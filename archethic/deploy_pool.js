@@ -9,7 +9,7 @@ if (!config.endpoint || !config.factorySeed) {
 }
 
 const args = []
-process.argv.forEach(function (val, index, _array) { if (index > 1) { args.push(val) } })
+process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(val) } })
 
 if (args.length != 1) {
   console.log("Missing arguments")
@@ -32,12 +32,9 @@ async function main(endpoint, factorySeed) {
   const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
   console.log("Pool genesis address:", poolGenesisAddress)
 
-  let poolCode = ""
-  if (token == "UCO") {
-    poolCode = getUCOPoolCode(poolGenesisAddress, factorySeed)
-  } else {
-    poolCode = getTokenPoolCode(poolSeed, poolGenesisAddress, factorySeed, stateContractAddress)
-  }
+  const poolCode = (token == "UCO") ?
+    getUCOPoolCode(poolGenesisAddress, factorySeed) :
+    getTokenPoolCode(poolSeed, poolGenesisAddress, factorySeed, stateContractAddress)
 
   const storageNonce = await archethic.network.getStorageNoncePublicKey()
   const { encryptedSeed, authorizedKeys } = encryptSeed(poolSeed, storageNonce)
