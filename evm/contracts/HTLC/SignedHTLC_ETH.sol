@@ -31,6 +31,9 @@ contract SignedHTLC_ETH is HTLC_ETH {
             revert InvalidSignature();
         }
 
+        delete sigHash;
+        delete signer;
+
         withdraw(_secret);
     }
 

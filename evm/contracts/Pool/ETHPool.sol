@@ -8,7 +8,7 @@ import "../../interfaces/IHTLC.sol";
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
 contract ETHPool is PoolBase {
 
-    event FundsReceived(uint256 _amount);
+    event FundsReceived(uint256 indexed _amount);
     error ProvisionLimitReached();
 
 	function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap) initializer external {

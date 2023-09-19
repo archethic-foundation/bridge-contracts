@@ -11,7 +11,7 @@ contract ERCPool is PoolBase {
 
     IERC20 public token;
 
-    event TokenChanged(address _token);
+    event TokenChanged(address indexed _token);
 
     function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, IERC20 _token) initializer public {
         __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap);
@@ -24,11 +24,12 @@ contract ERCPool is PoolBase {
     }
 
     function _provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        if (token.balanceOf(address(this)) < _amount) {
+        IERC20 _token = token;
+        if (_token.balanceOf(address(this)) < _amount) {
             revert InsufficientFunds();
         } 
 
-        return ERCPool_HTLCDeployer.provisionHTLC(_hash, _amount, _lockTime, token, this);
+        return ERCPool_HTLCDeployer.provisionHTLC(_hash, _amount, _lockTime, _token, this);
     }
 
     function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {

@@ -4,14 +4,14 @@ pragma solidity ^0.8.13;
 import "../../interfaces/IHTLC.sol";
 
 abstract contract HTLCBase is IHTLC {
-    uint public startTime;
-    uint public lockTime;
+    bool public finished;
+    address public recipient;
+    address public from;
+    uint256 public startTime;
+    uint256 public lockTime;
+    uint256 public amount;
     bytes32 public secret;
     bytes32 public hash;
-    address public recipient;
-    uint256 public amount;
-    bool public finished;
-    address public from;
 
     event Withdrawn();
     event Refunded();

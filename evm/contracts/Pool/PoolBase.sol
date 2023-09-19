@@ -11,25 +11,25 @@ import "../../interfaces/IHTLC.sol";
 
 contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
-    address public reserveAddress; 
+    bool public locked;
+    address public reserveAddress;
     address public safetyModuleAddress;
-    uint256 public safetyModuleFeeRate;
     address public archethicPoolSigner;
     uint256 public poolCap;
-    bool public locked;
+    uint256 public safetyModuleFeeRate;
 
     mapping(bytes32 => IHTLC) _provisionedSwaps;
     mapping(bytes32 => IHTLC) _mintedSwaps;
 
-    event ReserveAddressChanged(address _reservedAddress);
-    event SafetyModuleAddressChanged(address _safetyModuleAddress);
-    event SafetyModuleFeeRateChanged(uint256 _safetyModuleFeeRate);
-    event ArchethicPoolSignerChanged(address _signer);
-    event PoolCapChanged(uint256 _poolCap);
+    event ReserveAddressChanged(address indexed _reservedAddress);
+    event SafetyModuleAddressChanged(address indexed _safetyModuleAddress);
+    event SafetyModuleFeeRateChanged(uint256 indexed _safetyModuleFeeRate);
+    event ArchethicPoolSignerChanged(address indexed _signer);
+    event PoolCapChanged(uint256 indexed _poolCap);
     event Lock();
     event Unlock();
-    event ContractProvisioned(IHTLC _htlc, uint256 _amount);
-    event ContractMinted(IHTLC _htlc, uint256 _amount);
+    event ContractProvisioned(IHTLC indexed _htlc, uint256 indexed _amount);
+    event ContractMinted(IHTLC indexed _htlc, uint256 indexed _amount);
 
     error InvalidReserveAddress();
     error InvalidSafetyModuleAddress();
@@ -123,6 +123,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) virtual external {
         checkUnlocked();
+
         if(address(_provisionedSwaps[_hash]) != address(0)) {
             revert AlreadyProvisioned();
         }
@@ -133,6 +134,9 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         if (signer != archethicPoolSigner) {
             revert InvalidSignature();
         }
+
+        delete signer;
+        delete signatureHash;
 
         IHTLC htlcContract = _provisionHTLC(_hash, _amount, _lockTime);
         _provisionedSwaps[_hash] = htlcContract;

@@ -31,6 +31,9 @@ contract SignedHTLC_ERC is HTLC_ERC {
             revert InvalidSignature();
         }
 
+        delete sigHash;
+        delete signer;
+
         withdraw(_secret);
     }
 

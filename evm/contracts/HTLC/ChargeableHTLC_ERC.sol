@@ -21,8 +21,10 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         IPool _pool
     ) HTLC_ERC(_pool.reserveAddress(), _token, _amount, _hash, _lockTime) {
         pool = _pool;
-        fee = _amount.mul(pool.safetyModuleFeeRate()).div(100000);
-        amount = _amount.sub(fee);
+        uint256 _fee = _amount.mul(_pool.safetyModuleFeeRate()).div(100000);
+        amount = _amount.sub(_fee);
+
+        fee = _fee;
     }
 
     function _enoughFunds() internal view override returns (bool) {
@@ -30,8 +32,10 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     }
 
     function _transfer() internal override {
-        token.transfer(pool.safetyModuleAddress(), fee);
-        token.transfer(recipient, amount);
+        IERC20 _token = token;
+
+        _token.transfer(pool.safetyModuleAddress(), fee);
+        _token.transfer(recipient, amount);
     }
 
     function _refund() internal override {

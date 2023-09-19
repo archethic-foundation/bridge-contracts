@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./HTLC_ETH.sol";
@@ -20,8 +19,9 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         IPool _pool
     ) HTLC_ETH(payable(_pool.reserveAddress()), _amount, _hash, _lockTime) {
         pool = _pool;
-        fee = _amount.mul(pool.safetyModuleFeeRate()).div(100000);
-        amount = _amount.sub(fee);
+        uint256 _fee = _amount.mul(_pool.safetyModuleFeeRate()).div(100000);
+        amount = _amount.sub(_fee);
+        fee = _fee;
     }
 
     function _checkAmount() internal view override {

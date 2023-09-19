@@ -12,6 +12,9 @@ library ETHPool_HTLCDeployer {
         SignedHTLC_ETH htlcContract = new SignedHTLC_ETH(payable(msg.sender), _amount, _hash, _lockTime, _pool);
         (bool sent,) = address(htlcContract).call{value: _amount}("");
         require(sent);
+
+        delete sent;
+
         return htlcContract;
     }
 

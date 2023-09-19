@@ -52,6 +52,12 @@ module.exports = {
   compilers: {
     solc: {
       version: "0.8.13",      // Fetch exact version from solc-bin
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 10000, // Optimize gas for function call instead of deployment
+        },
+      }
     }
   },
 
