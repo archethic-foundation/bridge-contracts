@@ -46,17 +46,14 @@ actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _u
     end
   end
 
-  # Find a way to generate a random secret
-  secret = Crypto.hash(transaction.address)
+  secret = Crypto.hmac(transaction.address)
   secret_hash = Crypto.hash(secret, "sha256")
 
   # Build signature for EVM decryption
   signature = sign_for_evm(secret_hash)
 
   # Add secret and signature in content
-  # secret should be encrypted (Not possible with ec_encrypt for now)
-  # secret should be stored in State
-  htlc_map = [secret: secret, end_time: end_time]
+  htlc_map = [hmac_address: transaction.address, end_time: end_time]
 
   htlc_genesis_address = Chain.get_genesis_address(transaction.address)
 
@@ -105,11 +102,11 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address) do
 
   contract_content = Map.delete(contract_content, htlc_genesis_address)
 
-  # Here should decrypt secret
-  signature = sign_for_evm(htlc_map.secret)
+  secret = Crypto.hmac(htlc_map.hmac_address)
+  signature = sign_for_evm(secret)
 
   Contract.set_content Json.to_string(contract_content)
-  Contract.add_recipient address: htlc_genesis_address, action: "reveal_secret", args: [htlc_map.secret, signature]
+  Contract.add_recipient address: htlc_genesis_address, action: "reveal_secret", args: [secret, signature]
 end
 
 ####################
