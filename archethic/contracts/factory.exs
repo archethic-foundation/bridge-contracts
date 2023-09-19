@@ -13,7 +13,11 @@ export fun get_protocol_fee_address() do
 end
 
 export fun get_token_resupply_definition(token_address, amount, htlc_address) do
-  big_int_amount = amount * 100_000_000
+  token_address = String.to_hex(token_address)
+  htlc_address = String.to_hex(htlc_address)
+
+  big_int_amount = Math.trunc(amount * 100_000_000)
+
   Json.to_string(
     [
       aeip: [8, 18, 19],
