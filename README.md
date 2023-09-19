@@ -1,2 +1,2 @@
 # bridge-contracts
-EVM smart contract for Archethic's Bridge
+EVM & Archethic smart contract for Archethic's Bridge
