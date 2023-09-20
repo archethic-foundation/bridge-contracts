@@ -6,7 +6,7 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function (deployer, network, accounts) {
     let reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap, tokenAddress
-    const safeteModuleFeeRate = 500
+    const safeteModuleFeeRate = 5 // 0.05%
 
     await deployer.deploy(ERCPool_HTLCDeployer)
     await deployer.link(ERCPool_HTLCDeployer, LiquidityPool)

@@ -4,10 +4,12 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "../../interfaces/IPool.sol";
 import "../../interfaces/IHTLC.sol";
 
+using SafeMath for uint256; 
 
 contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
@@ -56,7 +58,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
         reserveAddress = _reserveAddress;
         safetyModuleAddress = _safetyAddress;
-        safetyModuleFeeRate = _safetyFeeRate;
+        safetyModuleFeeRate = _safetyFeeRate.mul(100);
         archethicPoolSigner = _archPoolSigner;
         poolCap = _poolCap;
         locked = true;
@@ -86,7 +88,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
     function setSafetyModuleFeeRate(uint256 _safetyFeeRate) virtual external {
         _checkOwner();
-        safetyModuleFeeRate = _safetyFeeRate;
+        safetyModuleFeeRate = _safetyFeeRate.mul(100);
         emit SafetyModuleFeeRateChanged(_safetyFeeRate);
     }
 
@@ -115,6 +117,10 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         _checkOwner();
         locked = true;
         emit Unlock();
+    }
+    
+    function swapFee(uint256 _amount) external view returns (uint256) {
+        return _amount.mul(safetyModuleFeeRate).div(100000);
     }
 
     function provisionedSwaps(bytes32 _hash) external view returns (IHTLC) {

@@ -43,8 +43,8 @@ contract("LP Proxy", (accounts) => {
         assert.equal(await HTLCInstance.pool(), proxiedPoolInstance.address)
         assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         assert.equal(await HTLCInstance.recipient(), reserveAddress);
-        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.95'))
-        assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.05'))
+        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.995'))
+        assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
         assert.equal(await HTLCInstance.lockTime(), 60)
     })
 

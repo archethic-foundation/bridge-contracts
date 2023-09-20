@@ -21,7 +21,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         IPool _pool
     ) HTLC_ERC(_pool.reserveAddress(), _token, _amount, _hash, _lockTime) {
         pool = _pool;
-        uint256 _fee = _amount.mul(_pool.safetyModuleFeeRate()).div(100000);
+        uint256 _fee = _pool.swapFee(_amount);
         amount = _amount.sub(_fee);
 
         fee = _fee;

@@ -19,7 +19,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         IPool _pool
     ) HTLC_ETH(payable(_pool.reserveAddress()), _amount, _hash, _lockTime) {
         pool = _pool;
-        uint256 _fee = _amount.mul(_pool.safetyModuleFeeRate()).div(100000);
+        uint256 _fee = _pool.swapFee(_amount);
         amount = _amount.sub(_fee);
         fee = _fee;
     }

@@ -57,7 +57,7 @@ contract("ERC LiquidityPool", (accounts) => {
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), DummyTokenInstance.address)
 
         await instance.setSafetyModuleFeeRate(10)
-        assert.equal(await instance.safetyModuleFeeRate(), 10)
+        assert.equal(await instance.safetyModuleFeeRate(), 1000)
     })
 
     it("should update the archethic pool signer address", async () => {
@@ -203,15 +203,15 @@ contract("ERC LiquidityPool", (accounts) => {
         assert.equal(await HTLCInstance.pool(), instance.address)
         assert.equal(await HTLCInstance.hash(), `0x${secretHash}`)
         assert.equal(await HTLCInstance.recipient(), reserveAddress);
-        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.95'))
-        assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.05'))
+        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.995'))
+        assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
         assert.equal(await HTLCInstance.lockTime(), 60)
 
         await DummyTokenInstance.transfer(htlcAddress, web3.utils.toWei('1'))
         await HTLCInstance.withdraw(`0x${secret.toString('hex')}`)
 
-        assert.equal(await DummyTokenInstance.balanceOf(reserveAddress), web3.utils.toWei('0.95'))
-        assert.equal(await DummyTokenInstance.balanceOf(await instance.safetyModuleAddress()), web3.utils.toWei('0.05'))
+        assert.equal(await DummyTokenInstance.balanceOf(reserveAddress), web3.utils.toWei('0.995'))
+        assert.equal(await DummyTokenInstance.balanceOf(await instance.safetyModuleAddress()), web3.utils.toWei('0.005'))
     })
 
     it("should return an error if the sender does not have funds", async () => {
