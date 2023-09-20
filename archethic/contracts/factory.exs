@@ -174,11 +174,11 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
     @version 1
     #{date_time_trigger}
     condition triggered_by: transaction, on: reveal_secret(secret, secret_signature), as: [
-      address: (
-			  #Here we should ensure the transaction is comming from pool
-			  #Chain.get_genesis_address() == 0x#{pool_address}
-			  #is not working this the transaction is not validated so it return the same address
-			  true
+      previous_public_key: (
+		    # Transaction is not yet validated so we need to use previous address
+		    # to get the genesis address
+		    previous_address = Chain.get_previous_address()
+			  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
 		  ),
       timestamp: transaction.timestamp < #{end_time},
       content: Crypto.hash(String.to_hex(secret)) == 0x\#{secret_hash}
@@ -210,11 +210,11 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
   @version 1
   #{date_time_trigger}
   condition triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature), as: [
-    address: (
-			#Here we should ensure the transaction is comming from pool
-			#Chain.get_genesis_address() == 0x#{pool_address}
-			#is not working this the transaction is not validated so it return the same address
-			true
+    previous_public_key: (
+		  # Transaction is not yet validated so we need to use previous address
+		  # to get the genesis address
+		  previous_address = Chain.get_previous_address()
+			Chain.get_genesis_address(previous_address) == 0x#{pool_address}
 		)
   ]
 
