@@ -8,6 +8,11 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   type: "contract",
   code: valid_chargeable_code?(end_time, amount, user_address, secret_hash),
   timestamp: end_time > Time.now(),
+  content: (
+    # Ensure the pool has enough UCO to send the requested fund
+    balance = Chain.get_uco_balance(contract.address)
+    balance >= amount
+  ),
   address: (
     # Here ensure Ethereum contract exists and check rules
     # How to ensure Ethereum contract is a valid one ?
