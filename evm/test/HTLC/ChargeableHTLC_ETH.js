@@ -18,7 +18,8 @@ contract("Chargeable ETH HTLC", (accounts) => {
       1,
       reserveAddress,
       safetyModuleAddress,
-      fee
+      fee,
+      { value: web3.utils.toWei("1") }
     )
 
     assert.equal(await HTLCInstance.amount(), amount)
@@ -27,6 +28,8 @@ contract("Chargeable ETH HTLC", (accounts) => {
     assert.equal(await HTLCInstance.recipient(), reserveAddress)
     assert.equal(await HTLCInstance.finished(), false)
     assert.equal(await HTLCInstance.lockTime(), 1)
+
+    assert.equal(await web3.eth.getBalance(HTLCInstance.address), web3.utils.toWei("1.0"))
   })
 
   it("withdraw should send tokens to the reserve address and fee to the safety module", async() => {
@@ -47,13 +50,13 @@ contract("Chargeable ETH HTLC", (accounts) => {
       60,
       reserveAddress,
       safetyModuleAddress,
-      fee
+      fee,
+      { value: web3.utils.toWei("1") }
     )
 
     const balanceSafetyModuleBefore = await web3.eth.getBalance(safetyModuleAddress)
     const balanceReserveBefore = await web3.eth.getBalance(reserveAddress)
 
-    await web3.eth.sendTransaction({ from: accounts[1], to: HTLCInstance.address, value: web3.utils.toWei("1.0") });
     await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[2] })
 
     const balanceSafetyModuleAfter = await web3.eth.getBalance(safetyModuleAddress)
@@ -82,11 +85,10 @@ contract("Chargeable ETH HTLC", (accounts) => {
       reserveAddress,
       safetyModuleAddress,
       fee,
-      { from: accounts[2] }
+      { from: accounts[2], value: web3.utils.toWei('1') }
     )
 
     const balanceBefore = await web3.eth.getBalance(accounts[2])
-    await web3.eth.sendTransaction({ from: accounts[1], to: HTLCInstance.address, value: web3.utils.toWei("1") });
 
     await increaseTime(2)
     await HTLCInstance.refund()

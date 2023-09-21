@@ -18,15 +18,10 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         address payable _reserveAddress,
         address payable _safetyModuleAddress,
         uint256 _fee
-    ) HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime) {
+    ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
-    }
-
-    function _checkAmount() internal view override {
-        if (address(this).balance > amount.add(fee)) {
-            revert ProvisionLimitReached();
-        }
+        _assertReceivedFunds(_amount.add(_fee));
     }
 
     function _enoughFunds() internal view override returns (bool) {

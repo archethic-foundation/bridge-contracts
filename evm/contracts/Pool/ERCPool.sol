@@ -14,6 +14,7 @@ contract ERCPool is PoolBase {
     IERC20 public token;
 
     event TokenChanged(address indexed _token);
+    error CannotSendEthers();
 
     function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, IERC20 _token) initializer public {
         __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap);
@@ -25,7 +26,7 @@ contract ERCPool is PoolBase {
         emit TokenChanged(address(_token));
     }
 
-    function _provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
+    function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         IERC20 _token = token;
         if (_token.balanceOf(address(this)) < _amount) {
             revert InsufficientFunds();
@@ -36,7 +37,14 @@ contract ERCPool is PoolBase {
         return htlcContract;
     }
 
-    function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
+    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override payable external {
+        if (msg.value != 0) {
+            revert CannotSendEthers();
+        }
+        _mintHTLC(_hash, _amount, _lockTime);
+    }
+
+    function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         uint256 _fee = swapFee(_amount);
         ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;

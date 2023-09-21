@@ -5,27 +5,23 @@ import "./HTLCBase.sol";
 
 contract HTLC_ETH is HTLCBase {
     event FundsReceived(uint _amount);
+    error ContractNotProvisioned();
 
-    error ProvisionLimitReached();
-
-    constructor(address payable _recipient, uint256 _amount, bytes32 _hash, uint _lockTime) HTLCBase(_recipient, _amount, _hash, _lockTime) {
-    }
-
-    receive() payable external {
-        _checkAmount();
-        if (finished) {
-            revert AlreadyFinished();
+    constructor(address payable _recipient, uint256 _amount, bytes32 _hash, uint _lockTime, bool _delegateFundsAssertion) payable HTLCBase(_recipient, _amount, _hash, _lockTime) {
+        if (!_delegateFundsAssertion) {
+            _assertReceivedFunds(_amount);
         }
-        if (!_beforeLockTime()) {
-            revert TooLate();
+    }
+   
+    function _assertReceivedFunds(uint256 _amount) virtual internal {
+        if(msg.value != _amount) {
+           revert ContractNotProvisioned();
         }
         emit FundsReceived(msg.value);
     }
 
-    function _checkAmount() virtual internal {
-        if(address(this).balance > amount) {
-            revert ProvisionLimitReached();
-        }
+     function _amountToReceive() virtual internal view returns (uint256) {
+        return amount;
     }
 
     function _transfer() override virtual internal {

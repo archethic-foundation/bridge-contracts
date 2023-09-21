@@ -13,6 +13,7 @@ contract ETHPool is PoolBase {
 
     event FundsReceived(uint256 indexed _amount);
     error ProvisionLimitReached();
+    error ContractNotProvisioned();
 
 	function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap) initializer external {
         __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap);
@@ -25,24 +26,22 @@ contract ETHPool is PoolBase {
         emit FundsReceived(msg.value);
     }
 
-    function _provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal override returns (IHTLC) {
+    function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal override returns (IHTLC) {
         if (address(this).balance < _amount) {
             revert InsufficientFunds();
         } 
 
-        SignedHTLC_ETH htlcContract = new SignedHTLC_ETH(payable(msg.sender), _amount, _hash, _lockTime, address(this));
-        (bool sent,) = address(htlcContract).call{value: _amount}("");
-        require(sent);
-
-        delete sent;
-
+        SignedHTLC_ETH htlcContract = (new SignedHTLC_ETH){value: _amount}(payable(msg.sender), _amount, _hash, _lockTime, address(this));
         return htlcContract;
     }
 
-    function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
+    function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
+        if (msg.value != _amount) {
+            revert ContractNotProvisioned();
+        }
         uint256 _fee = swapFee(_amount);
 
-        ChargeableHTLC_ETH htlcContract = new ChargeableHTLC_ETH(_amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;
     }
 }

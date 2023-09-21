@@ -127,7 +127,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         return _provisionedSwaps[_hash];
     }
 
-    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) virtual external {
+    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external {
         checkUnlocked();
 
         if(address(_provisionedSwaps[_hash]) != address(0)) {
@@ -144,7 +144,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         delete signer;
         delete signatureHash;
 
-        IHTLC htlcContract = _provisionHTLC(_hash, _amount, _lockTime);
+        IHTLC htlcContract = _createSignedHTLC(_hash, _amount, _lockTime);
         _provisionedSwaps[_hash] = htlcContract;
         emit ContractProvisioned(htlcContract, _amount);
     } 
@@ -153,15 +153,19 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         return _mintedSwaps[_hash];
     }
 
-    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual external {
+    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) payable virtual external {
+        _mintHTLC(_hash, _amount, _lockTime);
+    }
+
+    function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal {
         if(address(_mintedSwaps[_hash]) != address(0)) {
             revert AlreadyMinted();
         }
-        IHTLC htlcContract = _mintHTLC(_hash, _amount, _lockTime);
+        IHTLC htlcContract = _createChargeableHTLC(_hash, _amount, _lockTime);
         _mintedSwaps[_hash] = htlcContract;
         emit ContractMinted(htlcContract, _amount);
     }
 
-    function _provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
-    function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
+    function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
+    function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
 }

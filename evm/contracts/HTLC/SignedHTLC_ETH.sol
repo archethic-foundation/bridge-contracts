@@ -14,7 +14,7 @@ contract SignedHTLC_ETH is HTLC_ETH {
 
     error InvalidSignature();
 
-    constructor(address payable _recipient, uint256 _amount, bytes32 _hash, uint _lockTime, address _poolSigner) HTLC_ETH(_recipient, _amount, _hash, _lockTime) {
+    constructor(address payable _recipient, uint256 _amount, bytes32 _hash, uint _lockTime, address _poolSigner) payable HTLC_ETH(_recipient, _amount, _hash, _lockTime, false) {
         poolSigner = _poolSigner;
     }
 

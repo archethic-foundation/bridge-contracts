@@ -24,8 +24,7 @@ contract("Signed ETH HTLC", (accounts) => {
             .update(secret)
             .digest()
 
-        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
-        await web3.eth.sendTransaction({ from: accounts[1], to: HTLCInstance.address, value: web3.utils.toWei('1') });
+        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address, { value: web3.utils.toWei('1')})
 
         const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
 
@@ -47,8 +46,7 @@ contract("Signed ETH HTLC", (accounts) => {
             .update(secret)
             .digest()
 
-        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
-        await web3.eth.sendTransaction({ from: accounts[1], to: HTLCInstance.address, value: web3.utils.toWei('1') });
+        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address, { value: web3.utils.toWei('1')})
 
         const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
 

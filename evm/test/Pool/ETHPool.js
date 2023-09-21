@@ -192,7 +192,7 @@ contract("ETH LiquidityPool", (accounts) => {
         await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'))
         await instance.unlock()
 
-        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60)
+        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, { value: web3.utils.toWei('1') })
         const htlcAddress = await instance.mintedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
         assert.equal(await HTLCInstance.safetyModuleAddress(), safetyModuleAddress)
@@ -203,7 +203,7 @@ contract("ETH LiquidityPool", (accounts) => {
         assert.equal(await HTLCInstance.lockTime(), 60)
     })
 
-    it("should return an error if the sender does not have funds", async () => {
+    it("should return an error if the sender does not provision the contract", async () => {
         const safetyModuleAddress = accounts[3]
         const reserveAddress = accounts[4]
 
@@ -216,7 +216,7 @@ contract("ETH LiquidityPool", (accounts) => {
         }
         catch (e) {
             const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "InsufficientFunds")
+            assert.equal(interface.parseError(e.data.result).name, "ContractNotProvisioned")
         }
     })
 
@@ -228,7 +228,7 @@ contract("ETH LiquidityPool", (accounts) => {
         await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'))
         await instance.unlock()
 
-        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60)
+        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, { value: web3.utils.toWei('1') })
 
         try {
             await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60)

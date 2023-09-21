@@ -35,7 +35,7 @@ contract("LP Proxy", (accounts) => {
 
         const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
 
-        await proxiedPoolInstance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60)
+        await proxiedPoolInstance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, { value: web3.utils.toWei('1') })
         const htlcAddress = await proxiedPoolInstance.mintedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
 
