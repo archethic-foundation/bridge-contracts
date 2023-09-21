@@ -35,7 +35,13 @@ end
 condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address), as: [
   type: "contract",
   code: valid_signed_code?(end_time, amount, user_address),
-  timestamp: end_time > Time.now()
+  timestamp: end_time > Time.now(),
+  previous_public_key: (
+    # Ensure contract has enough fund to withdraw
+    previous_address = Chain.get_previous_address()
+    balance = Chain.get_token_balance(previous_address, #TOKEN_ADDRESS#)
+    balance >= amount
+  )
 ]
 
 actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _user_address) do
