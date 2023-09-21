@@ -1,14 +1,10 @@
 const LiquidityPool = artifacts.require("ETHPool")
-const ETHPool_HTLCDeployer = artifacts.require("ETHPool_HTLCDeployer")
 
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function (deployer, network, accounts) {
     let reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap
-    const safeteModuleFeeRate = 500
-
-    await deployer.deploy(ETHPool_HTLCDeployer)
-    await deployer.link(ETHPool_HTLCDeployer, LiquidityPool)
+    const safetyModuleFeeRate = 5 // 0.05%
 
     if (network == "development") {
         reserveAddress = accounts[4]
@@ -17,7 +13,7 @@ module.exports = async function (deployer, network, accounts) {
         poolCap = web3.utils.toWei('200')
     }
 
-    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safeteModuleFeeRate, archethicPoolSigner, poolCap], { deployer });
+    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap], { deployer });
 
     if (network == "development") {
         await instance.unlock()

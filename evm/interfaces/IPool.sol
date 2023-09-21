@@ -5,7 +5,7 @@ import "./IHTLC.sol";
 
 interface IPool {
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external;
-    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) external;
+    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) payable external;
     function setReserveAddress(address _reserveAddress) external;
     function setSafetyModuleAddress(address _safetyAddress) external;
     function setSafetyModuleFeeRate(uint256 _safetyFeeRate) external;
