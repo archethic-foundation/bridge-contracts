@@ -4,24 +4,23 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./HTLC_ETH.sol";
-import "../../interfaces/IPool.sol";
 
 using SafeMath for uint256;
 
 contract ChargeableHTLC_ETH is HTLC_ETH {
-    IPool public pool;
     uint256 public fee;
+    address public safetyModuleAddress;
 
     constructor(
         uint256 _amount,
         bytes32 _hash,
         uint _lockTime,
-        IPool _pool
-    ) HTLC_ETH(payable(_pool.reserveAddress()), _amount, _hash, _lockTime) {
-        pool = _pool;
-        uint256 _fee = _pool.swapFee(_amount);
-        amount = _amount.sub(_fee);
+        address payable _reserveAddress,
+        address payable _safetyModuleAddress,
+        uint256 _fee
+    ) HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime) {
         fee = _fee;
+        safetyModuleAddress = _safetyModuleAddress;
     }
 
     function _checkAmount() internal view override {
@@ -35,7 +34,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     }
 
     function _transfer() internal override {
-        (bool sent, ) = pool.safetyModuleAddress().call{value: fee}("");
+        (bool sent, ) = safetyModuleAddress.call{value: fee}("");
         require(sent);
         (sent, ) = recipient.call{value: amount}("");
         require(sent);

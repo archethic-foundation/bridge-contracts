@@ -2,8 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "./PoolBase.sol";
-import "./deployment/ETHPool_HTLCDeployer.sol";
+import "../HTLC/ChargeableHTLC_ETH.sol";
+import "../HTLC/SignedHTLC_ETH.sol";
 import "../../interfaces/IHTLC.sol";
+
+using SafeMath for uint256;
 
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
 contract ETHPool is PoolBase {
@@ -27,10 +30,19 @@ contract ETHPool is PoolBase {
             revert InsufficientFunds();
         } 
 
-        return ETHPool_HTLCDeployer.provisionHTLC(_hash, _amount, _lockTime, this);
+        SignedHTLC_ETH htlcContract = new SignedHTLC_ETH(payable(msg.sender), _amount, _hash, _lockTime, address(this));
+        (bool sent,) = address(htlcContract).call{value: _amount}("");
+        require(sent);
+
+        delete sent;
+
+        return htlcContract;
     }
 
     function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        return ETHPool_HTLCDeployer.mintHTLC(_hash, _amount, _lockTime, this);
+        uint256 _fee = swapFee(_amount);
+
+        ChargeableHTLC_ETH htlcContract = new ChargeableHTLC_ETH(_amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
+        return htlcContract;
     }
 }

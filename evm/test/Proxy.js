@@ -3,10 +3,9 @@ const LiquidityPoolV2 = artifacts.require("ETHPoolV2")
 const ChargeableHTLC = artifacts.require("ChargeableHTLC_ETH")
 const SignedHTLC = artifacts.require("SignedHTLC_ETH")
 
-const { deployProxy, upgradeProxy, admin } = require('@openzeppelin/truffle-upgrades');
+const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
 const { generateECDSAKey, createEthSign, hexToUintArray } = require('./utils')
-const { ethers } = require('ethers')
 
 contract("LP Proxy", (accounts) => {
 
@@ -40,7 +39,7 @@ contract("LP Proxy", (accounts) => {
         const htlcAddress = await proxiedPoolInstance.mintedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
 
-        assert.equal(await HTLCInstance.pool(), proxiedPoolInstance.address)
+        assert.equal(await HTLCInstance.from(), proxiedPoolInstance.address)
         assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         assert.equal(await HTLCInstance.recipient(), reserveAddress);
         assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.995'))
@@ -68,7 +67,7 @@ contract("LP Proxy", (accounts) => {
         assert.equal(web3.utils.toWei('1'), balanceHTLC)
 
         const HTLCInstance = await SignedHTLC.at(htlcAddress)
-        assert.equal(await HTLCInstance.pool(), proxiedPoolInstance.address)
+        assert.equal(await HTLCInstance.from(), proxiedPoolInstance.address)
         assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         assert.equal(await HTLCInstance.recipient(), accounts[0]);
         assert.equal(await HTLCInstance.amount(), web3.utils.toWei('1'))

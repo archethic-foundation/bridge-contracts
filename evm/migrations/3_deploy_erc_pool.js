@@ -1,15 +1,11 @@
 const LiquidityPool = artifacts.require("ERCPool")
 const DummyToken = artifacts.require("DummyToken")
-const ERCPool_HTLCDeployer = artifacts.require("ERCPool_HTLCDeployer")
 
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function (deployer, network, accounts) {
     let reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap, tokenAddress
-    const safeteModuleFeeRate = 5 // 0.05%
-
-    await deployer.deploy(ERCPool_HTLCDeployer)
-    await deployer.link(ERCPool_HTLCDeployer, LiquidityPool)
+    const safetyModuleFeeRate = 5 // 0.05%
 
     if (network == "development") {
         reserveAddress = accounts[4]
@@ -25,7 +21,7 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`Deployed token: ${tokenAddress}`)
     }
 
-    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safeteModuleFeeRate, archethicPoolSigner, poolCap, tokenAddress], { deployer });
+    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap, tokenAddress], { deployer });
 
     if (network == "development") {
         await instance.unlock()

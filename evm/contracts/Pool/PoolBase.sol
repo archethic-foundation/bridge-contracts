@@ -119,7 +119,7 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         emit Unlock();
     }
     
-    function swapFee(uint256 _amount) external view returns (uint256) {
+    function swapFee(uint256 _amount) internal view returns (uint256) {
         return _amount.mul(safetyModuleFeeRate).div(100000);
     }
 

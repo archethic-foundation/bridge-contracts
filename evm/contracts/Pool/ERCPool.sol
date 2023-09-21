@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3
 pragma solidity ^0.8.13;
 
-
 import "./PoolBase.sol";
-import "./deployment/ERCPool_HTLCDeployer.sol";
+import "../HTLC/ChargeableHTLC_ERC.sol";
+import "../HTLC/SignedHTLC_ERC.sol";
 import "../../interfaces/IHTLC.sol";
+
+using SafeMath for uint256;
 
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
 contract ERCPool is PoolBase {
@@ -29,10 +31,14 @@ contract ERCPool is PoolBase {
             revert InsufficientFunds();
         } 
 
-        return ERCPool_HTLCDeployer.provisionHTLC(_hash, _amount, _lockTime, _token, this);
+        SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(msg.sender, _token, _amount, _hash, _lockTime, address(this));
+        _token.transfer(address(htlcContract), _amount);
+        return htlcContract;
     }
 
     function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        return ERCPool_HTLCDeployer.mintHTLC(_hash, _amount, _lockTime, token, this);
+        uint256 _fee = swapFee(_amount);
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
+        return htlcContract;
     }
 }

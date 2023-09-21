@@ -1,5 +1,4 @@
 const HTLC = artifacts.require("SignedHTLC_ERC")
-const LiquidityPool = artifacts.require("ERCPool")
 const DummyToken = artifacts.require("DummyToken")
 
 const { generateECDSAKey, createEthSign } = require("../utils")
@@ -23,11 +22,6 @@ contract("Signed ERC HTLC", (accounts) => {
     })
 
     it("should withdraw funds once the secret is valid for the hash and the hash is signed by the Archethic pool", async () => {
-        const poolInstance = await LiquidityPool.new()
-        await poolInstance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), DummyTokenInstance.address)
-
-        await poolInstance.unlock()
-        await DummyTokenInstance.transfer(poolInstance.address, web3.utils.toWei('2'))
 
         const secret = randomBytes(32)
 
@@ -35,11 +29,8 @@ contract("Signed ERC HTLC", (accounts) => {
             .update(secret)
             .digest()
 
-        const { r, s, v } = createEthSign(hash, archPoolSigner.privateKey)
-
-        await poolInstance.provisionHTLC(`0x${hash.toString('hex')}`, web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v, { from: accounts[2] })
-        const HTLCAddress = await poolInstance.provisionedSwaps(`0x${hash.toString('hex')}`)
-        const HTLCInstance = await HTLC.at(HTLCAddress)
+        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
+        await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei('1'))
 
         const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
 
@@ -55,26 +46,19 @@ contract("Signed ERC HTLC", (accounts) => {
     })
 
     it("should return an error if the signature is invalid", async () => {
-        const poolInstance = await LiquidityPool.new()
-        await poolInstance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), DummyTokenInstance.address)
-
-        await poolInstance.unlock()
-
-        await DummyTokenInstance.transfer(poolInstance.address, web3.utils.toWei('2'))
-
+        
         const secret = randomBytes(32)
 
         const hash = createHash("sha256")
             .update(secret)
             .digest()
 
-        const { r, s, v } = createEthSign(hash, archPoolSigner.privateKey)
-
-        await poolInstance.provisionHTLC(`0x${hash.toString('hex')}`, web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v, { from: accounts[2] })
-        const HTLCAddress = await poolInstance.provisionedSwaps(`0x${hash.toString('hex')}`)
-        const HTLCInstance = await HTLC.at(HTLCAddress)
+        const { v } = createEthSign(hash, archPoolSigner.privateKey)
 
         const { r: rSecret, s: sSecret } = createEthSign(randomBytes(32), archPoolSigner.privateKey)
+
+        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
+        await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei('1'))
 
         try {
             await HTLCInstance.signedWithdraw(`0x${secret.toString('hex')}`, `0x${rSecret}`, `0x${sSecret}`, v, { from: accounts[3] })
@@ -84,5 +68,4 @@ contract("Signed ERC HTLC", (accounts) => {
             assert.equal(interface.parseError(e.data.result).name, "InvalidSignature")
         }
     })
-
 })

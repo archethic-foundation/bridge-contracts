@@ -22,8 +22,6 @@ interface IPool {
     function poolCap() external returns(uint256);
     function locked() external returns(bool);
 
-    function swapFee(uint256 amount) external returns(uint256);
-
     function provisionedSwaps(bytes32 _hash) external returns (IHTLC);
     function mintedSwaps(bytes32 _hash) external returns (IHTLC);
 }
