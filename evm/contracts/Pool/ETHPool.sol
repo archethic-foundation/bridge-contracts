@@ -31,7 +31,7 @@ contract ETHPool is PoolBase {
             revert InsufficientFunds();
         } 
 
-        SignedHTLC_ETH htlcContract = (new SignedHTLC_ETH){value: _amount}(payable(msg.sender), _amount, _hash, _lockTime, address(this));
+        SignedHTLC_ETH htlcContract = (new SignedHTLC_ETH){value: _amount}(payable(msg.sender), _amount, _hash, _lockTime, archethicPoolSigner);
         return htlcContract;
     }
 
