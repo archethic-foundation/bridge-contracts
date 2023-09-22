@@ -32,7 +32,7 @@ contract ERCPool is PoolBase {
             revert InsufficientFunds();
         } 
 
-        SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(msg.sender, _token, _amount, _hash, _lockTime, address(this));
+        SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(msg.sender, _token, _amount, _hash, _lockTime, archethicPoolSigner);
         _token.transfer(address(htlcContract), _amount);
         return htlcContract;
     }
