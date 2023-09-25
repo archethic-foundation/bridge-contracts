@@ -64,6 +64,18 @@ module.exports = {
       }),
       confirmations: 2,
       skipDryRun: true
+    },
+
+    bsc_testnet: {
+      network_id: 97,
+      provider: () => new HDWalletProvider({
+        privateKeys: [
+          "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
+        ],
+        providerOrUrl: "https://data-seed-prebsc-1-s1.binance.org:8545"
+      }),
+      confirmations: 2,
+      skipDryRun: true
     }
   },
 
