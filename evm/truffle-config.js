@@ -52,6 +52,18 @@ module.exports = {
       }),
       confirmations: 2,
       skipDryRun: true
+    },
+
+    mumbai: {
+      network_id: 80001,
+      provider: () => new HDWalletProvider({
+        privateKeys: [
+          "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
+        ],
+        providerOrUrl: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a"
+      }),
+      confirmations: 2,
+      skipDryRun: true
     }
   },
 

@@ -20,6 +20,13 @@ module.exports = async function (deployer, network, accounts) {
         archethicPoolSigner = '0xaf08762b5c7001314dca6e9c3aa56c1a603f9369'
     }
 
+    if (network == "mumbai") {
+        reserveAddress = "0x64d75D315c592cCE1F83c53A201313C82b30FA8d"
+        safetyModuleAddress = "0xc20BcA1a8155c65964e5280D93d379aeB3A4c2e7"
+        poolCap = web3.utils.toWei('5')
+        archethicPoolSigner = '0xaf08762b5c7001314dca6e9c3aa56c1a603f9369'
+    }
+
     const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap], { deployer });
 
     if (network == "development") {
