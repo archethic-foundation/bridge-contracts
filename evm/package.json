@@ -17,5 +17,8 @@
     "secp256k1": "^5.0.0",
     "truffle": "^5.1.16-truffleLogger.0",
     "truffle-contract-size": "^2.0.1"
+  },
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^2.1.15"
   }
 }

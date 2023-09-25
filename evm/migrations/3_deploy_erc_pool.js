@@ -21,6 +21,14 @@ module.exports = async function (deployer, network, accounts) {
         console.log(`Deployed token: ${tokenAddress}`)
     }
 
+    if (network == "sepolia") {
+        reserveAddress = "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc"
+        safetyModuleAddress = "0xbEF25E2b992494aF270092562e92aAC8394e0982"
+        poolCap = web3.utils.toWei('5')
+        archethicPoolSigner = '0xaf08762b5c7001314dca6e9c3aa56c1a603f9369'
+        tokenAddress = '0xCBBd3374090113732393DAE1433Bc14E5233d5d7'
+    }
+
     const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap, tokenAddress], { deployer });
 
     if (network == "development") {

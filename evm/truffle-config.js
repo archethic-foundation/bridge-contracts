@@ -22,7 +22,7 @@
 // const mnemonic = process.env["MNEMONIC"];
 // const infuraProjectId = process.env["INFURA_PROJECT_ID"];
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
   /**
@@ -38,9 +38,21 @@ module.exports = {
   networks: {
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
-      port: 7545,            // Standard Ethereum port (default: none)
+      port: 8545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
     },
+
+    sepolia: {
+      network_id: 11155111,
+      provider: () => new HDWalletProvider({
+        privateKeys: [
+          "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
+        ],
+        providerOrUrl: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a"
+      }),
+      confirmations: 2,
+      skipDryRun: true
+    }
   },
 
   // Set default mocha options here, use special reporters etc.

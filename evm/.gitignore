@@ -1,5 +1,5 @@
 build
 node_modules
-.openzeppelin
+.openzeppelin/unknown-*.json
 test/.openzeppelin
 .DS_Store
