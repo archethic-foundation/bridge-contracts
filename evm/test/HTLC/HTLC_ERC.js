@@ -51,8 +51,6 @@ contract("ERC HTLC", (accounts) => {
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
 
-    assert.ok(await HTLCInstance.canWithdraw())
-
     const balance1 = await DummyTokenInstance.balanceOf(recipientEthereum)
 
     await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[2] })
@@ -193,9 +191,17 @@ contract("ERC HTLC", (accounts) => {
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
-    await increaseTime(2)
 
-    assert.ok(await HTLCInstance.canRefund())
+    const startTime = await HTLCInstance.startTime()
+    const lockTime = await HTLCInstance.lockTime()
+
+    const date = new Date(startTime * 1000)
+    date.setSeconds(date.getSeconds() + lockTime + 1)
+    const secondUNIX = Math.floor(date.getTime() / 1000)
+
+    assert.equal(true, await HTLCInstance.canRefund(secondUNIX))
+
+    await increaseTime(2)
 
     await HTLCInstance.refund()
     const balance2 = await DummyTokenInstance.balanceOf(accounts[0])
@@ -225,7 +231,11 @@ contract("ERC HTLC", (accounts) => {
 
     await increaseTime(2)
     await HTLCInstance.refund()
-    assert.equal(false, await HTLCInstance.canRefund())
+
+    const date = new Date()
+    const secondUNIX = Math.floor(date.getTime() / 1000)
+
+    assert.equal(false, await HTLCInstance.canRefund(secondUNIX))
 
     try {
       await HTLCInstance.refund()

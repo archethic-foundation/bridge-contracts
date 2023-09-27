@@ -2,8 +2,7 @@
 pragma solidity ^0.8.13;
 
 interface IHTLC {
-    function canWithdraw() external view returns (bool);
-    function canRefund() external view returns (bool);
+    function canRefund(uint256 timestamp) external view returns (bool);
 
     function amount() external returns(uint256);
     function hash() external returns(bytes32);

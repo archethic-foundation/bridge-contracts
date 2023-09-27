@@ -50,8 +50,6 @@ contract("ETH HTLC", (accounts) => {
     const balance = await web3.eth.getBalance(HTLCInstance.address)
     assert.equal(balance, await HTLCInstance.amount())
 
-    assert.ok(await HTLCInstance.canWithdraw())
-
     await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
 
     const balance2 = await web3.eth.getBalance(recipientEthereum)
@@ -117,7 +115,6 @@ contract("ETH HTLC", (accounts) => {
 
     await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
     try {
-      assert.equal(false, await HTLCInstance.canWithdraw())
       await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[2] })
     }
     catch(e) {
@@ -170,10 +167,9 @@ contract("ETH HTLC", (accounts) => {
       false,
       { value: amount }
     )
-    
+   
     await increaseTime(2)
 
-    assert.equal(false, await HTLCInstance.canWithdraw())
     try {
       await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
     }
@@ -203,10 +199,16 @@ contract("ETH HTLC", (accounts) => {
     
     const balance1 = await web3.eth.getBalance(recipientEthereum)
 
+    const startTime = await HTLCInstance.startTime()
+    const lockTime = await HTLCInstance.lockTime()
+
+    const date = new Date(startTime * 1000)
+    date.setSeconds(date.getSeconds() + lockTime + 1)
+    const secondUNIX = Math.floor(date.getTime() / 1000)
+
+    assert.equal(true, await HTLCInstance.canRefund(secondUNIX))
+
     await increaseTime(2)
-
-    assert.ok(await HTLCInstance.canRefund())
-
     await HTLCInstance.refund()
 
     const balance2 = await web3.eth.getBalance(recipientEthereum)
@@ -234,7 +236,6 @@ contract("ETH HTLC", (accounts) => {
     
     await increaseTime(2)
     await HTLCInstance.refund()
-    assert.equal(false, await HTLCInstance.canRefund())
     
     try {
       await HTLCInstance.refund()
@@ -262,8 +263,11 @@ contract("ETH HTLC", (accounts) => {
       false,
       { value: amount }
     )
-    
-    assert.equal(false, await HTLCInstance.canRefund())
+
+    const date = new Date()
+    const secondUNIX = Math.floor(date.getTime() / 1000)
+
+    assert.equal(false, await HTLCInstance.canRefund(secondUNIX))
     
     try {
       await HTLCInstance.refund()

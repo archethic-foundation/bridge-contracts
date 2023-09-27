@@ -47,10 +47,6 @@ abstract contract HTLCBase is IHTLC {
         from = msg.sender;
     }
 
-    function canWithdraw() external view returns (bool) {
-        return !finished && _beforeLockTime() && _enoughFunds();
-    }
-
     function withdraw(bytes32 _secret) public {
         if (finished) {
             revert AlreadyFinished();
@@ -61,7 +57,7 @@ abstract contract HTLCBase is IHTLC {
         if (!_enoughFunds()) {
             revert InsufficientFunds();
         }
-        if (!_beforeLockTime()) {
+        if (!_beforeLockTime(block.timestamp)) {
             revert TooLate();
         }
         secret = _secret;
@@ -70,8 +66,8 @@ abstract contract HTLCBase is IHTLC {
         emit Withdrawn();
     }
 
-    function canRefund() external view returns (bool) {
-        return !finished && !_beforeLockTime() && _enoughFunds();
+    function canRefund(uint256 timestamp) external view returns (bool) {
+        return !finished && !_beforeLockTime(timestamp) && _enoughFunds();
     }
 
     function refund() external {
@@ -81,7 +77,7 @@ abstract contract HTLCBase is IHTLC {
         if (!_enoughFunds()) {
             revert InsufficientFunds();
         }
-        if (_beforeLockTime()) {
+        if (_beforeLockTime(block.timestamp)) {
             revert TooEarly();
         }
         _refund();
@@ -89,8 +85,8 @@ abstract contract HTLCBase is IHTLC {
         emit Refunded();
     }
 
-    function _beforeLockTime() internal view returns (bool) {
-        return block.timestamp < startTime + lockTime;
+    function _beforeLockTime(uint256 timestamp) internal view returns (bool) {
+        return timestamp < startTime + lockTime;
     }
 
     function _transfer() virtual internal{}
