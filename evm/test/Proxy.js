@@ -5,7 +5,7 @@ const SignedHTLC = artifacts.require("SignedHTLC_ETH")
 
 const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
-const { generateECDSAKey, createEthSign, hexToUintArray } = require('./utils')
+const { generateECDSAKey, createEthSign, hexToUintArray, concatUint8Arrays, uintArrayToHex } = require('./utils')
 
 contract("LP Proxy", (accounts) => {
 
@@ -57,9 +57,21 @@ contract("LP Proxy", (accounts) => {
         await proxiedPoolInstance.unlock()
         await web3.eth.sendTransaction({ from: accounts[1], to: proxiedPoolInstance.address, value: web3.utils.toWei('2') });
 
-        const sigHash = hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const networkID = await web3.eth.getChainId()
 
-        const { r, s, v } = createEthSign(sigHash, archPoolSigner.privateKey)
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkID, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+
+        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
 
         await proxiedPoolInstance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v)
         const htlcAddress = await proxiedPoolInstance.provisionedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")

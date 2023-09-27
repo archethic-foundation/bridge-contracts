@@ -4,7 +4,7 @@ const SignedHTLC = artifacts.require("SignedHTLC_ERC")
 const ChargeableHTLC = artifacts.require("ChargeableHTLC_ERC")
 
 const { randomBytes, createHash } = require("crypto")
-const { generateECDSAKey, hexToUintArray, createEthSign } = require("../utils")
+const { generateECDSAKey, hexToUintArray, createEthSign, concatUint8Arrays, uintArrayToHex } = require("../utils")
 const { ethers } = require("ethers")
 
 contract("ERC LiquidityPool", (accounts) => {
@@ -123,9 +123,21 @@ contract("ERC LiquidityPool", (accounts) => {
 
         await DummyTokenInstance.transfer(instance.address, web3.utils.toWei('2'))
 
-        const sigHash = hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const networkID = await web3.eth.getChainId()
 
-        const { r, s, v } = createEthSign(sigHash, archPoolSigner.privateKey)
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkID, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+
+        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
 
         await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v)
         const htlcAddress = await instance.provisionedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
@@ -169,10 +181,21 @@ contract("ERC LiquidityPool", (accounts) => {
 
         await instance.unlock()
 
-        const sigHash = hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const networkID = await web3.eth.getChainId()
 
-        const { r, s, v } = createEthSign(sigHash, archPoolSigner.privateKey)
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkID, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+
+        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
 
         try {
             await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v)
