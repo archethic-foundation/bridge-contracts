@@ -21,7 +21,9 @@ interface IPool {
     function safetyModuleFeeRate() external returns(uint256);
     function poolCap() external returns(uint256);
     function locked() external returns(bool);
+    function provisionedSwaps() external returns (address[] memory);
+    function mintedSwaps() external returns (address[] memory);
 
-    function provisionedSwaps(bytes32 _hash) external returns (IHTLC);
-    function mintedSwaps(bytes32 _hash) external returns (IHTLC);
+    function provisionedSwap(bytes32 _hash) external returns (IHTLC);
+    function mintedSwap(bytes32 _hash) external returns (IHTLC);
 }

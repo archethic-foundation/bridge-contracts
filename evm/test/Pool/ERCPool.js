@@ -128,7 +128,7 @@ contract("ERC LiquidityPool", (accounts) => {
         const { r, s, v } = createEthSign(sigHash, archPoolSigner.privateKey)
 
         await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v)
-        const htlcAddress = await instance.provisionedSwaps("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const htlcAddress = await instance.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const balanceHTLC = await DummyTokenInstance.balanceOf(htlcAddress)
         assert.equal(web3.utils.toWei('1'), balanceHTLC)
 
@@ -198,7 +198,7 @@ contract("ERC LiquidityPool", (accounts) => {
             .digest("hex")
 
         await instance.mintHTLC(`0x${secretHash}`, web3.utils.toWei('1'), 60)
-        const htlcAddress = await instance.mintedSwaps(`0x${secretHash}`)
+        const htlcAddress = await instance.mintedSwap(`0x${secretHash}`)
         const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
         assert.equal(await HTLCInstance.safetyModuleAddress(), satefyModuleAddress)
         assert.equal(await HTLCInstance.hash(), `0x${secretHash}`)
