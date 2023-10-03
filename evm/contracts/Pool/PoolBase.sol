@@ -11,7 +11,7 @@ import "../../interfaces/IHTLC.sol";
 
 using SafeMath for uint256; 
 
-contract PoolBase is IPool, Initializable, OwnableUpgradeable {
+abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
     bool public locked;
     address public reserveAddress;
@@ -20,8 +20,11 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     uint256 public poolCap;
     uint256 public safetyModuleFeeRate;
 
-    mapping(bytes32 => IHTLC) _provisionedSwaps;
-    mapping(bytes32 => IHTLC) _mintedSwaps;
+    mapping(bytes32 => IHTLC) _refProvisionedSwaps;
+    mapping(bytes32 => IHTLC) _refMintedSwaps;
+
+    address[] _provisionedSwaps;
+    address[] _mintedSwaps;
 
     event ReserveAddressChanged(address indexed _reservedAddress);
     event SafetyModuleAddressChanged(address indexed _safetyModuleAddress);
@@ -123,14 +126,18 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         return _amount.mul(safetyModuleFeeRate).div(100000);
     }
 
-    function provisionedSwaps(bytes32 _hash) external view returns (IHTLC) {
-        return _provisionedSwaps[_hash];
+    function provisionedSwaps() external view returns (address[] memory) {
+        return _provisionedSwaps;
+    }
+
+    function provisionedSwap(bytes32 _hash) external view returns (IHTLC) {
+        return _refProvisionedSwaps[_hash];
     }
 
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external {
         checkUnlocked();
 
-        if(address(_provisionedSwaps[_hash]) != address(0)) {
+        if(address(_refProvisionedSwaps[_hash]) != address(0)) {
             revert AlreadyProvisioned();
         }
 
@@ -146,12 +153,19 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         delete signedMessageHash;
 
         IHTLC htlcContract = _createSignedHTLC(_hash, _amount, _lockTime);
-        _provisionedSwaps[_hash] = htlcContract;
+        _refProvisionedSwaps[_hash] = htlcContract;
+
+        _provisionedSwaps.push(address(htlcContract));
+
         emit ContractProvisioned(htlcContract, _amount);
     } 
 
-    function mintedSwaps(bytes32 _hash) external view returns (IHTLC) {
-        return _mintedSwaps[_hash];
+    function mintedSwaps() external view returns (address[] memory) {
+        return _mintedSwaps;
+    }
+
+    function mintedSwap(bytes32 _hash) external view returns (IHTLC) {
+        return _refMintedSwaps[_hash];
     }
 
     function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) payable virtual external {
@@ -159,11 +173,12 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     }
 
     function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal {
-        if(address(_mintedSwaps[_hash]) != address(0)) {
+        if(address(_refMintedSwaps[_hash]) != address(0)) {
             revert AlreadyMinted();
         }
         IHTLC htlcContract = _createChargeableHTLC(_hash, _amount, _lockTime);
-        _mintedSwaps[_hash] = htlcContract;
+        _refMintedSwaps[_hash] = htlcContract;
+        _mintedSwaps.push(address(htlcContract));
         emit ContractMinted(htlcContract, _amount);
     }
 
