@@ -31,7 +31,7 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address), as: [
+condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address, _chain_id), as: [
   type: "contract",
   code: valid_signed_code?(end_time, amount, user_address),
   timestamp: end_time > Time.now(),
@@ -43,7 +43,7 @@ condition triggered_by: transaction, on: request_secret_hash(end_time, amount, u
   )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _user_address) do
+actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   contract_content = Map.new()
   if Json.is_valid?(contract.content) do
@@ -61,10 +61,14 @@ actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _u
   secret_hash = Crypto.hash(secret, "sha256")
 
   # Build signature for EVM decryption
-  signature = sign_for_evm(secret_hash)
+  signature = sign_for_evm(secret_hash, chain_id)
 
   # Add secret and signature in content
-  htlc_map = [hmac_address: transaction.address, end_time: end_time]
+  htlc_map = [
+    hmac_address: transaction.address,
+    end_time: end_time,
+    chain_id: chain_id
+  ]
 
   htlc_genesis_address = Chain.get_genesis_address(transaction.address)
 
@@ -114,7 +118,7 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address) do
   contract_content = Map.delete(contract_content, htlc_genesis_address)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
-  signature = sign_for_evm(secret)
+  signature = sign_for_evm(secret, htlc_map.chain_id)
 
   Contract.set_content Json.to_string(contract_content)
   Contract.add_recipient address: htlc_genesis_address, action: "reveal_secret", args: [secret, signature]
@@ -161,9 +165,13 @@ fun valid_signed_code?(end_time, amount, user_address) do
   Code.is_same?(expected_code, transaction.code)
 end
 
-fun sign_for_evm(data) do
+fun sign_for_evm(data, chain_id) do
+  # Perform a first hash to combine data and chain_id
+  hash_abi = Evm.abi_encode("(bytes32,uint)", [data, chain_id])
+  combined_hash = Crypto.hash(hash_abi, "keccak256")
+
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-  signature_payload = Crypto.hash("#{prefix}#{data}", "keccak256")
+  signature_payload = Crypto.hash("#{prefix}#{combined_hash}", "keccak256")
 
   sig = Crypto.sign_with_recovery(signature_payload)
 
