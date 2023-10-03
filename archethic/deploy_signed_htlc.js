@@ -1,11 +1,7 @@
 import Archethic, { Crypto, Utils } from "archethic"
 import config from "./config.js"
 
-if (!config.endpoint || !config.userSeed || !config.factorySeed) {
-  console.log("Invalid config !")
-  console.log("Config needs endpoint, userSeed and factorySeed")
-  process.exit(1)
-}
+const env = config.environments.local
 
 const args = []
 process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(val) } })
@@ -16,9 +12,14 @@ if (args.length != 4) {
   process.exit(1)
 }
 
-main(config.endpoint, config.userSeed, config.factorySeed)
+main()
 
-async function main(endpoint, userSeed, factorySeed) {
+async function main() {
+  const endpoint = env.endpoint
+  const userSeed = env.userSeed
+  const factorySeed = env.factorySeed
+  const chainId = env.defaultChainId
+
   const token = args[0]
   const seed = args[1]
   const endTime = parseInt(args[2])
@@ -50,7 +51,7 @@ async function main(endpoint, userSeed, factorySeed) {
   const tx = archethic.transaction.new()
     .setType("contract")
     .setCode(htlcCode)
-    .addRecipient(poolGenesisAddress, "request_secret_hash", [endTime, amount, userAddress])
+    .addRecipient(poolGenesisAddress, "request_secret_hash", [endTime, amount, userAddress, chainId])
     .addOwnership(encryptedSeed, authorizedKeys)
     .build(seed, index)
     .originSign(Utils.originPrivateKey)

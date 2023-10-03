@@ -31,7 +31,7 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address, _chain_id), as: [
+condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address, chain_id), as: [
   type: "contract",
   code: valid_signed_code?(end_time, amount, user_address),
   timestamp: end_time > Time.now(),
@@ -40,7 +40,8 @@ condition triggered_by: transaction, on: request_secret_hash(end_time, amount, u
     previous_address = Chain.get_previous_address()
     balance = Chain.get_uco_balance(previous_address)
     balance >= amount
-  )
+  ),
+  content: List.in?([#CHAIN_IDS#], chain_id)
 ]
 
 actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _user_address, chain_id) do
