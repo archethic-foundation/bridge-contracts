@@ -1,11 +1,7 @@
 import Archethic, { Crypto, Utils } from "archethic"
 import config from "./config.js"
 
-if (!config.endpoint || !config.userSeed) {
-  console.log("Invalid config !")
-  console.log("Config needs endpoint and userSeed")
-  process.exit(1)
-}
+const env = config.environments.local
 
 const args = []
 process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(val) } })
@@ -16,9 +12,12 @@ if (args.length != 2) {
   process.exit(1)
 }
 
-main(config.endpoint, config.userSeed)
+main()
 
-async function main(endpoint, seed) {
+async function main() {
+  const endpoint = env.endpoint
+  const seed = env.userSeed
+
   const poolGenesisAddress = args[0]
   const htlcGenesisAddress = args[1]
 

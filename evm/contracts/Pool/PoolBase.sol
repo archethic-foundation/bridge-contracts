@@ -134,15 +134,16 @@ contract PoolBase is IPool, Initializable, OwnableUpgradeable {
             revert AlreadyProvisioned();
         }
 
-        bytes32 signatureHash = ECDSA.toEthSignedMessageHash(_hash);
-        address signer = ECDSA.recover(signatureHash, _v, _r, _s);
-
+        bytes32 messagePayloadHash = keccak256(abi.encodePacked(_hash, bytes32(block.chainid)));
+        bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayloadHash);
+        address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
         if (signer != archethicPoolSigner) {
             revert InvalidSignature();
         }
 
         delete signer;
-        delete signatureHash;
+        delete messagePayloadHash;
+        delete signedMessageHash;
 
         IHTLC htlcContract = _createSignedHTLC(_hash, _amount, _lockTime);
         _provisionedSwaps[_hash] = htlcContract;

@@ -2,15 +2,15 @@ import fs from "fs"
 import Archethic, { Crypto, Utils } from "archethic"
 import config from "./config.js"
 
-if (!config.endpoint || !config.factorySeed || !config.protocolFeeAddress) {
-  console.log("Invalid config !")
-  console.log("Config needs endpoint and factorySeed")
-  process.exit(1)
-}
+const env = config.environments.local
 
-main(config.endpoint, config.factorySeed, config.protocolFeeAddress)
+main()
 
-async function main(endpoint, seed, protocolFeeAddress) {
+async function main() {
+  const endpoint = env.endpoint
+  const seed = env.factorySeed
+  const protocolFeeAddress = env.protocolFeeAddress
+
   const archethic = new Archethic(endpoint)
   await archethic.connect()
 
