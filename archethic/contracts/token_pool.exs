@@ -32,9 +32,9 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(end_time, amount, user_address, chain_id), as: [
+condition triggered_by: transaction, on: request_secret_hash(amount, user_address, chain_id), as: [
   type: "contract",
-  code: valid_signed_code?(end_time, amount, user_address),
+  code: valid_signed_code?(amount, user_address),
   timestamp: end_time > Time.now(),
   previous_public_key: (
     # Ensure contract has enough fund to withdraw
@@ -45,7 +45,7 @@ condition triggered_by: transaction, on: request_secret_hash(end_time, amount, u
   content: List.in?([#CHAIN_IDS#], chain_id)
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(_amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   contract_content = Contract.call_function(#STATE_ADDRESS#, "get_state", [])
 
@@ -62,6 +62,10 @@ actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _u
   # Build signature for EVM decryption
   signature = sign_for_evm(secret_hash, chain_id)
 
+  # Calculate endtime now + 2 hours
+  now = Time.now()
+  end_time = now - Math.rem(now, 60) + 7200
+
   # Add secret and signature in content
   htlc_map = [
     hmac_address: transaction.address,
@@ -74,7 +78,7 @@ actions triggered_by: transaction, on: request_secret_hash(end_time, _amount, _u
   contract_content = Map.set(contract_content, htlc_genesis_address, htlc_map)
 
   Contract.add_recipient address: #STATE_ADDRESS#, action: "update_state", args: [contract_content]
-  Contract.add_recipient address: transaction.address, action: "set_secret_hash", args: [secret_hash, signature]
+  Contract.add_recipient address: transaction.address, action: "set_secret_hash", args: [secret_hash, signature, end_time]
 end
 
 ####################################
@@ -150,9 +154,8 @@ fun valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
   Code.is_same?(expected_code, transaction.code)
 end
 
-fun valid_signed_code?(end_time, amount, user_address) do
+fun valid_signed_code?(amount, user_address) do
   args = [
-    end_time,
     user_address,
     #POOL_ADDRESS#,
     #TOKEN_ADDRESS#,
