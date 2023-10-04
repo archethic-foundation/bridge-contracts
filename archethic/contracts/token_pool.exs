@@ -36,19 +36,34 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(amount, user_address, chain_id), as: [
-  type: "contract",
-  code: valid_signed_code?(amount, user_address),
+condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id), as: [
+  type: "transfer",
+  code: valid_signed_code?(htlc_genesis_address, amount, user_address),
   previous_public_key: (
     # Ensure contract has enough fund to withdraw
     previous_address = Chain.get_previous_address()
     balance = Chain.get_token_balance(previous_address, #TOKEN_ADDRESS#)
     balance >= amount
   ),
-  content: List.in?([#CHAIN_IDS#], chain_id)
+  content: List.in?([#CHAIN_IDS#], chain_id),
+  token_transfers: (
+    valid? = false
+
+    htlc_genesis_address = String.to_hex(htlc_genesis_address)
+    transfers = Map.get(transaction.token_transfers, htlc_genesis_address, [])
+    for transfer in transfers do
+      if transfer.token_address == #TOKEN_ADDRESS# &&
+         transfer.token_id == 0 &&
+         transfer.amount == amount do
+        valid? = true   
+     end
+    end
+
+    valid?
+  )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(_amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, _amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   contract_content = Contract.call_function(#STATE_ADDRESS#, "get_state", [])
 
@@ -76,12 +91,11 @@ actions triggered_by: transaction, on: request_secret_hash(_amount, _user_addres
     chain_id: chain_id
   ]
 
-  htlc_genesis_address = Chain.get_genesis_address(transaction.address)
-
+  htlc_genesis_address = String.to_hex(htlc_genesis_address)
   contract_content = Map.set(contract_content, htlc_genesis_address, htlc_map)
 
   Contract.add_recipient address: #STATE_ADDRESS#, action: "update_state", args: [contract_content]
-  Contract.add_recipient address: transaction.address, action: "set_secret_hash", args: [secret_hash, signature, end_time]
+  Contract.add_recipient address: htlc_genesis_address, action: "set_secret_hash", args: [secret_hash, signature, end_time]
 end
 
 ####################################
@@ -177,17 +191,26 @@ fun valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
   Code.is_same?(expected_code, transaction.code)
 end
 
-fun valid_signed_code?(amount, user_address) do
-  args = [
-    user_address,
-    #POOL_ADDRESS#,
-    #TOKEN_ADDRESS#,
-    amount
-  ]
+fun valid_signed_code?(htlc_address, amount, user_address) do
+  valid? = false
 
-  expected_code = Contract.call_function(#FACTORY_ADDRESS#, "get_signed_htlc", args)
+  htlc_address = String.to_hex(htlc_address)
+  last_htlc_transaction = Chain.get_last_transaction(htlc_address)
 
-  Code.is_same?(expected_code, transaction.code)
+  if last_htlc_transaction != nil do
+    args = [
+      user_address,
+      #POOL_ADDRESS#,
+      #TOKEN_ADDRESS#,
+      amount
+    ]
+
+    expected_code = Contract.call_function(#FACTORY_ADDRESS#, "get_signed_htlc", args)
+
+    valid? = Code.is_same?(expected_code, last_htlc_transaction.code)
+  end
+
+  valid?
 end
 
 fun sign_for_evm(data, chain_id) do
