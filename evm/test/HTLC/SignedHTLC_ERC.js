@@ -29,7 +29,11 @@ contract("Signed ERC HTLC", (accounts) => {
             .update(secret)
             .digest()
 
-        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
+        const date = new Date()
+        date.setSeconds(date.getSeconds() + 60)
+        const date_sec = Math.floor(date.getTime() / 1000)
+
+        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, date_sec, archPoolSigner.address)
         await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei('1'))
 
         const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
@@ -57,7 +61,11 @@ contract("Signed ERC HTLC", (accounts) => {
 
         const { r: rSecret, s: sSecret } = createEthSign(randomBytes(32), archPoolSigner.privateKey)
 
-        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, 60, archPoolSigner.address)
+        const date = new Date()
+        date.setSeconds(date.getSeconds() + 60)
+        const date_sec = Math.floor(date.getTime() / 1000)
+
+        const HTLCInstance = await HTLC.new(accounts[2], DummyTokenInstance.address, web3.utils.toWei('1'), `0x${hash.toString('hex')}`, date_sec, archPoolSigner.address)
         await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei('1'))
 
         try {

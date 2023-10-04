@@ -5,6 +5,7 @@ const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 module.exports = async function (deployer, network, accounts) {
     let reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap
     const safetyModuleFeeRate = 5 // 0.05%
+    const lockTimePeriod = 7200; // 2H
 
     if (network == "development") {
         reserveAddress = accounts[4]
@@ -34,7 +35,7 @@ module.exports = async function (deployer, network, accounts) {
         archethicPoolSigner = '0xaf08762b5c7001314dca6e9c3aa56c1a603f9369'
     }
 
-    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap], { deployer });
+    const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap, lockTimePeriod], { deployer });
 
     if (network == "development") {
         await instance.unlock()

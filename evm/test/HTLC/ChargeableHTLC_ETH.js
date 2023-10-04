@@ -11,11 +11,15 @@ contract("Chargeable ETH HTLC", (accounts) => {
 
     const amount = web3.utils.toWei("0.995")
     const fee = web3.utils.toWei("0.005")
+
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
     
     const HTLCInstance = await HTLC.new(
       amount,
       "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-      1,
+      date_sec,
       reserveAddress,
       safetyModuleAddress,
       fee,
@@ -27,7 +31,7 @@ contract("Chargeable ETH HTLC", (accounts) => {
     assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
     assert.equal(await HTLCInstance.recipient(), reserveAddress)
     assert.equal(await HTLCInstance.finished(), false)
-    assert.equal(await HTLCInstance.lockTime(), 1)
+    assert.equal(await HTLCInstance.lockTime(), date_sec)
 
     assert.equal(await web3.eth.getBalance(HTLCInstance.address), web3.utils.toWei("1.0"))
   })
@@ -44,10 +48,14 @@ contract("Chargeable ETH HTLC", (accounts) => {
     const amount = web3.utils.toWei("0.995")
     const fee = web3.utils.toWei("0.005")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 60)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       amount,
       `0x${secretHash}`,
-      60,
+      date_sec,
       reserveAddress,
       safetyModuleAddress,
       fee,
@@ -78,10 +86,14 @@ contract("Chargeable ETH HTLC", (accounts) => {
     const amount = web3.utils.toWei("0.995")
     const fee = web3.utils.toWei("0.005")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       amount,
       `0x${secretHash}`,
-      1,
+      date_sec,
       reserveAddress,
       safetyModuleAddress,
       fee,

@@ -24,7 +24,7 @@ contract("LP Proxy", (accounts) => {
         const satefyModuleAddress = accounts[3]
         const reserveAddress = accounts[4]
 
-        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
+        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200'), 60]);
         assert.equal(await proxiedPoolInstance.reserveAddress(), reserveAddress)
         assert.equal(await proxiedPoolInstance.poolCap(), web3.utils.toWei('200'))
     })
@@ -33,9 +33,11 @@ contract("LP Proxy", (accounts) => {
         const satefyModuleAddress = accounts[3]
         const reserveAddress = accounts[4]
 
-        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
+        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200'), 60]);
 
-        await proxiedPoolInstance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, { value: web3.utils.toWei('1') })
+        const date = new Date()
+
+        await proxiedPoolInstance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), { value: web3.utils.toWei('1') })
         const htlcAddress = await proxiedPoolInstance.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
 
@@ -44,7 +46,9 @@ contract("LP Proxy", (accounts) => {
         assert.equal(await HTLCInstance.recipient(), reserveAddress);
         assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.995'))
         assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
-        assert.equal(await HTLCInstance.lockTime(), 60)
+
+        const lockTime = await HTLCInstance.lockTime()
+        assert.equal(true, (lockTime.toNumber() - Math.floor(date.getTime() / 1000)) >= 60)
     })
 
 
@@ -52,7 +56,7 @@ contract("LP Proxy", (accounts) => {
         const satefyModuleAddress = accounts[3]
         const reserveAddress = accounts[4]
 
-        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
+        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200'), 60]);
 
         await proxiedPoolInstance.unlock()
         await web3.eth.sendTransaction({ from: accounts[1], to: proxiedPoolInstance.address, value: web3.utils.toWei('2') });
@@ -73,7 +77,11 @@ contract("LP Proxy", (accounts) => {
 
         const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
 
-        await proxiedPoolInstance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), 60, `0x${r}`, `0x${s}`, v)
+        const date = new Date()
+        date.setSeconds(date.getSeconds() + 60)
+        const date_sec = Math.floor(date.getTime() / 1000)
+
+        await proxiedPoolInstance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
         const htlcAddress = await proxiedPoolInstance.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const balanceHTLC = await web3.eth.getBalance(htlcAddress)
         assert.equal(web3.utils.toWei('1'), balanceHTLC)
@@ -83,17 +91,18 @@ contract("LP Proxy", (accounts) => {
         assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         assert.equal(await HTLCInstance.recipient(), accounts[0]);
         assert.equal(await HTLCInstance.amount(), web3.utils.toWei('1'))
-        assert.equal(await HTLCInstance.lockTime(), 60)
+        
+        assert.equal(await HTLCInstance.lockTime(), date_sec)
     })
 
     it("change implementation", async () => {
         const satefyModuleAddress = accounts[3]
         const reserveAddress = accounts[4]
 
-        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
+        const proxiedPoolInstance = await deployProxy(LiquidityPool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200'), 60]);
         assert.equal(await proxiedPoolInstance.safetyModuleFeeRate(), 500)
 
-        await upgradeProxy(proxiedPoolInstance.address, LiquidityPoolV2, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200')]);
+        await upgradeProxy(proxiedPoolInstance.address, LiquidityPoolV2, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('200'), 60]);
         await proxiedPoolInstance.setSafetyModuleFeeRate(500)
         assert.equal(await proxiedPoolInstance.safetyModuleFeeRate(), 1000)
     })
