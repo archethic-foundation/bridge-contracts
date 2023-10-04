@@ -7,7 +7,11 @@
 condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash), as: [
   type: "contract",
   code: valid_chargeable_code?(end_time, amount, user_address, secret_hash),
-  timestamp: end_time > Time.now(),
+  timestamp: (
+    # End time cannot be less than now or more than 1 day
+    now = Time.now()
+    end_time > now && end_time <= (now + 86400)
+  ),
   address: (
     # Here ensure Ethereum contract exists and check rules
     # How to ensure Ethereum contract is a valid one ?
@@ -35,7 +39,6 @@ end
 condition triggered_by: transaction, on: request_secret_hash(amount, user_address, chain_id), as: [
   type: "contract",
   code: valid_signed_code?(amount, user_address),
-  timestamp: end_time > Time.now(),
   previous_public_key: (
     # Ensure contract has enough fund to withdraw
     previous_address = Chain.get_previous_address()

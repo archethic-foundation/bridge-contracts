@@ -7,7 +7,11 @@
 condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash), as: [
   type: "contract",
   code: valid_chargeable_code?(end_time, amount, user_address, secret_hash),
-  timestamp: end_time > Time.now(),
+  timestamp: (
+    # End time cannot be less than now or more than 1 day
+    now = Time.now()
+    end_time > now && end_time <= (now + 86400)
+  ),
   content: (
     # Ensure the pool has enough UCO to send the requested fund
     balance = Chain.get_uco_balance(contract.address)
@@ -52,7 +56,7 @@ actions triggered_by: transaction, on: request_secret_hash(_amount, _user_addres
 
   for key in Map.keys(contract_content) do
     htlc_map = Map.get(contract_content, key)
-    if htlc_map.end_time > Time.now() do
+    if htlc_map.end_time <= Time.now() do
       contract_content = Map.delete(contract_content, key)
     end
   end
