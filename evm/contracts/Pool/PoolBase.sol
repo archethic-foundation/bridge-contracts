@@ -209,6 +209,7 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
 
     function _chargeableHTLCLockTime() internal view returns (uint256) {
-        return block.timestamp.add(lockTimePeriod);
+        uint256 minuteRoundedBlockTimestamp = block.timestamp.sub(block.timestamp.mod(60));
+        return minuteRoundedBlockTimestamp.add(lockTimePeriod);
     }
 }
