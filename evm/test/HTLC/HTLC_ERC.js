@@ -16,12 +16,16 @@ contract("ERC HTLC", (accounts) => {
   it("should create contract", async () => {
     const recipientEthereum = accounts[2]
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       web3.utils.toWei("1"),
       "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-      1
+      date_sec
     )
 
     assert.equal(await HTLCInstance.amount(), web3.utils.toWei("1"))
@@ -29,7 +33,7 @@ contract("ERC HTLC", (accounts) => {
     assert.equal(await HTLCInstance.token(), DummyTokenInstance.address)
     assert.equal(await HTLCInstance.recipient(), recipientEthereum)
     assert.equal(await HTLCInstance.finished(), false)
-    assert.equal(await HTLCInstance.lockTime(), 1)
+    assert.equal(await HTLCInstance.lockTime(), date_sec)
   })
 
   it("should withdraw the funds with the hash preimage reveal", async () => {
@@ -41,12 +45,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 60)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      60
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
@@ -68,12 +76,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 60)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      60
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
@@ -97,12 +109,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 60)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      60
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
@@ -125,12 +141,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 60)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      60
+      date_sec
     )
 
     try {
@@ -151,12 +171,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      1
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
@@ -182,24 +206,21 @@ contract("ERC HTLC", (accounts) => {
 
     const balance1 = await DummyTokenInstance.balanceOf(accounts[0])
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      1
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
 
-    const startTime = await HTLCInstance.startTime()
-    const lockTime = await HTLCInstance.lockTime()
-
-    const date = new Date(startTime * 1000)
-    date.setSeconds(date.getSeconds() + lockTime + 1)
-    const secondUNIX = Math.floor(date.getTime() / 1000)
-
-    assert.equal(true, await HTLCInstance.canRefund(secondUNIX))
+    assert.equal(true, await HTLCInstance.canRefund(date_sec))
 
     await increaseTime(2)
 
@@ -219,12 +240,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      1
+      date_sec
     )
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
@@ -232,8 +257,8 @@ contract("ERC HTLC", (accounts) => {
     await increaseTime(2)
     await HTLCInstance.refund()
 
-    const date = new Date()
-    const secondUNIX = Math.floor(date.getTime() / 1000)
+    const now = new Date()
+    const secondUNIX = Math.floor(now.getTime() / 1000)
 
     assert.equal(false, await HTLCInstance.canRefund(secondUNIX))
 
@@ -255,12 +280,16 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 1)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      1
+      date_sec
     )
 
     try {
@@ -281,13 +310,21 @@ contract("ERC HTLC", (accounts) => {
       .update(secret)
       .digest("hex")
 
+    const date = new Date()
+    date.setSeconds(date.getSeconds() + 5)
+    const date_sec = Math.floor(date.getTime() / 1000)
+
     const HTLCInstance = await HTLC.new(
       recipientEthereum,
       DummyTokenInstance.address,
       amount,
       `0x${secretHash}`,
-      1
+      date_sec
     )
+
+    const now = new Date()
+    const secondUNIX = Math.floor(now.getTime() / 1000)
+    assert.equal(false, await HTLCInstance.canRefund(secondUNIX))
 
     await DummyTokenInstance.transfer(HTLCInstance.address, amount)
     try {

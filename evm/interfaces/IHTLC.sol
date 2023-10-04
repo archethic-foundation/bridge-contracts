@@ -10,8 +10,8 @@ interface IHTLC {
     function lockTime() external returns(uint256);
     function recipient() external returns(address);
     function finished() external returns(bool);
-    function startTime() external returns(uint256);
 
     function withdraw(bytes32) external;
     function refund() external;
+    function enoughFunds() external view returns (bool);
 }

@@ -19,6 +19,7 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     address public archethicPoolSigner;
     uint256 public poolCap;
     uint256 public safetyModuleFeeRate;
+    uint256 public lockTimePeriod;
 
     mapping(bytes32 => IHTLC) _refProvisionedSwaps;
     mapping(bytes32 => IHTLC) _refMintedSwaps;
@@ -35,6 +36,7 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     event Unlock();
     event ContractProvisioned(IHTLC indexed _htlc, uint256 indexed _amount);
     event ContractMinted(IHTLC indexed _htlc, uint256 indexed _amount);
+    event LockTimePeriodChanged(uint256 indexed _lockTimePeriod);
 
     error InvalidReserveAddress();
     error InvalidSafetyModuleAddress();
@@ -44,8 +46,10 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
     error InvalidSignature();
     error InsufficientFunds();
     error Locked();
+    error InvalidLockTimePeriod();
+    error InvalidLockTime();
 
-    function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap) onlyInitializing virtual internal {
+    function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod) onlyInitializing virtual internal {
         __Ownable_init();
 
         if(_reserveAddress == address(0)) {
@@ -59,12 +63,17 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
             revert InvalidArchethicPoolSigner();
         }
 
+        if (_lockTimePeriod == 0) {
+            revert InvalidLockTimePeriod();
+        }
+
         reserveAddress = _reserveAddress;
         safetyModuleAddress = _safetyAddress;
         safetyModuleFeeRate = _safetyFeeRate.mul(100);
         archethicPoolSigner = _archPoolSigner;
         poolCap = _poolCap;
         locked = true;
+        lockTimePeriod = _lockTimePeriod;
     }
 
     function checkUnlocked() internal view {
@@ -121,6 +130,12 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         locked = true;
         emit Unlock();
     }
+
+    function setLockTimePeriod(uint _lockTimePeriod) virtual external {
+        _checkOwner();
+        lockTimePeriod = _lockTimePeriod;
+        emit LockTimePeriodChanged(_lockTimePeriod);
+    }
     
     function swapFee(uint256 _amount) internal view returns (uint256) {
         return _amount.mul(safetyModuleFeeRate).div(100000);
@@ -136,6 +151,13 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external {
         checkUnlocked();
+
+        // Locktime cannot:
+        // - be zero
+        // - be more than 1 day or less than the lockTime
+        if (_lockTime == 0 || _lockTime.sub(block.timestamp) > 86400) {
+            revert InvalidLockTime();
+        }
 
         if(address(_refProvisionedSwaps[_hash]) != address(0)) {
             revert AlreadyProvisioned();
@@ -168,8 +190,8 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         return _refMintedSwaps[_hash];
     }
 
-    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) payable virtual external {
-        _mintHTLC(_hash, _amount, _lockTime);
+    function mintHTLC(bytes32 _hash, uint256 _amount) payable virtual external {
+        _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
     function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal {
@@ -184,4 +206,8 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
 
     function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
+
+    function _chargeableHTLCLockTime() internal view returns (uint256) {
+        return block.timestamp.add(lockTimePeriod);
+    }
 }

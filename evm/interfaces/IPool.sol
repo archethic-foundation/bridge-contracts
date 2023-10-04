@@ -5,12 +5,13 @@ import "./IHTLC.sol";
 
 interface IPool {
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external;
-    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) payable external;
+    function mintHTLC(bytes32 _hash, uint256 _amount) payable external;
     function setReserveAddress(address _reserveAddress) external;
     function setSafetyModuleAddress(address _safetyAddress) external;
     function setSafetyModuleFeeRate(uint256 _safetyFeeRate) external;
     function setArchethicPoolSigner(address _archPoolSigner) external;
     function setPoolCap(uint256 _poolCap) external;
+    function setLockTimePeriod(uint256 _lockTimePeriod) external;
     function unlock() external;
     function lock() external;
 

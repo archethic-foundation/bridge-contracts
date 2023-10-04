@@ -7,7 +7,6 @@ abstract contract HTLCBase is IHTLC {
     bool public finished;
     address public recipient;
     address public from;
-    uint256 public startTime;
     uint256 public lockTime;
     uint256 public amount;
     bytes32 public secret;
@@ -41,7 +40,6 @@ abstract contract HTLCBase is IHTLC {
         recipient = _recipient;
         amount = _amount;
         hash = _hash;
-        startTime = block.timestamp;
         lockTime = _lockTime;
         finished = false;
         from = msg.sender;
@@ -86,10 +84,14 @@ abstract contract HTLCBase is IHTLC {
     }
 
     function _beforeLockTime(uint256 timestamp) internal view returns (bool) {
-        return timestamp < startTime + lockTime;
+        return timestamp < lockTime;
     }
 
     function _transfer() virtual internal{}
     function _refund() virtual internal{}
     function _enoughFunds() virtual internal view returns (bool) {}
+
+    function enoughFunds() external view returns (bool) {
+        return _enoughFunds();
+    }
 }

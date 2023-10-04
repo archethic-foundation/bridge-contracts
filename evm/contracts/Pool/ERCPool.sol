@@ -16,8 +16,8 @@ contract ERCPool is PoolBase {
     event TokenChanged(address indexed _token);
     error CannotSendEthers();
 
-    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, IERC20 _token) initializer public {
-        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap);
+    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, IERC20 _token) initializer public {
+        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod);
         token = _token;
 	}
 
@@ -37,11 +37,11 @@ contract ERCPool is PoolBase {
         return htlcContract;
     }
 
-    function mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override payable external {
+    function mintHTLC(bytes32 _hash, uint256 _amount) override payable external {
         if (msg.value != 0) {
             revert CannotSendEthers();
         }
-        _mintHTLC(_hash, _amount, _lockTime);
+        _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
