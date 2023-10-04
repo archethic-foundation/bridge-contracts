@@ -8,7 +8,7 @@ process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(v
 
 if (args.length != 2) {
   console.log("Missing arguments")
-  console.log("Usage: node deploy_htlc.js [poolAddress] [htlcGenesisAddress]")
+  console.log("Usage: node deploy_htlc.js [tokenSymbol] [htlcGenesisAddress]")
   process.exit(1)
 }
 
@@ -18,8 +18,11 @@ async function main() {
   const endpoint = env.endpoint
   const seed = env.userSeed
 
-  const poolGenesisAddress = args[0]
+  const token = args[0]
   const htlcGenesisAddress = args[1]
+
+  const poolSeed = Crypto.hash(token).slice(1)
+  const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
 
   const archethic = new Archethic(endpoint)
   await archethic.connect()

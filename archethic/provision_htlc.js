@@ -8,7 +8,7 @@ process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(v
 
 if (args.length != 3) {
   console.log("Missing arguments")
-  console.log("Usage: node deploy_htlc.js [\"UCO\" | tokenAddress] [htlcSeed] [amount]")
+  console.log("Usage: node provision_htlc.js [\"UCO\" | tokenSymbol] [htlcSeed] [amount]")
   process.exit(1)
 }
 
@@ -17,40 +17,38 @@ main()
 async function main() {
   const endpoint = env.endpoint
   const userSeed = env.userSeed
-  const factorySeed = env.factorySeed
+  const chainId = env.defaultChainId
 
   const token = args[0]
-  const seed = args[1]
+  const htlcSeed = args[1]
   const amount = parseFloat(args[2])
 
   const poolSeed = Crypto.hash(token).slice(1)
   const tokenAddress = (token == "UCO") ? "UCO" : Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
 
   const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
-  const factoryGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(factorySeed, 0))
   const userAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(userSeed, 0))
+  const htlcGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(htlcSeed, 0))
 
   const archethic = new Archethic(endpoint)
   await archethic.connect()
 
-  const params = [userAddress, poolGenesisAddress, tokenAddress, amount]
-  const htlcCode = await archethic.network.callFunction(factoryGenesisAddress, "get_signed_htlc", params)
-
-  const storageNonce = await archethic.network.getStorageNoncePublicKey()
-  const { encryptedSeed, authorizedKeys } = encryptSeed(seed, storageNonce)
-
-  const htlcGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(seed, 0))
-  console.log("Signed HTLC genesis address:", htlcGenesisAddress)
-  const index = await archethic.transaction.getTransactionIndex(htlcGenesisAddress)
+  const index = await archethic.transaction.getTransactionIndex(userAddress)
 
   // Get faucet before sending transaction
   // await requestFaucet(endpoint, poolGenesisAddress)
 
   const tx = archethic.transaction.new()
-    .setType("contract")
-    .setCode(htlcCode)
-    .addOwnership(encryptedSeed, authorizedKeys)
-    .build(seed, index)
+    .setType("transfer")
+    .addRecipient(poolGenesisAddress, "request_secret_hash", [htlcGenesisAddress, amount, userAddress, chainId])
+
+  if (tokenAddress == "UCO") {
+    tx.addUCOTransfer(htlcGenesisAddress, Utils.toBigInt(amount))
+  } else {
+    tx.addTokenTransfer(htlcGenesisAddress, Utils.toBigInt(amount), tokenAddress)
+  }
+
+  tx.build(userSeed, index)
     .originSign(Utils.originPrivateKey)
 
   tx.on("fullConfirmation", (_confirmations) => {
@@ -65,12 +63,4 @@ async function main() {
     console.log("Reason:", reason)
     process.exit(1)
   }).send()
-}
-
-function encryptSeed(seed, storageNonce) {
-  const aesKey = Crypto.randomSecretKey()
-  const encryptedSeed = Crypto.aesEncrypt(seed, aesKey)
-  const encryptedAesKey = Crypto.ecEncrypt(aesKey, storageNonce)
-  const authorizedKeys = [{ encryptedSecretKey: encryptedAesKey, publicKey: storageNonce }]
-  return { encryptedSeed, authorizedKeys }
 }

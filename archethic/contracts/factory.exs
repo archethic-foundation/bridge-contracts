@@ -90,6 +90,16 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     Contract.set_code ""
   end
 
+  condition triggered_by: transaction, on: refund(), as: [
+    timestamp: timestamp >= #{end_time}
+  ]
+
+  actions triggered_by: transaction, on: refund() do
+    Contract.set_type "transfer"
+    #{return_transfer_code}
+    Contract.set_code ""
+  end
+
   condition triggered_by: transaction, on: reveal_secret(secret), as: [
     timestamp: transaction.timestamp < #{end_time},
     content: Crypto.hash(String.to_hex(secret)) == 0x#{secret_hash},
@@ -223,6 +233,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   """
   @version 1
+
   condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
     previous_public_key: (
 		  # Transaction is not yet validated so we need to use previous address
