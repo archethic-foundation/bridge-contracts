@@ -48,7 +48,10 @@ contract("LP Proxy", (accounts) => {
         assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
 
         const lockTime = await HTLCInstance.lockTime()
-        assert.equal(true, (lockTime.toNumber() - Math.floor(date.getTime() / 1000)) >= 60)
+        const nowTimestamp = Math.floor(date.getTime() / 1000)
+        const roundedTimestamp = nowTimestamp - (nowTimestamp % 60)
+
+        assert.equal(true, (lockTime.toNumber() - roundedTimestamp) >= 60)
     })
 
 
