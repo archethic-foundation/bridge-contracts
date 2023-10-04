@@ -106,7 +106,7 @@ end
 # Archethic => External chain #
 ###############################
 
-export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) do
+export fun get_signed_htlc(user_address, pool_address, token, amount) do
   # Here we should ensure end_time is valid compared to Time.now() and return error
 
   user_address = String.to_hex(user_address)
@@ -145,14 +145,15 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
     """
   end
 
-  date_time_trigger = """
-  # Automate the refunding after the given timestamp
-  actions triggered_by: datetime, at: #{end_time} do
+  # Temporary endtime before the one of the pool is now + 1 day
+  now = Time.now()
+  temporary_endtime = now - Math.rem(now, 60) + 86400
+
+  refund_code = """
     Contract.set_type "transfer"
     # Send back the token to the user address
     #{return_transfer_code}
     Contract.set_code ""
-  end
   """
 
   code_after_withdraw = """
@@ -172,7 +173,11 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
 
   after_secret_code = """
     @version 1
-    #{date_time_trigger}
+    # Automate the refunding after the given timestamp
+    actions triggered_by: datetime, at: \#{end_time} do
+    #{refund_code}
+    end
+
     condition triggered_by: transaction, on: reveal_secret(secret, secret_signature), as: [
       previous_public_key: (
 		    # Transaction is not yet validated so we need to use previous address
@@ -180,7 +185,7 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
 		    previous_address = Chain.get_previous_address()
 			  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
 		  ),
-      timestamp: transaction.timestamp < #{end_time},
+      timestamp: transaction.timestamp < \#{end_time},
       content: Crypto.hash(String.to_hex(secret)) == 0x\#{secret_hash}
     ]
 
@@ -194,8 +199,9 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
       Contract.set_code next_code
     end
 
-    export fun get_secret_hash() do
+    export fun get_htlc_data() do
       [
+        end_time: \#{end_time},
         secret_hash: 0x\#{secret_hash},
         secret_hash_signature: [
           r: 0x\#{secret_hash_signature.r},
@@ -208,8 +214,12 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
 
   """
   @version 1
-  #{date_time_trigger}
-  condition triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature), as: [
+  # Automate the refunding after the given timestamp
+  actions triggered_by: datetime, at: #{temporary_endtime} do
+  #{refund_code}
+  end
+
+  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
     previous_public_key: (
 		  # Transaction is not yet validated so we need to use previous address
 		  # to get the genesis address
@@ -218,7 +228,7 @@ export fun get_signed_htlc(end_time, user_address, pool_address, token, amount) 
 		)
   ]
 
-  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature) do
+  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time) do
     next_code = \"""
   #{after_secret_code}
     \"""

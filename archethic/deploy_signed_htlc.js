@@ -6,9 +6,9 @@ const env = config.environments.local
 const args = []
 process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(val) } })
 
-if (args.length != 4) {
+if (args.length != 3) {
   console.log("Missing arguments")
-  console.log("Usage: node deploy_htlc.js [\"UCO\" | tokenAddress] [htlcSeed] [endTime] [amount]")
+  console.log("Usage: node deploy_htlc.js [\"UCO\" | tokenAddress] [htlcSeed] [amount]")
   process.exit(1)
 }
 
@@ -22,8 +22,7 @@ async function main() {
 
   const token = args[0]
   const seed = args[1]
-  const endTime = parseInt(args[2])
-  const amount = parseFloat(args[3])
+  const amount = parseFloat(args[2])
 
   const poolSeed = Crypto.hash(token).slice(1)
   const tokenAddress = (token == "UCO") ? "UCO" : Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
@@ -35,7 +34,7 @@ async function main() {
   const archethic = new Archethic(endpoint)
   await archethic.connect()
 
-  const params = [endTime, userAddress, poolGenesisAddress, tokenAddress, amount]
+  const params = [userAddress, poolGenesisAddress, tokenAddress, amount]
   const htlcCode = await archethic.network.callFunction(factoryGenesisAddress, "get_signed_htlc", params)
 
   const storageNonce = await archethic.network.getStorageNoncePublicKey()
@@ -51,7 +50,7 @@ async function main() {
   const tx = archethic.transaction.new()
     .setType("contract")
     .setCode(htlcCode)
-    .addRecipient(poolGenesisAddress, "request_secret_hash", [endTime, amount, userAddress, chainId])
+    .addRecipient(poolGenesisAddress, "request_secret_hash", [amount, userAddress, chainId])
     .addOwnership(encryptedSeed, authorizedKeys)
     .build(seed, index)
     .originSign(Utils.originPrivateKey)
@@ -76,36 +75,4 @@ function encryptSeed(seed, storageNonce) {
   const encryptedAesKey = Crypto.ecEncrypt(aesKey, storageNonce)
   const authorizedKeys = [{ encryptedSecretKey: encryptedAesKey, publicKey: storageNonce }]
   return { encryptedSeed, authorizedKeys }
-}
-
-async function getHtlcCode(endpoint, poolAddress, userAddress, endTime, amount) {
-  return new Promise((resolve, reject) => {
-    const body = {
-      "jsonrpc": "2.0",
-      "id": 1,
-      "method": "contract_fun",
-      "params": {
-        "contract": poolAddress,
-        "function": "get_signed_htlc",
-        "args": [endTime, userAddress, poolAddress, "UCO", amount]
-      }
-    }
-
-    fetch(endpoint + "/api/rpc", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    })
-      .then(async (response) => {
-        const res = await response.json()
-        resolve(res.result)
-      })
-      .catch((err) => {
-        console.log(err)
-        reject(err)
-      });
-  })
 }
