@@ -155,7 +155,8 @@ abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
         // Locktime cannot:
         // - be zero
         // - be more than 1 day or less than the lockTime
-        if (_lockTime == 0 || _lockTime.sub(block.timestamp) > 86400) {
+        // - be before the block's timestamp
+        if (_lockTime == 0 || _lockTime < block.timestamp || _lockTime.sub(block.timestamp) > 86400) {
             revert InvalidLockTime();
         }
 
