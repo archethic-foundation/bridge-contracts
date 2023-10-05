@@ -9,7 +9,7 @@ process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(v
 
 if (args.length != 1) {
   console.log("Missing arguments")
-  console.log("Usage: node deploy_pool.js [\"UCO\" | \"tokenSymbol\"]")
+  console.log("Usage: node update_pool.js [\"UCO\" | \"tokenSymbol\"]")
   process.exit(1)
 }
 
@@ -28,44 +28,28 @@ async function main() {
   const archethic = new Archethic(endpoint)
   await archethic.connect()
 
-  const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
-  console.log("Pool genesis address:", poolGenesisAddress)
 
+  const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
   const poolCode = (token == "UCO") ?
     getUCOPoolCode(poolGenesisAddress, factorySeed, masterSeed) :
     getTokenPoolCode(poolSeed, poolGenesisAddress, factorySeed, stateContractAddress, masterSeed)
 
-  const storageNonce = await archethic.network.getStorageNoncePublicKey()
-  const { encryptedSeed, authorizedKeys } = encryptSeed(poolSeed, storageNonce)
+  const masterGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(masterSeed, 0))
+  console.log("Master genesis address:", masterGenesisAddress)
+  const index = await archethic.transaction.getTransactionIndex(masterGenesisAddress)
 
-  const index = await archethic.transaction.getTransactionIndex(poolGenesisAddress)
+  const updateTx = archethic.transaction.new()
+    .setType("transfer")
+    .addRecipient(poolGenesisAddress, "update_code", [poolCode])
+    .build(masterSeed, index)
+    .originSign(Utils.originPrivateKey)
 
-  const poolTx = archethic.transaction.new()
-    .setCode(poolCode)
-    .addOwnership(encryptedSeed, authorizedKeys)
-
-  if (token != "UCO") {
-    poolTx.setType("token")
-      .setContent(getTokenDefinition(token))
-      .addUCOTransfer(stateContractAddress, Utils.toBigInt(50))
-  } else {
-    poolTx.setType("contract")
-  }
-
-  poolTx.build(poolSeed, index).originSign(Utils.originPrivateKey)
-
-  poolTx.on("fullConfirmation", async (_confirmations) => {
-    const txAddress = Utils.uint8ArrayToHex(poolTx.address)
+  updateTx.on("fullConfirmation", async (_confirmations) => {
+    const txAddress = Utils.uint8ArrayToHex(updateTx.address)
     console.log("Transaction validated !")
     console.log("Address:", txAddress)
     console.log(endpoint + "/explorer/transaction/" + txAddress)
-    if (token != "UCO") {
-      deployStateContract(archethic, stateSeed, storageNonce)
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1))
-    } else {
-      process.exit(0)
-    }
+    process.exit(0)
   }).on("error", (context, reason) => {
     console.log("Error while sending pool transaction")
     console.log("Contest:", context)
@@ -112,55 +96,3 @@ function replaceCommonTemplate(poolCode, poolGenesisAddress, factorySeed, master
   return poolCode.replaceAll("#CHAIN_IDS#", chainIds)
 }
 
-function getTokenDefinition(token) {
-  return JSON.stringify({
-    aeip: [2, 8, 18, 19],
-    supply: 1,
-    type: "fungible",
-    symbol: token,
-    name: token,
-    allow_mint: true,
-    properties: {},
-    recipients: [
-      {
-        to: "00000000000000000000000000000000000000000000000000000000000000000000",
-        amount: 1
-      }
-    ]
-  })
-}
-
-function encryptSeed(seed, storageNonce) {
-  const aesKey = Crypto.randomSecretKey()
-  const encryptedSeed = Crypto.aesEncrypt(seed, aesKey)
-  const encryptedAesKey = Crypto.ecEncrypt(aesKey, storageNonce)
-  const authorizedKeys = [{ encryptedSecretKey: encryptedAesKey, publicKey: storageNonce }]
-  return { encryptedSeed, authorizedKeys }
-}
-
-async function deployStateContract(archethic, seed, storageNonce) {
-  return new Promise(async (resolve, reject) => {
-    const genesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(seed, 0))
-    const { encryptedSeed, authorizedKeys } = encryptSeed(seed, storageNonce)
-
-    const code = fs.readFileSync("./contracts/state_contract.exs", "utf8")
-
-    const index = await archethic.transaction.getTransactionIndex(genesisAddress)
-
-    const tx = archethic.transaction.new()
-      .setType("contract")
-      .setCode(code)
-      .setContent("{}")
-      .addOwnership(encryptedSeed, authorizedKeys)
-      .build(seed, index).originSign(Utils.originPrivateKey)
-
-    tx.on("fullConfirmation", async (_confirmations) => {
-      resolve()
-    }).on("error", (context, reason) => {
-      console.log("Error while sending state transaction")
-      console.log("Contest:", context)
-      console.log("Reason:", reason)
-      reject()
-    }).send()
-  })
-}
