@@ -130,6 +130,25 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address) do
   Contract.add_recipient address: htlc_genesis_address, action: "reveal_secret", args: [secret, signature]
 end
 
+condition triggered_by: transaction, on: update_code(new_code), as: [
+  previous_public_key: (
+		# Pool code can only be updated from the master chain if the bridge
+
+		# Transaction is not yet validated so we need to use previous address
+		# to get the genesis address
+		previous_address = Chain.get_previous_address()
+		Chain.get_genesis_address(previous_address) == #MASTER_GENESIS_ADDRESS#
+	),
+	code: Code.is_valid?(new_code)
+]
+
+actions triggered_by: transaction, on: update_code(new_code) do
+  Contract.set_type "contract"
+  # Keep contract state
+  Contract.set_content contract.content
+  Contract.set_code new_code
+end
+
 ####################
 # Public functions #
 ####################
