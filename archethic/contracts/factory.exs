@@ -45,10 +45,16 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   return_transfer_code = ""
   if token == "UCO" do
     # We don't burn UCO, we return them in pool contract
-    return_transfer_code = "Contract.add_uco_transfer to: 0x#{pool_address}, amount: #{amount}"
+    return_transfer_code = """
+    # Send back UCO to bridge pool
+      Contract.add_uco_transfer to: 0x#{pool_address}, amount: #{amount}
+    """
   else
     burn_address = Chain.get_burn_address()
-    return_transfer_code = "Contract.add_token_transfer to: 0x#{burn_address}, amount: #{amount}, token_address: 0x#{token}"
+    return_transfer_code = """
+    # Burn the non withdrawed tokens
+      Contract.add_token_transfer to: 0x#{burn_address}, amount: #{amount}, token_address: 0x#{token}
+    """
   end
 
   fee_amount = amount * 0.003
@@ -80,7 +86,6 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   # Automate the refunding after the given timestamp
   actions triggered_by: datetime, at: #{end_time} do
     Contract.set_type "transfer"
-    # Send back the token to the bridge pool
     #{return_transfer_code}
     Contract.set_code ""
   end
@@ -145,10 +150,6 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     """
   end
 
-  # Temporary endtime before the one of the pool is now + 1 day
-  now = Time.now()
-  temporary_endtime = now - Math.rem(now, 60) + 86400
-
   refund_code = """
     Contract.set_type "transfer"
     # Send back the token to the user address
@@ -175,6 +176,14 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     @version 1
     # Automate the refunding after the given timestamp
     actions triggered_by: datetime, at: \#{end_time} do
+    #{refund_code}
+    end
+
+    condition triggered_by: transaction, on: refund(), as: [
+      timestamp: timestamp >= \#{end_time}
+    ]
+
+    actions triggered_by: transaction, on: refund() do
     #{refund_code}
     end
 
@@ -214,11 +223,6 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   """
   @version 1
-  # Automate the refunding after the given timestamp
-  actions triggered_by: datetime, at: #{temporary_endtime} do
-  #{refund_code}
-  end
-
   condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
     previous_public_key: (
 		  # Transaction is not yet validated so we need to use previous address
