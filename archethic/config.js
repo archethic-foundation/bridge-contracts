@@ -3,7 +3,6 @@ export default {
     local: {
       endpoint: "http://127.0.0.1:4000",
       availableEvmNetworks: ["local"],
-      defaultChainId: 1337,
       factorySeed: "factory",
       userSeed: "user",
       masterSeed: "master",

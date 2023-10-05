@@ -1,51 +1,55 @@
-import Archethic, { Crypto, Utils } from "archethic"
-import config from "./config.js"
+import Archethic, { Utils } from "archethic"
+import config from "../../config.js"
+import { getGenesisAddress, getPoolInfo } from "../utils.js"
 
-const env = config.environments.local
-
-const args = []
-process.argv.forEach(function(val, index, _array) { if (index > 1) { args.push(val) } })
-
-if (args.length != 2) {
-  console.log("Missing arguments")
-  console.log("Usage: node deploy_htlc.js [tokenSymbol] [htlcGenesisAddress]")
-  process.exit(1)
+const command = "request_secret"
+const describe = "Request a pool to reveal the secret for a HTLC contract"
+const builder = {
+  token: {
+    describe: "The token of the pool (used to retrieve pool address)",
+    demandOption: true, // Required
+    type: "string"
+  },
+  htlc_address: {
+    describe: "The genesis address of the HTLC contract",
+    demandOption: true,
+    type: "string"
+  },
+  env: {
+    describe: "The environment config to use (default to local)",
+    demandOption: false,
+    type: "string"
+  }
 }
 
-main()
+const handler = async function(argv) {
+  const envName = argv["env"] ? argv["env"] : "local"
+  const env = config.environments[envName]
 
-async function main() {
-  const endpoint = env.endpoint
-  const seed = env.userSeed
+  const token = argv["token"]
+  const htlcGenesisAddress = argv["htlc_address"]
 
-  const token = args[0]
-  const htlcGenesisAddress = args[1]
+  const { poolGenesisAddress } = getPoolInfo(token)
 
-  const poolSeed = Crypto.hash(token).slice(1)
-  const poolGenesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 0))
-
-  const archethic = new Archethic(endpoint)
+  const archethic = new Archethic(env.endpoint)
   await archethic.connect()
 
   const htlcAddressBefore = await getLastAddress(archethic, htlcGenesisAddress)
 
-  const genesisAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(seed, 0))
+  const genesisAddress = getGenesisAddress(env.userSeed)
   console.log("User genesis address:", genesisAddress)
   const index = await archethic.transaction.getTransactionIndex(genesisAddress)
-
-  // Get faucet before sending transaction
-  // await requestFaucet(endpoint, poolGenesisAddress)
 
   const tx = archethic.transaction.new()
     .setType("transfer")
     .addRecipient(poolGenesisAddress, "reveal_secret", [htlcGenesisAddress])
-    .build(seed, index)
+    .build(env.userSeed, index)
     .originSign(Utils.originPrivateKey)
 
   tx.on("fullConfirmation", (_confirmations) => {
     console.log("Secret request successfully sent !")
     console.log("Waiting for HTLC to withdraw ...")
-    wait(htlcAddressBefore, htlcGenesisAddress, endpoint, archethic)
+    wait(htlcAddressBefore, htlcGenesisAddress, env.endpoint, archethic)
   }).on("error", (context, reason) => {
     console.log("Error while sending transaction")
     console.log("Contest:", context)
@@ -84,4 +88,11 @@ async function wait(htlcAddressBefore, htlcGenesisAddress, endpoint, archethic, 
     console.log(endpoint + "/explorer/transaction/" + htlcAddressAfter)
     process.exit(0)
   }
+}
+
+export default {
+  command,
+  describe,
+  builder,
+  handler
 }
