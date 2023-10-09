@@ -10,7 +10,7 @@ module.exports = async function (deployer, network, accounts) {
     if (network == "development") {
         reserveAddress = accounts[4]
         safetyModuleAddress = accounts[5]
-        archethicPoolSigner = '0x3f6e4b7cde77901603425009c4a65177270156b2'
+        archethicPoolSigner = '0x480b332bf0cb7b6f225b06a16ea2a27c74379f9d'
         poolCap = web3.utils.toWei('200')
     }
 
