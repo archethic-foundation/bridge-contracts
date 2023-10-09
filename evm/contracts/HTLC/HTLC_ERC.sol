@@ -20,6 +20,6 @@ contract HTLC_ERC is HTLCBase {
     }
 
     function _enoughFunds() internal override virtual view returns (bool) {
-        return token.balanceOf(address(this)) == amount;    
+        return token.balanceOf(address(this)) >= amount;
     }
  }
