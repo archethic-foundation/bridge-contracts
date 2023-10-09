@@ -35,6 +35,6 @@ contract HTLC_ETH is HTLCBase {
     }
 
     function _enoughFunds() override virtual internal view returns (bool) {
-        return address(this).balance == amount;
+        return address(this).balance >= amount;
     }
  }
