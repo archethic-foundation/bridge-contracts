@@ -124,7 +124,8 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address) do
   contract_content = Map.delete(contract_content, htlc_genesis_address)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
-  signature = sign_for_evm(secret, htlc_map.chain_id)
+  # Do not use chain ID in signature for the secret reveal
+  signature = sign_for_evm(secret, nil)
 
   Contract.add_recipient address: #STATE_ADDRESS#, action: "update_state", args: [contract_content]
   Contract.add_recipient address: htlc_genesis_address, action: "reveal_secret", args: [secret, signature]
@@ -190,12 +191,16 @@ fun valid_signed_code?(amount, user_address) do
 end
 
 fun sign_for_evm(data, chain_id) do
-  # Perform a first hash to combine data and chain_id
-  hash_abi = Evm.abi_encode("(bytes32,uint)", [data, chain_id])
-  combined_hash = Crypto.hash(hash_abi, "keccak256")
+  hash = data
+
+  if chain_id != nil do
+    # Perform a first hash to combine data and chain_id
+    abi_data = Evm.abi_encode("(bytes32,uint)", [data, chain_id])
+    hash = Crypto.hash(abi_data, "keccak256")
+  end
 
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-  signature_payload = Crypto.hash("#{prefix}#{combined_hash}", "keccak256")
+  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
 
   sig = Crypto.sign_with_recovery(signature_payload)
 
