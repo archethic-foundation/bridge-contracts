@@ -13,10 +13,10 @@ using SafeMath for uint256;
 contract ChargeableHTLC_ERC is HTLC_ERC {
 
     /// @notice Return the fee's amount
-    uint256 public fee;
+    uint256 public immutable fee;
 
     /// @notice Return the satefy module destination wallet
-    address public safetyModuleAddress;
+    address public immutable safetyModuleAddress;
 
     constructor(
         IERC20 _token,

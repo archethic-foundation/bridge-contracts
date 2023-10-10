@@ -13,7 +13,7 @@ using SafeMath for uint256;
 /// @author Archethic Foundation
 contract SignedHTLC_ETH is HTLC_ETH {
     /// @notice Returns the Archethic's pool signer address
-    address public poolSigner;
+    address public immutable poolSigner;
 
     /// @notice Throws when the Archethic's pool signature is invalid
     error InvalidSignature();

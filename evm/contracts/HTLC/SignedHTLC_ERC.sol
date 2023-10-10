@@ -14,7 +14,7 @@ using SafeMath for uint256;
 contract SignedHTLC_ERC is HTLC_ERC {
 
     /// @notice Returns the Archethic's pool signer address
-    address public poolSigner;
+    address public immutable poolSigner;
 
     /// @notice Throws when the Archethic's pool signature is invalid
     error InvalidSignature();

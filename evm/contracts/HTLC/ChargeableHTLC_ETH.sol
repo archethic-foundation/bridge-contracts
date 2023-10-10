@@ -12,10 +12,10 @@ using SafeMath for uint256;
 contract ChargeableHTLC_ETH is HTLC_ETH {
 
     /// @notice Return the fee's amount
-    uint256 public fee;
+    uint256 public immutable fee;
 
     /// @notice Return the satefy module destination wallet
-    address public safetyModuleAddress;
+    address public immutable safetyModuleAddress;
 
     /// @dev Create HTLC instance but delegates funds control after the HTLC constructor
     /// @dev This way we can check funds with decorrelation between amount/fee and the sent ethers. 

@@ -11,22 +11,22 @@ abstract contract HTLCBase is IHTLC {
     bool public finished;
 
     /// @inheritdoc IHTLC
-    address public recipient;
+    address public immutable recipient;
 
     /// @inheritdoc IHTLC
-    address public from;
+    address public immutable from;
 
     /// @inheritdoc IHTLC
-    uint256 public lockTime;
+    uint256 public immutable lockTime;
 
     /// @inheritdoc IHTLC
-    uint256 public amount;
+    uint256 public immutable amount;
 
     /// @inheritdoc IHTLC
     bytes32 public secret;
 
     /// @inheritdoc IHTLC
-    bytes32 public hash;
+    bytes32 public immutable hash;
 
     /// @notice Notifies when the HTLC's secret is reveal and the funds have been sent to the receiver
     event Withdrawn();
