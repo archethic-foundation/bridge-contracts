@@ -29,10 +29,6 @@ contract HTLC_ETH is HTLCBase {
         emit FundsReceived(msg.value);
     }
 
-     function _amountToReceive() virtual internal view returns (uint256) {
-        return amount;
-    }
-
     /// @dev Send ethers to the HTLC's recipient
     function _transfer() override virtual internal {
         (bool sent,) = recipient.call{value: amount}("");
