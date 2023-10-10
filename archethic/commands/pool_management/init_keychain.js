@@ -21,7 +21,7 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
-  const keychainAccessSeed = argv["seed"] ? argv["seed"] : env.keychainAccessSeed
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
 
   if (keychainAccessSeed == undefined) {
     console.log("Keychain access seed not defined")
