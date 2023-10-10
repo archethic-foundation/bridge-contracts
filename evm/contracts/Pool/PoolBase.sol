@@ -36,11 +36,11 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @notice Returns the lock time period for the deployed contracts
     uint256 public lockTimePeriod;
 
-    mapping(bytes32 => IHTLC) _refProvisionedSwaps;
-    mapping(bytes32 => IHTLC) _refMintedSwaps;
+    mapping(bytes32 => IHTLC) private _refProvisionedSwaps;
+    mapping(bytes32 => IHTLC) private _refMintedSwaps;
 
-    address[] _provisionedSwaps;
-    address[] _mintedSwaps;
+    address[] private _provisionedSwaps;
+    address[] private _mintedSwaps;
 
     /// @notice Notifies a change about the reserve destination wallet
     event ReserveAddressChanged(address indexed _reservedAddress);
