@@ -4,12 +4,9 @@ pragma solidity 0.8.21;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "../../interfaces/IPool.sol";
 import "../../interfaces/IHTLC.sol";
-
-using SafeMath for uint256; 
 
 /// @title Pool to manage assets for Archethic's bridge on EVM's side
 /// @author Archethic Foundation
@@ -102,6 +99,12 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @notice Throws when the lock time is invalid
     error InvalidLockTime();
 
+    /// @notice Throws when the HTLC's hash is invalid
+    error InvalidHash();
+
+    /// @notice Throws when the HTLC's amount is invalid
+    error InvalidAmount();
+
     /// @notice Initizalize the pool with all the given properties
     /// @param _reserveAddress The destination address for the reserve wallet
     /// @param _safetyAddress The destination address for the safety module wallet
@@ -130,7 +133,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
 
         reserveAddress = _reserveAddress;
         safetyModuleAddress = _safetyAddress;
-        safetyModuleFeeRate = _safetyFeeRate.mul(100);
+        safetyModuleFeeRate = _safetyFeeRate * 100;
         archethicPoolSigner = _archPoolSigner;
         poolCap = _poolCap;
         locked = true;
@@ -170,7 +173,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @dev The fee rate is multiplied by 100 to match 2 decimals percentage
     function setSafetyModuleFeeRate(uint256 _safetyFeeRate) virtual external {
         _checkOwner();
-        safetyModuleFeeRate = _safetyFeeRate.mul(100);
+        safetyModuleFeeRate = _safetyFeeRate * 100;
         emit SafetyModuleFeeRateChanged(_safetyFeeRate);
     }
 
@@ -213,6 +216,10 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @dev LockTimePeriodChanged event is emitted once done
     function setLockTimePeriod(uint _lockTimePeriod) virtual external {
         _checkOwner();
+        if (_lockTimePeriod == 0) {
+            revert InvalidLockTimePeriod();
+        }
+
         lockTimePeriod = _lockTimePeriod;
         emit LockTimePeriodChanged(_lockTimePeriod);
     }
@@ -221,7 +228,12 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @dev The fee is multiplied by 100000 to convert back from 2 decimals using wei in the amount
     /// @param _amount Asset's amount to swap
     function swapFee(uint256 _amount) internal view returns (uint256) {
-        return _amount.mul(safetyModuleFeeRate).div(100000);
+        uint256 _safetyModuleFeeRate = safetyModuleFeeRate;
+        
+        if (_safetyModuleFeeRate == 0) {
+            return 0;
+        }
+        return (_amount * _safetyModuleFeeRate) / 100000;
     }
 
     /// @inheritdoc IPool
@@ -243,11 +255,19 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external {
         checkUnlocked();
 
+        if (_hash == bytes32(0)) {
+            revert InvalidHash();
+        }
+
+        if (_amount == 0) {
+            revert InvalidAmount();
+        }
+
         // Locktime cannot:
         // - be zero
         // - be more than 1 day or less than the lockTime
         // - be before the block's timestamp
-        if (_lockTime == 0 || _lockTime < block.timestamp || _lockTime.sub(block.timestamp) > 86400) {
+        if (_lockTime == 0 || _lockTime < block.timestamp || (_lockTime - block.timestamp) > 86400) {
             revert InvalidLockTime();
         }
 
@@ -289,6 +309,14 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @dev An error is thrown whether the secret's hash is already taken by a previous swap
     /// @dev The HTLC locktime is determined by the pool's locktime period
     function mintHTLC(bytes32 _hash, uint256 _amount) payable virtual external {
+        if (_hash == bytes32(0)) {
+            revert InvalidHash();
+        }
+
+        if (_amount == 0) {
+            revert InvalidAmount();
+        }
+
         _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
@@ -307,7 +335,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
 
     function _chargeableHTLCLockTime() internal view returns (uint256) {
         // We need to round to the minute as Archethic's smart contract self trigger feature restrict timestamp to rounded minute
-        uint256 minuteRoundedBlockTimestamp = block.timestamp.sub(block.timestamp.mod(60));
-        return minuteRoundedBlockTimestamp.add(lockTimePeriod);
+        uint256 minuteRoundedBlockTimestamp = block.timestamp - (block.timestamp % (60));
+        return minuteRoundedBlockTimestamp + lockTimePeriod;
     }
 }

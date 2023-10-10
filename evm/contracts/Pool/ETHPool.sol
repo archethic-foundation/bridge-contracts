@@ -6,8 +6,6 @@ import "../HTLC/ChargeableHTLC_ETH.sol";
 import "../HTLC/SignedHTLC_ETH.sol";
 import "../../interfaces/IHTLC.sol";
 
-using SafeMath for uint256;
-
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
 /// @title Pool to manage ETH asset for Archethic's bridge on EVM's side
 /// @author Archethic Foundation
@@ -58,7 +56,7 @@ contract ETHPool is PoolBase {
         }
         uint256 _fee = swapFee(_amount);
 
-        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_amount.sub(_fee), _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_amount - _fee, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;
     }
 }

@@ -3,11 +3,8 @@
 pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./HTLC_ETH.sol";
-
-using SafeMath for uint256;
 
 /// @title HTLC contract with signature verification before withdraw for ether swap
 /// @author Archethic Foundation

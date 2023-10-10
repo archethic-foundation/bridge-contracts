@@ -2,11 +2,8 @@
 pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./HTLC_ERC.sol";
-
-using SafeMath for uint256;
 
 /// @title HTLC contract with chargeable fee towards pool's safety module
 /// @author Archethic Foundation
@@ -33,7 +30,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
     /// @dev Check whether the HTLC have enough tokens to cover fee + amount
     function _enoughFunds() internal view override returns (bool) {
-        return token.balanceOf(address(this)) == amount.add(fee);
+        return token.balanceOf(address(this)) == amount + fee;
     }
 
     /// @dev Send ERC20 to the HTLC's recipient and safety module fee
@@ -46,6 +43,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
     /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
     function _refund() internal override {
-        SafeERC20.safeTransfer(token, from, amount.add(fee));
+        SafeERC20.safeTransfer(token, from, amount + fee);
     }
 }

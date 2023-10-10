@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: AGPL-3
 pragma solidity 0.8.21;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
 import "./HTLC_ETH.sol";
-
-using SafeMath for uint256;
 
 /// @title HTLC contract with chargeable fee towards pool's safety module
 /// @author Archethic Foundation
@@ -30,12 +26,12 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         // We check if the received ethers adds the deducted amount from the fee
-        _assertReceivedFunds(_amount.add(_fee));
+        _assertReceivedFunds(_amount + _fee);
     }
 
      /// @dev Check whether the HTLC have enough tokens to cover fee + amount
     function _enoughFunds() internal view override returns (bool) {
-        return address(this).balance == amount.add(fee);
+        return address(this).balance == amount + fee;
     }
 
     /// @dev Send ethers to the HTLC's recipient and safety module fee
@@ -48,7 +44,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
 
     /// @dev Send back ethers (amount + fee) to the HTLC's creator
     function _refund() internal override {
-        (bool sent, ) = from.call{value: amount.add(fee)}("");
+        (bool sent, ) = from.call{value: amount + fee}("");
         require(sent, "ETH transfer failed - refund");
     }
 }
