@@ -41,14 +41,14 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     /// @dev Send ethers to the HTLC's recipient and safety module fee
     function _transfer() internal override {
         (bool sent, ) = safetyModuleAddress.call{value: fee}("");
-        require(sent);
+        require(sent, "ETH transfer failed - withdraw/safety");
         (sent, ) = recipient.call{value: amount}("");
-        require(sent);
+        require(sent, "ETH transfer failed - withdraw/recipient");
     }
 
     /// @dev Send back ethers (amount + fee) to the HTLC's creator
     function _refund() internal override {
         (bool sent, ) = from.call{value: amount.add(fee)}("");
-        require(sent);
+        require(sent, "ETH transfer failed - refund");
     }
 }
