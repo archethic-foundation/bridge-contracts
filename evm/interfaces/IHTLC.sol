@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3
-pragma solidity ^0.8.13;
+pragma solidity 0.8.21;
 
 interface IHTLC {
     function canRefund(uint256 timestamp) external view returns (bool);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3
-pragma solidity ^0.8.13;
+pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
