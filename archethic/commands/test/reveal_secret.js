@@ -47,7 +47,7 @@ const handler = async function(argv) {
     .build(env.userSeed, index)
     .originSign(Utils.originPrivateKey)
 
-  tx.on("fullConfirmation", (_confirmations) => {
+  tx.on("requiredConfirmation", (_confirmations) => {
     console.log("Secret successfully sent !")
     console.log("Waiting for HTLC to withdraw ...")
     wait(htlcAddressBefore, htlcAddress, env.endpoint, archethic)
@@ -56,7 +56,7 @@ const handler = async function(argv) {
     console.log("Contest:", context)
     console.log("Reason:", reason)
     process.exit(1)
-  }).send()
+  }).send(50)
 }
 
 async function getLastAddress(archethic, address) {

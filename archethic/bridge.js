@@ -6,6 +6,7 @@ import { hideBin } from 'yargs/helpers'
 import deploy_pool from './commands/pool_management/deploy_pool.js'
 import deploy_factory from './commands/pool_management/deploy_factory.js'
 import update_pool from './commands/pool_management/update_pool.js'
+import init_keychain from './commands/pool_management/init_keychain.js'
 
 import deploy_chargeable_htlc from './commands/test/deploy_chargeable_htlc.js'
 import deploy_signed_htlc from './commands/test/deploy_signed_htlc.js'
@@ -18,6 +19,7 @@ const y = yargs(hideBin(process.argv))
 y.command(deploy_pool).help()
 y.command(deploy_factory).help()
 y.command(update_pool).help()
+y.command(init_keychain).help()
 
 y.command(deploy_chargeable_htlc).help()
 y.command(deploy_signed_htlc).help()

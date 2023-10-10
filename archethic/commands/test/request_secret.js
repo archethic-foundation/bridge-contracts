@@ -1,6 +1,6 @@
 import Archethic, { Utils } from "archethic"
 import config from "../../config.js"
-import { getGenesisAddress, getPoolInfo } from "../utils.js"
+import { getGenesisAddress, getServiceGenesisAddress } from "../utils.js"
 
 const command = "request_secret"
 const describe = "Request a pool to reveal the secret for a HTLC contract"
@@ -15,6 +15,11 @@ const builder = {
     demandOption: true,
     type: "string"
   },
+  access_seed: {
+    describe: "the keychain access seed (default in env config)",
+    demandOption: false,
+    type: "string"
+  },
   env: {
     describe: "The environment config to use (default to local)",
     demandOption: false,
@@ -26,13 +31,30 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
-  const token = argv["token"]
-  const htlcGenesisAddress = argv["htlc_address"]
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
 
-  const { poolGenesisAddress } = getPoolInfo(token)
+  if (keychainAccessSeed == undefined) {
+    console.log("Keychain access seed not defined")
+    process.exit(1)
+  }
 
   const archethic = new Archethic(env.endpoint)
   await archethic.connect()
+
+  let keychain
+
+  try {
+    keychain = await archethic.account.getKeychain(keychainAccessSeed)
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+
+  const token = argv["token"]
+  const htlcGenesisAddress = argv["htlc_address"]
+
+  const serviceName = token + "_pool"
+  const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
 
   const htlcAddressBefore = await getLastAddress(archethic, htlcGenesisAddress)
 
@@ -46,7 +68,7 @@ const handler = async function(argv) {
     .build(env.userSeed, index)
     .originSign(Utils.originPrivateKey)
 
-  tx.on("fullConfirmation", (_confirmations) => {
+  tx.on("requiredConfirmation", (_confirmations) => {
     console.log("Secret request successfully sent !")
     console.log("Waiting for HTLC to withdraw ...")
     wait(htlcAddressBefore, htlcGenesisAddress, env.endpoint, archethic)
@@ -55,7 +77,7 @@ const handler = async function(argv) {
     console.log("Contest:", context)
     console.log("Reason:", reason)
     process.exit(1)
-  }).send()
+  }).send(50)
 }
 
 async function getLastAddress(archethic, address) {

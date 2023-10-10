@@ -1,13 +1,12 @@
 import Archethic, { Utils } from "archethic"
 import config from "../../config.js"
 import {
-  getPoolInfo,
-  getStateInfo,
   getPoolCode,
   getStateCode,
-  encryptSecret,
   getTokenDefinition,
-  getGenesisAddress
+  getServiceGenesisAddress,
+  sendTransactionWithFunding,
+  updateKeychain
 } from "../utils.js"
 
 const command = "deploy_pool"
@@ -16,6 +15,11 @@ const builder = {
   token: {
     describe: "The token to create a pool, UCO or token symbol",
     demandOption: true, // Required
+    type: "string"
+  },
+  access_seed: {
+    describe: "The Keychain access seed (default in env config)",
+    demandOption: false,
     type: "string"
   },
   env: {
@@ -29,19 +33,37 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
-  const token = argv["token"]
-  const { poolSeed, poolGenesisAddress } = getPoolInfo(token)
-  const { stateSeed, stateContractAddress } = getStateInfo(token)
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
 
-  console.log("Pool genesis address:", poolGenesisAddress)
-
-  const poolCode = getPoolCode(env, token)
+  if (keychainAccessSeed == undefined) {
+    console.log("Keychain access seed not defined")
+    process.exit(1)
+  }
 
   const archethic = new Archethic(env.endpoint)
   await archethic.connect()
 
+  let keychain
+
+  try {
+    keychain = await archethic.account.getKeychain(keychainAccessSeed)
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+
+  const token = argv["token"]
+  const serviceName = token + "_pool"
+
+  keychain.addService(serviceName, "m/650'/" + serviceName)
+  const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
+
+  console.log("Pool genesis address:", poolGenesisAddress)
+
+  const poolCode = getPoolCode(env, keychain, serviceName)
+
   const storageNonce = await archethic.network.getStorageNoncePublicKey()
-  const { encryptedSecret, authorizedKeys } = encryptSecret(poolSeed, storageNonce)
+  const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(serviceName, [storageNonce])
 
   const index = await archethic.transaction.getTransactionIndex(poolGenesisAddress)
   if (index > 0) {
@@ -49,65 +71,49 @@ const handler = async function(argv) {
     process.exit(1)
   }
 
-  const poolTx = archethic.transaction.new()
+  let poolTx = archethic.transaction.new()
     .setCode(poolCode)
-    .addOwnership(encryptedSecret, authorizedKeys)
+    .addOwnership(secret, authorizedPublicKeys)
 
   if (token != "UCO") {
-    poolTx.setType("token")
-      .setContent(getTokenDefinition(token))
-      .addUCOTransfer(stateContractAddress, Utils.toBigInt(50))
+    poolTx.setType("token").setContent(getTokenDefinition(token))
   } else {
     poolTx.setType("contract")
   }
 
-  poolTx.build(poolSeed, index).originSign(Utils.originPrivateKey)
+  poolTx = keychain.buildTransaction(poolTx, serviceName, index).originSign(Utils.originPrivateKey)
 
-  poolTx.on("fullConfirmation", async (_confirmations) => {
-    const txAddress = Utils.uint8ArrayToHex(poolTx.address)
-    console.log("Transaction validated !")
-    console.log("Address:", txAddress)
-    console.log(env.endpoint + "/explorer/transaction/" + txAddress)
-    if (token != "UCO") {
-      deployStateContract(archethic, stateSeed, storageNonce)
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1))
-    } else {
-      process.exit(0)
-    }
-  }).on("error", (context, reason) => {
-    console.log("Error while sending pool transaction")
-    console.log("Contest:", context)
-    console.log("Reason:", reason)
-    process.exit(1)
-  }).send()
+  updateKeychain(keychain, archethic)
+    .then(() => sendTransactionWithFunding(poolTx, keychain, archethic))
+    .then(() => {
+      if (token != "UCO") {
+        console.log("=======================")
+        console.log("Deploying contract state")
+        return deployStateContract(archethic, keychain, serviceName, storageNonce)
+      } else {
+        process.exit(0)
+      }
+    })
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
 
-async function deployStateContract(archethic, seed, storageNonce) {
-  return new Promise(async (resolve, reject) => {
-    const genesisAddress = getGenesisAddress(seed)
-    const { encryptedSecret, authorizedKeys } = encryptSecret(seed, storageNonce)
+async function deployStateContract(archethic, keychain, serviceName, storageNonce) {
+  const stateName = serviceName + "state"
+  keychain.addService(stateName, "m/650'/" + stateName)
+  const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(stateName, [storageNonce])
 
-    const code = getStateCode()
+  const code = getStateCode()
 
-    const index = await archethic.transaction.getTransactionIndex(genesisAddress)
+  let tx = archethic.transaction.new()
+    .setType("contract")
+    .setCode(code)
+    .setContent("{}")
+    .addOwnership(secret, authorizedPublicKeys)
 
-    const tx = archethic.transaction.new()
-      .setType("contract")
-      .setCode(code)
-      .setContent("{}")
-      .addOwnership(encryptedSecret, authorizedKeys)
-      .build(seed, index).originSign(Utils.originPrivateKey)
+  tx = keychain.buildTransaction(tx, stateName, 0).originSign(Utils.originPrivateKey)
 
-    tx.on("fullConfirmation", async (_confirmations) => {
-      resolve()
-    }).on("error", (context, reason) => {
-      console.log("Error while sending state transaction")
-      console.log("Contest:", context)
-      console.log("Reason:", reason)
-      reject()
-    }).send()
-  })
+  return sendTransactionWithFunding(tx, keychain, archethic)
 }
 
 export default {

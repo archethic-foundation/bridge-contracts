@@ -1,10 +1,15 @@
 import Archethic, { Utils } from "archethic"
 import config from "../../config.js"
-import { getGenesisAddress, getFactoryCode } from "../utils.js"
+import { getFactoryCode, getServiceGenesisAddress, sendTransactionWithFunding } from "../utils.js"
 
 const command = "deploy_factory"
 const describe = "Deploy the factory"
 const builder = {
+  access_seed: {
+    describe: "The Keychain access seed (default in env config)",
+    demandOption: false,
+    type: "string"
+  },
   env: {
     describe: "The environment config to use (default to local)",
     demandOption: false,
@@ -16,36 +21,44 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
+
+  if (keychainAccessSeed == undefined) {
+    console.log("Keychain access seed not defined")
+    process.exit(1)
+  }
+
   const archethic = new Archethic(env.endpoint)
   await archethic.connect()
 
-  const factoryGenesisAddress = getGenesisAddress(env.factorySeed)
+  let keychain
+
+  try {
+    keychain = await archethic.account.getKeychain(keychainAccessSeed)
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+
+  const factoryGenesisAddress = getServiceGenesisAddress(keychain, "Factory")
   console.log("Factory genesis address:", factoryGenesisAddress)
 
   let factoryCode = getFactoryCode()
   // Replace protocol fee address
-  factoryCode = factoryCode.replaceAll("#PROTOCOL_FEE_ADDRESS#", "0x" + env.protocolFeeAddress)
+  const protocolFeeAddress = getServiceGenesisAddress(keychain, "ProtocolFee")
+  factoryCode = factoryCode.replaceAll("#PROTOCOL_FEE_ADDRESS#", "0x" + protocolFeeAddress)
 
   const index = await archethic.transaction.getTransactionIndex(factoryGenesisAddress)
 
-  const tx = archethic.transaction.new()
+  let factoryTx = archethic.transaction.new()
     .setType("contract")
     .setCode(factoryCode)
-    .build(env.factorySeed, index)
-    .originSign(Utils.originPrivateKey)
 
-  tx.on("fullConfirmation", (_confirmations) => {
-    const txAddress = Utils.uint8ArrayToHex(tx.address)
-    console.log("Transaction validated !")
-    console.log("Address:", txAddress)
-    console.log(env.endpoint + "/explorer/transaction/" + txAddress)
-    process.exit(0)
-  }).on("error", (context, reason) => {
-    console.log("Error while sending transaction")
-    console.log("Contest:", context)
-    console.log("Reason:", reason)
-    process.exit(1)
-  }).send()
+  factoryTx = keychain.buildTransaction(factoryTx, "Factory", index).originSign(Utils.originPrivateKey)
+
+  sendTransactionWithFunding(factoryTx, keychain, archethic)
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
 
 export default {

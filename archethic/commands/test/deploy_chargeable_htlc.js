@@ -1,6 +1,12 @@
 import Archethic, { Utils } from "archethic"
 import config from "../../config.js"
-import { encryptSecret, getGenesisAddress, getPoolInfo, getTokenAddress } from "../utils.js"
+import {
+  encryptSecret,
+  getGenesisAddress,
+  getServiceGenesisAddress,
+  getTokenAddress,
+  sendTransactionWithFunding
+} from "../utils.js"
 
 const command = "deploy_chargeable_htlc"
 const describe = "Deploy a chargeable HTLC to swap from EVM to Archethic"
@@ -30,6 +36,11 @@ const builder = {
     demandOption: true,
     type: "string"
   },
+  access_seed: {
+    describe: "the keychain access seed (default in env config)",
+    demandOption: false,
+    type: "string"
+  },
   env: {
     describe: "The environment config to use (default to local)",
     demandOption: false,
@@ -41,20 +52,37 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
+
+  if (keychainAccessSeed == undefined) {
+    console.log("Keychain access seed not defined")
+    process.exit(1)
+  }
+
+  const archethic = new Archethic(env.endpoint)
+  await archethic.connect()
+
+  let keychain
+
+  try {
+    keychain = await archethic.account.getKeychain(keychainAccessSeed)
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+
   const token = argv["token"]
   const seed = argv["seed"]
   const endTime = argv["endtime"]
   const amount = argv["amount"]
   const secretHash = argv["secret_hash"]
 
-  const tokenAddress = getTokenAddress(token)
+  const poolServiceName = token + "_pool"
+  const tokenAddress = getTokenAddress(keychain, token)
 
-  const { poolGenesisAddress } = getPoolInfo(token)
-  const factoryGenesisAddress = getGenesisAddress(env.factorySeed)
+  const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
+  const factoryGenesisAddress = getServiceGenesisAddress(keychain, "Factory")
   const userAddress = getGenesisAddress(env.userSeed)
-
-  const archethic = new Archethic(env.endpoint)
-  await archethic.connect()
 
   const params = [endTime, userAddress, poolGenesisAddress, secretHash, tokenAddress, amount]
   const htlcCode = await archethic.network.callFunction(factoryGenesisAddress, "get_chargeable_htlc", params)
@@ -77,18 +105,9 @@ const handler = async function(argv) {
     .build(seed, index)
     .originSign(Utils.originPrivateKey)
 
-  tx.on("fullConfirmation", (_confirmations) => {
-    const txAddress = Utils.uint8ArrayToHex(tx.address)
-    console.log("Transaction validated !")
-    console.log("Address:", txAddress)
-    console.log(env.endpoint + "/explorer/transaction/" + txAddress)
-    process.exit(0)
-  }).on("error", (context, reason) => {
-    console.log("Error while sending transaction")
-    console.log("Contest:", context)
-    console.log("Reason:", reason)
-    process.exit(1)
-  }).send()
+  sendTransactionWithFunding(tx, keychain, archethic, env.userSeed)
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
 
 export default {

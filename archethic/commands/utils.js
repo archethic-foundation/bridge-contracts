@@ -7,6 +7,8 @@ import { fileURLToPath } from "url"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const CONFIRMATION_THRESHOLD = 50
+
 const ucoContractPath = path.resolve(__dirname, "../contracts/uco_pool.exs")
 const tokenContractPath = path.resolve(__dirname, "../contracts/token_pool.exs")
 const stateContractPath = path.resolve(__dirname, "../contracts/state_contract.exs")
@@ -16,27 +18,18 @@ export function getGenesisAddress(seed) {
   return Utils.uint8ArrayToHex(Crypto.deriveAddress(seed, 0))
 }
 
-export function getTokenAddress(token) {
-  if (token == "UCO") {
-    return "UCO"
-  } else {
-    const { poolSeed } = getPoolInfo(token)
-    return Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
-  }
+export function getServiceGenesisAddress(keychain, service, suffix = "") {
+  return Utils.uint8ArrayToHex(keychain.deriveAddress(service, 0, suffix))
+}
+
+export function getTokenAddress(keychain, token) {
+  return token == "UCO" ?
+    "UCO" :
+    Utils.uint8ArrayToHex(keychain.deriveAddress(token + "_pool", 1))
 }
 
 export function getPoolInfo(token) {
-  const poolSeed = Crypto.hash(token).slice(1)
-  const poolGenesisAddress = getGenesisAddress(poolSeed)
-
-  return { poolSeed, poolGenesisAddress }
-}
-
-export function getStateInfo(token) {
-  const stateSeed = Crypto.hash(token + "state").slice(1)
-  const stateContractAddress = getGenesisAddress(stateSeed)
-
-  return { stateSeed, stateContractAddress }
+  return token
 }
 
 export function encryptSecret(secret, publicKey) {
@@ -45,6 +38,79 @@ export function encryptSecret(secret, publicKey) {
   const encryptedAesKey = Crypto.ecEncrypt(aesKey, publicKey)
   const authorizedKeys = [{ encryptedSecretKey: encryptedAesKey, publicKey: publicKey }]
   return { encryptedSecret, authorizedKeys }
+}
+
+export async function updateKeychain(keychain, archethic) {
+  return new Promise(async (resolve, reject) => {
+    const keychainGenesisAddress = Crypto.deriveAddress(keychain.seed, 0)
+    const transactionChainIndex = await archethic.transaction.getTransactionIndex(keychainGenesisAddress)
+
+    const keychainTx = archethic.account.newKeychainTransaction(keychain, transactionChainIndex)
+      .originSign(Utils.originPrivateKey)
+
+    keychainTx.on("requiredConfirmation", async (_confirmations) => {
+      const txAddress = Utils.uint8ArrayToHex(keychainTx.address)
+      console.log("Keychain transaction validated !")
+      console.log("Address:", txAddress)
+      console.log(archethic.endpoint.origin + "/explorer/transaction/" + txAddress)
+      console.log("=======================")
+      resolve()
+    }).on("error", (context, reason) => {
+      console.log("Error while sending Keychain transaction")
+      console.log("Contest:", context)
+      console.log("Reason:", reason)
+      reject()
+    }).send(CONFIRMATION_THRESHOLD)
+  })
+}
+
+export async function sendTransactionWithFunding(tx, keychain, archethic, fundSeedFrom = undefined) {
+  return new Promise(async (resolve, reject) => {
+    let { fee } = await archethic.transaction.getTransactionFee(tx)
+    fee = Math.trunc(fee * 1.01)
+
+    const txPreviousAddress = "00" + Utils.uint8ArrayToHex(Crypto.hash(tx.previousPublicKey))
+    let refillTx = archethic.transaction.new()
+      .setType("transfer")
+      .addUCOTransfer(txPreviousAddress, fee)
+
+    let fundingGenesisAddress
+    if (fundSeedFrom) {
+      fundingGenesisAddress = getGenesisAddress(fundSeedFrom)
+      const index = await archethic.transaction.getTransactionIndex(Crypto.deriveAddress(fundSeedFrom, 0))
+      refillTx.build(fundSeedFrom, index).originSign(Utils.originPrivateKey)
+    } else {
+      fundingGenesisAddress = getServiceGenesisAddress(keychain, "Master")
+      const masterIndex = await archethic.transaction.getTransactionIndex(keychain.deriveAddress("Master"))
+      refillTx = keychain.buildTransaction(refillTx, "Master", masterIndex).originSign(Utils.originPrivateKey)
+    }
+
+    tx.on("requiredConfirmation", async (_confirmations) => {
+      const txAddress = Utils.uint8ArrayToHex(tx.address)
+      console.log("Transaction validated !")
+      console.log("Address:", txAddress)
+      console.log(archethic.endpoint.origin + "/explorer/transaction/" + txAddress)
+      resolve()
+    }).on("error", (context, reason) => {
+      console.log("Error while sending transaction")
+      console.log("Context:", context)
+      console.log("Reason:", reason)
+      reject()
+    })
+
+    console.log("Sending funds to previous transaction address ...")
+    console.log("=======================")
+
+    refillTx.on("requiredConfirmation", async (_confirmations) => {
+      tx.send(CONFIRMATION_THRESHOLD)
+    }).on("error", (context, reason) => {
+      console.log("Error while sending UCO fee transaction")
+      console.log("Funding genesis address:", fundingGenesisAddress)
+      console.log("Context:", context)
+      console.log("Reason:", reason)
+      reject()
+    }).send(CONFIRMATION_THRESHOLD)
+  })
 }
 
 export function getTokenDefinition(token) {
@@ -73,25 +139,22 @@ export function getFactoryCode() {
   return fs.readFileSync(factoryContractPath, "utf8")
 }
 
-export function getPoolCode(env, token) {
-  const { poolSeed, poolGenesisAddress } = getPoolInfo(token)
-  const { stateContractAddress } = getStateInfo(token)
-
-  return (token == "UCO") ?
-    getUCOPoolCode(poolGenesisAddress, env) :
-    getTokenPoolCode(poolSeed, poolGenesisAddress, stateContractAddress, env)
+export function getPoolCode(env, keychain, serviceName) {
+  return (serviceName == "UCO_pool") ?
+    getUCOPoolCode(keychain, serviceName, env) :
+    getTokenPoolCode(keychain, serviceName, env)
 }
 
-function getUCOPoolCode(poolGenesisAddress, env) {
+function getUCOPoolCode(keychain, serviceName, env) {
   let poolCode = fs.readFileSync(ucoContractPath, "utf8")
-
-  return replaceCommonTemplate(poolCode, poolGenesisAddress, env)
+  return replaceCommonTemplate(poolCode, keychain, serviceName, env)
 }
 
-function getTokenPoolCode(poolSeed, poolGenesisAddress, stateContractAddress, env) {
+function getTokenPoolCode(keychain, serviceName, env) {
   // First pool transaction create the token, so we calculate the token address as
   // the first transaction if the chain
-  const tokenAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(poolSeed, 1))
+  const tokenAddress = Utils.uint8ArrayToHex(keychain.deriveAddress(serviceName, 1))
+  const stateContractAddress = getServiceGenesisAddress(keychain, serviceName, "state")
 
   let poolCode = fs.readFileSync(tokenContractPath, "utf8")
   // Replace token address
@@ -99,17 +162,18 @@ function getTokenPoolCode(poolSeed, poolGenesisAddress, stateContractAddress, en
   // Replace state address
   poolCode = poolCode.replaceAll("#STATE_ADDRESS#", "0x" + stateContractAddress)
 
-  return replaceCommonTemplate(poolCode, poolGenesisAddress, env)
+  return replaceCommonTemplate(poolCode, keychain, serviceName, env)
 }
 
-function replaceCommonTemplate(poolCode, poolGenesisAddress, env) {
+function replaceCommonTemplate(poolCode, keychain, poolServiceName, env) {
   // Replace genesis pool address
+  const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
   poolCode = poolCode.replaceAll("#POOL_ADDRESS#", "0x" + poolGenesisAddress)
   // Replace factory address
-  const factoryAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(env.factorySeed, 0))
+  const factoryAddress = getServiceGenesisAddress(keychain, "Factory")
   poolCode = poolCode.replaceAll("#FACTORY_ADDRESS#", "0x" + factoryAddress)
   // Replace master address
-  const masterAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(env.masterSeed, 0))
+  const masterAddress = getServiceGenesisAddress(keychain, "Master")
   poolCode = poolCode.replaceAll("#MASTER_GENESIS_ADDRESS#", "0x" + masterAddress)
   // Replace available chain ids
   const chainIds = []
