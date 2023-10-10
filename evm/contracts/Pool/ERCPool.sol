@@ -6,6 +6,8 @@ import "../HTLC/ChargeableHTLC_ERC.sol";
 import "../HTLC/SignedHTLC_ERC.sol";
 import "../../interfaces/IHTLC.sol";
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 using SafeMath for uint256;
 
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
@@ -33,7 +35,8 @@ contract ERCPool is PoolBase {
         } 
 
         SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(msg.sender, _token, _amount, _hash, _lockTime, archethicPoolSigner);
-        _token.transfer(address(htlcContract), _amount);
+        SafeERC20.safeTransfer(_token, address(htlcContract), _amount);
+
         return htlcContract;
     }
 
