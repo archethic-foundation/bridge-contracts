@@ -9,16 +9,23 @@ import "./HTLC_ERC.sol";
 
 using SafeMath for uint256;
 
+/// @title HTLC contract with signature verification before withdraw for ERC20 swap
+/// @author Archethic Foundation
 contract SignedHTLC_ERC is HTLC_ERC {
+
+    /// @notice Returns the Archethic's pool signer address
     address public poolSigner;
 
+    /// @notice Throws when the Archethic's pool signature is invalid
     error InvalidSignature();
 
     constructor(address _recipient, IERC20 _token, uint256 _amount, bytes32 _hash, uint _lockTime, address _poolSigner) HTLC_ERC(_recipient, _token,  _amount, _hash, _lockTime) {
         poolSigner = _poolSigner;
     }
 
-    function signedWithdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+    /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address upon the Archethic's pool signature
+    /// @dev Signature verification is done before to do the usual withdraw flow of the HTLC
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
         bytes32 sigHash = ECDSA.toEthSignedMessageHash(_secret);
         address signer = ECDSA.recover(sigHash, _v, _r, _s);
 
@@ -29,10 +36,11 @@ contract SignedHTLC_ERC is HTLC_ERC {
         delete sigHash;
         delete signer;
 
-        withdraw(_secret);
+        _withdraw(_secret);
     }
 
-    function signatureHash() public view returns (bytes32) {
-        return keccak256(abi.encodePacked(amount, hash, recipient, token));
+    /// @dev Prevent to use the direct withdraw's function without the signature
+    function withdraw(bytes32) override pure external {
+        revert InvalidSignature();
     }
  }

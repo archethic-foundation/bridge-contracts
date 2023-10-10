@@ -8,8 +8,14 @@ import "./HTLC_ERC.sol";
 
 using SafeMath for uint256;
 
+/// @title HTLC contract with chargeable fee towards pool's safety module
+/// @author Archethic Foundation
 contract ChargeableHTLC_ERC is HTLC_ERC {
+
+    /// @notice Return the fee's amount
     uint256 public fee;
+
+    /// @notice Return the satefy module destination wallet
     address public safetyModuleAddress;
 
     constructor(
@@ -25,10 +31,12 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         safetyModuleAddress = _safetyModuleAddress;
     }
 
+    /// @dev Check whether the HTLC have enough tokens to cover fee + amount
     function _enoughFunds() internal view override returns (bool) {
         return token.balanceOf(address(this)) == amount.add(fee);
     }
 
+    /// @dev Send ERC20 to the HTLC's recipient and safety module fee
     function _transfer() internal override {
         IERC20 _token = token;
 
@@ -36,6 +44,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         SafeERC20.safeTransfer(_token, recipient, amount);
     }
 
+    /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
     function _refund() internal override {
         SafeERC20.safeTransfer(token, from, amount.add(fee));
     }
