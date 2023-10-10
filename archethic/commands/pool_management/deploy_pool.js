@@ -62,14 +62,14 @@ const handler = async function(argv) {
 
   const poolCode = getPoolCode(env, keychain, serviceName)
 
-  const storageNonce = await archethic.network.getStorageNoncePublicKey()
-  const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(serviceName, [storageNonce])
-
   const index = await archethic.transaction.getTransactionIndex(poolGenesisAddress)
   if (index > 0) {
     console.log("Pool already exists !")
     process.exit(1)
   }
+
+  const storageNonce = await archethic.network.getStorageNoncePublicKey()
+  const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(serviceName, [storageNonce])
 
   let poolTx = archethic.transaction.new()
     .setCode(poolCode)
@@ -99,11 +99,11 @@ const handler = async function(argv) {
 }
 
 async function deployStateContract(archethic, keychain, serviceName, storageNonce) {
-  const stateName = serviceName + "state"
+  const stateName = serviceName + "_state"
   keychain.addService(stateName, "m/650'/" + stateName)
   const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(stateName, [storageNonce])
 
-  const code = getStateCode()
+  const code = getStateCode(keychain, serviceName)
 
   let tx = archethic.transaction.new()
     .setType("contract")

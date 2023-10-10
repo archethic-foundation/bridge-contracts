@@ -131,8 +131,11 @@ export function getTokenDefinition(token) {
   })
 }
 
-export function getStateCode() {
-  return fs.readFileSync(stateContractPath, "utf8")
+export function getStateCode(keychain, poolServiceName) {
+  const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
+  const code = fs.readFileSync(stateContractPath, "utf8")
+
+  return code.replaceAll("#POOL_ADDRESS#", "0x" + poolGenesisAddress)
 }
 
 export function getFactoryCode() {
@@ -154,7 +157,7 @@ function getTokenPoolCode(keychain, serviceName, env) {
   // First pool transaction create the token, so we calculate the token address as
   // the first transaction if the chain
   const tokenAddress = Utils.uint8ArrayToHex(keychain.deriveAddress(serviceName, 1))
-  const stateContractAddress = getServiceGenesisAddress(keychain, serviceName, "state")
+  const stateContractAddress = getServiceGenesisAddress(keychain, serviceName, "_state")
 
   let poolCode = fs.readFileSync(tokenContractPath, "utf8")
   // Replace token address
