@@ -136,7 +136,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         safetyModuleFeeRate = _safetyFeeRate * 100;
         archethicPoolSigner = _archPoolSigner;
         poolCap = _poolCap;
-        locked = true;
+        locked = false;
         lockTimePeriod = _lockTimePeriod;
     }
 

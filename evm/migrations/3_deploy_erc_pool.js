@@ -49,6 +49,6 @@ module.exports = async function (deployer, network, accounts) {
     const instance = await deployProxy(LiquidityPool, [reserveAddress, safetyModuleAddress, safetyModuleFeeRate, archethicPoolSigner, poolCap, lockTimePeriod, tokenAddress], { deployer });
 
     if (network == "development") {
-        await instance.unlock()
+        
     }
 }

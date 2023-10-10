@@ -42,6 +42,8 @@ contract ETHPool is PoolBase {
             revert InsufficientFunds();
         } 
 
+        checkAmountWithDecimals(_amount);
+
         SignedHTLC_ETH htlcContract = (new SignedHTLC_ETH){value: _amount}(payable(msg.sender), _amount, _hash, _lockTime, archethicPoolSigner);
         return htlcContract;
     }
@@ -51,6 +53,8 @@ contract ETHPool is PoolBase {
     /// This can accept ethers for the same amount of the swap
     /// The amount of the HTLC is then reduced by the pool's safety module rate
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
+        checkAmountWithDecimals(_amount);
+
         if (msg.value != _amount) {
             revert ContractNotProvisioned();
         }
@@ -58,5 +62,13 @@ contract ETHPool is PoolBase {
 
         ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_amount - _fee, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;
+    }
+
+    function checkAmountWithDecimals(uint256 _amount) pure private {
+        // Make sure the decimals matches the Archethic's decimal policy about 10e8. (The trailing decimals must be assigned to 0)
+        uint8 mod = 18 - 8;
+        if(_amount % (10 ** mod) != 0) {
+            revert InvalidAmount();
+        }
     }
 }

@@ -28,7 +28,7 @@ contract("ETH LiquidityPool", (accounts) => {
         assert.equal(await instance.safetyModuleFeeRate(), 500)
         assert.equal(await instance.archethicPoolSigner(), archPoolSigner.address)
         assert.equal(await instance.poolCap(), web3.utils.toWei('2'))
-        assert.equal(await instance.locked(), true)
+        assert.equal(await instance.locked(), false)
         assert.equal(await instance.lockTimePeriod(), 60)
     })
 
@@ -75,18 +75,18 @@ contract("ETH LiquidityPool", (accounts) => {
         assert.equal(await instance.poolCap(), 50000)
     })
 
-    it("should unlock pool", async () => {
+    it("should lock pool", async () => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
 
-        await instance.unlock()
-        assert.equal(false, await instance.locked())
+        await instance.lock()
+        assert.equal(true, await instance.locked())
     })
 
     it("should lock pool after unlocked", async () => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        await instance.unlock()
+        
 
         assert.equal(false, await instance.locked())
         await instance.lock()
@@ -114,7 +114,7 @@ contract("ETH LiquidityPool", (accounts) => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
 
-        await instance.unlock()
+        
         await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
 
         const networkID = await web3.eth.getChainId()
@@ -154,7 +154,7 @@ contract("ETH LiquidityPool", (accounts) => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
 
-        await instance.unlock()
+        
         await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
 
         const networkID = await web3.eth.getChainId()
@@ -192,7 +192,7 @@ contract("ETH LiquidityPool", (accounts) => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
 
-        await instance.unlock()
+        
         await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
 
         const sigHash = randomBytes(32)
@@ -215,7 +215,7 @@ contract("ETH LiquidityPool", (accounts) => {
     it("should return an error when the pool doesn't have enough funds to provide HTLC contract", async () => {
         const instance = await LiquidityPool.new()
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        await instance.unlock()
+        
         
         const networkID = await web3.eth.getChainId()
 
@@ -254,7 +254,7 @@ contract("ETH LiquidityPool", (accounts) => {
 
         const instance = await LiquidityPool.new()
         await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        await instance.unlock()
+        
 
         await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), { value: web3.utils.toWei('1') })
         const htlcAddress = await instance.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
@@ -278,7 +278,7 @@ contract("ETH LiquidityPool", (accounts) => {
 
         const instance = await LiquidityPool.new()
         await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        await instance.unlock()
+        
 
         try {
             await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('100000'))
@@ -295,7 +295,7 @@ contract("ETH LiquidityPool", (accounts) => {
 
         const instance = await LiquidityPool.new()
         await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        await instance.unlock()
+        
 
         await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), { value: web3.utils.toWei('1') })
 
