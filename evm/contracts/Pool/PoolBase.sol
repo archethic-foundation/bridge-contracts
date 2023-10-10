@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "../../interfaces/IPool.sol";
@@ -11,7 +11,7 @@ import "../../interfaces/IHTLC.sol";
 
 using SafeMath for uint256; 
 
-abstract contract PoolBase is IPool, Initializable, OwnableUpgradeable {
+abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
 
     bool public locked;
     address public reserveAddress;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3
 pragma solidity 0.8.21;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 contract Migrations is Ownable {
   uint256 public last_completed_migration;

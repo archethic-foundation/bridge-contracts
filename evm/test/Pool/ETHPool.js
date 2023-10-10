@@ -98,6 +98,7 @@ contract("ETH LiquidityPool", (accounts) => {
         await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
 
         await instance.transferOwnership(accounts[3])
+        await instance.acceptOwnership({ from: accounts[3] })
         assert.equal(accounts[3], await instance.owner())
     })
 
