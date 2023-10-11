@@ -1,4 +1,4 @@
-import Archethic, { Utils } from "archethic"
+import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
 import { getGenesisAddress, getTokenAddress, getServiceGenesisAddress } from "../utils.js"
 

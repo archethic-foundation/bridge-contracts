@@ -1,4 +1,4 @@
-import Archethic, { Utils } from "archethic"
+import Archethic, { Utils } from "@archethicjs/sdk"
 import keccak256 from "keccak256"
 import config from "../../config.js"
 

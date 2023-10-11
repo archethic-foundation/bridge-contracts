@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "archethic": "../../libjs/dist",
+    "@archethicjs/sdk": "^1.19.0",
     "keccak256": "^1.0.6",
     "yargs": "^17.7.2"
   },

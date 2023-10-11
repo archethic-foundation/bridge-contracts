@@ -1,5 +1,5 @@
 import fs from "fs"
-import { Crypto, Utils } from "archethic"
+import { Crypto, Utils } from "@archethicjs/sdk"
 import config from "../config.js"
 import path from "path"
 import { fileURLToPath } from "url"
