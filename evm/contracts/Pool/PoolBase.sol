@@ -114,7 +114,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @param _lockTimePeriod The locktime period of the new HTLC contracts
     /// @dev The safety module fee rate is multiplied by 100 to match 2 decimals percentage
     function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod) onlyInitializing virtual internal {
-        __Ownable_init();
+        __Ownable2Step_init();
 
         if(_reserveAddress == address(0)) {
             revert InvalidReserveAddress();
