@@ -43,10 +43,7 @@ const handler = async function(argv) {
   const factoryGenesisAddress = getServiceGenesisAddress(keychain, "Factory")
   console.log("Factory genesis address:", factoryGenesisAddress)
 
-  let factoryCode = getFactoryCode()
-  // Replace protocol fee address
-  const protocolFeeAddress = getServiceGenesisAddress(keychain, "ProtocolFee")
-  factoryCode = factoryCode.replaceAll("#PROTOCOL_FEE_ADDRESS#", "0x" + protocolFeeAddress)
+  const factoryCode = getFactoryCode(keychain)
 
   const index = await archethic.transaction.getTransactionIndex(factoryGenesisAddress)
 

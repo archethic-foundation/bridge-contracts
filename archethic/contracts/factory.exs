@@ -9,7 +9,7 @@ export fun get_protocol_fee() do
 end
 
 export fun get_protocol_fee_address() do
-  #PROTOCOL_FEE_ADDRESS#
+  @PROTOCOL_FEE_ADDRESS
 end
 
 export fun get_token_resupply_definition(token_address, amount, htlc_address) do
@@ -62,9 +62,9 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 
   fee_transfer_code = ""
   if token == "UCO" do
-    fee_transfer_code = "Contract.add_uco_transfer to: #PROTOCOL_FEE_ADDRESS#, amount: #{fee_amount}"
+    fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
   else
-    fee_transfer_code = "Contract.add_token_transfer to: #PROTOCOL_FEE_ADDRESS#, amount: #{fee_amount}, token_address: 0x#{token}"
+    fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
   end
 
   valid_transfer_code = ""
@@ -140,9 +140,9 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   fee_transfer_code = ""
   if token == "UCO" do
-    fee_transfer_code = "Contract.add_uco_transfer to: #PROTOCOL_FEE_ADDRESS#, amount: #{fee_amount}"
+    fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
   else
-    fee_transfer_code = "Contract.add_token_transfer to: #PROTOCOL_FEE_ADDRESS#, amount: #{fee_amount}, token_address: 0x#{token}"
+    fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
   end
 
   valid_transfer_code = ""
