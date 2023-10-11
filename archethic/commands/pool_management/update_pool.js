@@ -1,6 +1,6 @@
 import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
-import { getPoolCode, getServiceGenesisAddress } from "../utils.js"
+import { getPoolCode, getServiceGenesisAddress, getPoolServiceName } from "../utils.js"
 
 const command = "update_pool"
 const describe = "Update an existing pool"
@@ -46,7 +46,7 @@ const handler = async function(argv) {
   }
 
   const token = argv["token"]
-  const serviceName = token + "_pool"
+  const serviceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
 
   const indexPool = await archethic.transaction.getTransactionIndex(poolGenesisAddress)
@@ -55,7 +55,7 @@ const handler = async function(argv) {
     process.exit(1)
   }
 
-  const poolCode = getPoolCode(env, keychain, serviceName)
+  const poolCode = getPoolCode(envName, keychain, token)
 
   const masterGenesisAddress = getServiceGenesisAddress(keychain, "Master")
   console.log("Master genesis address:", masterGenesisAddress)

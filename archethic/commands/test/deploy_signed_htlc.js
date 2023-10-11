@@ -3,6 +3,7 @@ import config from "../../config.js"
 import {
   encryptSecret,
   getGenesisAddress,
+  getPoolServiceName,
   getServiceGenesisAddress,
   getTokenAddress,
   sendTransactionWithFunding
@@ -67,7 +68,7 @@ const handler = async function(argv) {
 
   const tokenAddress = getTokenAddress(keychain, token)
 
-  const serviceName = token + "_pool"
+  const serviceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
   const factoryGenesisAddress = getServiceGenesisAddress(keychain, "Factory")
   const userAddress = getGenesisAddress(env.userSeed)

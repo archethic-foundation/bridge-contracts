@@ -2,14 +2,12 @@ export default {
   environments: {
     local: {
       endpoint: "http://127.0.0.1:4000",
-      availableEvmNetworks: ["local"],
       userSeed: "user",
       keychainAccessSeed: "access",
       keychainSeed: "keychain"
     },
     testnet: {
       endpoint: "https://testnet.archethic.net",
-      availableEvmNetworks: ["sepolia_ethereum", "mumbai_polygon", "bnb_chain_testnet"]
     }
   },
   evmNetworks: {
@@ -28,6 +26,32 @@ export default {
     bnb_chain_testnet: {
       endpoint: "https://polygon-mumbai.g.alchemy.com/v2/-8zo2X19AmwNv7AGVIsGF5LWJQLc92Oj",
       chainId: 97
+    }
+  },
+  pools: {
+    UCO: {
+      availableEvmNetworks: {
+        local: ["local"],
+        testnet: ["sepolia_ethereum", "mumbai_polygon", "bnb_chain_testnet"]
+      }
+    },
+    aeETH: {
+      availableEvmNetworks: {
+        local: ["local"],
+        testnet: ["sepolia_ethereum"]
+      }
+    },
+    aeBNB: {
+      availableEvmNetworks: {
+        local: ["local"],
+        testnet: ["bnb_chain_testnet"]
+      }
+    },
+    aeMATIC: {
+      availableEvmNetworks: {
+        local: ["local"],
+        testnet: ["mumbai_polygon"]
+      }
     }
   }
 }

@@ -6,7 +6,8 @@ import {
   getTokenDefinition,
   getServiceGenesisAddress,
   sendTransactionWithFunding,
-  updateKeychain
+  updateKeychain,
+  getPoolServiceName
 } from "../utils.js"
 
 const command = "deploy_pool"
@@ -53,14 +54,14 @@ const handler = async function(argv) {
   }
 
   const token = argv["token"]
-  const serviceName = token + "_pool"
+  const serviceName = getPoolServiceName(token)
 
   keychain.addService(serviceName, "m/650'/" + serviceName)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
 
   console.log("Pool genesis address:", poolGenesisAddress)
 
-  const poolCode = getPoolCode(env, keychain, serviceName)
+  const poolCode = getPoolCode(envName, keychain, token)
 
   const index = await archethic.transaction.getTransactionIndex(poolGenesisAddress)
   if (index > 0) {

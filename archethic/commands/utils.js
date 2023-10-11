@@ -25,11 +25,15 @@ export function getServiceGenesisAddress(keychain, service, suffix = "") {
 export function getTokenAddress(keychain, token) {
   return token == "UCO" ?
     "UCO" :
-    Utils.uint8ArrayToHex(keychain.deriveAddress(token + "_pool", 1))
+    Utils.uint8ArrayToHex(keychain.deriveAddress(getPoolServiceName(token), 1))
 }
 
 export function getPoolInfo(token) {
   return token
+}
+
+export function getPoolServiceName(token) {
+  return token + "_pool"
 }
 
 export function encryptSecret(secret, publicKey) {
@@ -145,20 +149,21 @@ export function getFactoryCode(keychain) {
   return code.replaceAll("@PROTOCOL_FEE_ADDRESS", "0x" + protocolFeeAddress)
 }
 
-export function getPoolCode(env, keychain, serviceName) {
-  return (serviceName == "UCO_pool") ?
-    getUCOPoolCode(keychain, serviceName, env) :
-    getTokenPoolCode(keychain, serviceName, env)
+export function getPoolCode(envName, keychain, token) {
+  return (token == "UCO") ?
+    getUCOPoolCode(keychain, token, envName) :
+    getTokenPoolCode(keychain, token, envName)
 }
 
-function getUCOPoolCode(keychain, serviceName, env) {
+function getUCOPoolCode(keychain, token, envName) {
   let poolCode = fs.readFileSync(ucoContractPath, "utf8")
-  return replaceCommonTemplate(poolCode, keychain, serviceName, env)
+  return replaceCommonTemplate(poolCode, keychain, token, envName)
 }
 
-function getTokenPoolCode(keychain, serviceName, env) {
+function getTokenPoolCode(keychain, token, envName) {
   // First pool transaction create the token, so we calculate the token address as
   // the first transaction if the chain
+  const serviceName = getPoolServiceName(token)
   const tokenAddress = Utils.uint8ArrayToHex(keychain.deriveAddress(serviceName, 1))
   const stateContractAddress = getServiceGenesisAddress(keychain, serviceName, "_state")
 
@@ -168,11 +173,12 @@ function getTokenPoolCode(keychain, serviceName, env) {
   // Replace state address
   poolCode = poolCode.replaceAll("@STATE_ADDRESS", "0x" + stateContractAddress)
 
-  return replaceCommonTemplate(poolCode, keychain, serviceName, env)
+  return replaceCommonTemplate(poolCode, keychain, token, envName)
 }
 
-function replaceCommonTemplate(poolCode, keychain, poolServiceName, env) {
+function replaceCommonTemplate(poolCode, keychain, token, envName) {
   // Replace genesis pool address
+  const poolServiceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
   poolCode = poolCode.replaceAll("@POOL_ADDRESS", "0x" + poolGenesisAddress)
   // Replace factory address
@@ -183,7 +189,7 @@ function replaceCommonTemplate(poolCode, keychain, poolServiceName, env) {
   poolCode = poolCode.replaceAll("@MASTER_GENESIS_ADDRESS", "0x" + masterAddress)
   // Replace available chain ids
   const chainIds = []
-  for (let network of env.availableEvmNetworks) {
+  for (let network of config.pools[token].availableEvmNetworks[envName]) {
     const chainId = config.evmNetworks[network].chainId
     chainIds.push(chainId)
   }

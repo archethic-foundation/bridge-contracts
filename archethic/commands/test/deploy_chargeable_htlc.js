@@ -3,6 +3,7 @@ import config from "../../config.js"
 import {
   encryptSecret,
   getGenesisAddress,
+  getPoolServiceName,
   getServiceGenesisAddress,
   getTokenAddress,
   sendTransactionWithFunding
@@ -77,7 +78,7 @@ const handler = async function(argv) {
   const amount = argv["amount"]
   const secretHash = argv["secret_hash"]
 
-  const poolServiceName = token + "_pool"
+  const poolServiceName = getPoolServiceName(token)
   const tokenAddress = getTokenAddress(keychain, token)
 
   const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)

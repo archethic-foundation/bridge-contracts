@@ -1,6 +1,7 @@
 import Archethic, { Utils } from "@archethicjs/sdk"
 import keccak256 from "keccak256"
 import config from "../../config.js"
+import { getPoolServiceName } from "../utils.js"
 
 const command = "derive_eth_address"
 const describe = "Derive the corresponding EVM address from a pool service"
@@ -47,7 +48,7 @@ const handler = async function(argv) {
 
   const token = argv["token"]
 
-  const serviceName = token + "_pool"
+  const serviceName = getPoolServiceName(token)
   keychain.addService(serviceName, "m/650'/" + serviceName, "secp256k1")
 
   const { publicKey } = keychain.deriveKeypair(serviceName, 0)

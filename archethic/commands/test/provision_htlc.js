@@ -1,6 +1,6 @@
 import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
-import { getGenesisAddress, getTokenAddress, getServiceGenesisAddress } from "../utils.js"
+import { getGenesisAddress, getTokenAddress, getServiceGenesisAddress, getPoolServiceName } from "../utils.js"
 
 const command = "provision_htlc"
 const describe = "Provision a signed HTLC address and request the pool the create a secret"
@@ -67,7 +67,7 @@ const handler = async function(argv) {
 
   const tokenAddress = getTokenAddress(keychain, token)
 
-  const serviceName = token + "_pool"
+  const serviceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
   const userAddress = getGenesisAddress(env.userSeed)
 
