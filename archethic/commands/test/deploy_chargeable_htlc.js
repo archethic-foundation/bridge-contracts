@@ -37,6 +37,16 @@ const builder = {
     demandOption: true,
     type: "string"
   },
+  evm_tx_address: {
+    describe: "The creation address of EVM HTLC",
+    demandOption: true,
+    type: "string"
+  },
+  evm_contract_address: {
+    describe: "The EVM HTLC contract address",
+    demandOption: true,
+    type: "string"
+  },
   access_seed: {
     describe: "the keychain access seed (default in env config)",
     demandOption: false,
@@ -77,6 +87,8 @@ const handler = async function(argv) {
   const endTime = argv["endtime"]
   const amount = argv["amount"]
   const secretHash = argv["secret_hash"]
+  const evmTxAddress = argv["evm_tx_address"]
+  const evmContractAddress = argv["evm_contract_address"]
 
   const poolServiceName = getPoolServiceName(token)
   const tokenAddress = getTokenAddress(keychain, token)
@@ -101,7 +113,7 @@ const handler = async function(argv) {
   const tx = archethic.transaction.new()
     .setType("contract")
     .setCode(htlcCode)
-    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash])
+    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash, evmTxAddress, evmContractAddress, 1337])
     .addOwnership(encryptedSecret, authorizedKeys)
     .build(seed, index)
     .originSign(Utils.originPrivateKey)

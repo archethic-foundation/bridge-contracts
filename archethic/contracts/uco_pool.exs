@@ -4,29 +4,43 @@
 # EVM => Archethic : Request funds #
 ####################################
 
-condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash), as: [
+condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash, evm_tx_address, evm_contract, chain_id), as: [
   type: "contract",
   code: valid_chargeable_code?(end_time, amount, user_address, secret_hash),
-  timestamp:
-    (
-      # End time cannot be less than now or more than 1 day
-      now = Time.now()
-      end_time > now && end_time <= now + 86400
-    ),
-  content:
-    (
-      # Ensure the pool has enough UCO to send the requested fund
-      balance = Chain.get_uco_balance(contract.address)
-      balance >= amount
-    ),
-  # Here ensure Ethereum contract exists and check rules
-  # How to ensure Ethereum contract is a valid one ?
-  # Maybe get the ABI of HTLC on github and compare it to the one on Ethereum
-  # Then control rules
-  address: true
+  timestamp: (
+    # End time cannot be less than now or more than 1 day
+    now = Time.now()
+    end_time > now && end_time <= now + 86400
+  ),
+  uco_transfers: (
+    # Ensure the pool has enough UCO to send the requested fund
+    balance = Chain.get_uco_balance(contract.address)
+    balance >= amount
+  ),
+  content: List.in?([@CHAIN_IDS], chain_id),
+  address: (
+    valid? = false
+
+    tx_receipt_request = get_tx_receipt_request(evm_tx_address)
+    body = Json.to_string([tx_receipt_request])
+
+    chain_data = get_chain_data(chain_id)
+    headers = ["Content-Type": "application/json"]
+
+    res = Http.request(chain_data.endpoint, "POST", headers, body)
+    if res.status == 200 && res.body != nil do
+      responses = Json.parse(res.body)
+
+      tx_receipt = get_tx_receipt_response(responses)
+      
+      valid? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract)
+    end
+
+    valid?
+  )
 ]
 
-actions triggered_by: transaction, on: request_funds(_end_time, amount, _user_address, _secret_hash) do
+actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, _, _) do
   Contract.set_type("transfer")
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -216,6 +230,57 @@ fun valid_signed_code?(htlc_address, amount, user_address) do
   end
 
   valid?
+end
+
+fun get_chain_data(chain_id) do
+  data = Map.new()
+  @EVM_DATA_CONDITIONS
+  data
+end
+
+fun get_tx_receipt_request(evm_tx_address) do
+  [
+    jsonrpc: "2.0",
+    id: 1,
+    method: "eth_getTransactionReceipt",
+    params: [evm_tx_address]
+  ]
+end
+
+fun get_tx_receipt_response(responses) do
+  response = nil
+
+  for res in responses do
+    if res.id == 1 do
+      response = Map.get(res, "result")
+    end
+  end
+
+  response
+end
+
+fun valid_tx_receipt?(tx_receipt, proxy_address, evm_contract) do
+  if tx_receipt != nil do
+    logs = List.at(tx_receipt.logs, 0)
+
+    # Transaction is valid
+    valid_status? = tx_receipt.status == "0x1"
+    # Transaction interacted with proxy address
+    valid_proxy_address? = String.to_lowercase(tx_receipt.to) == proxy_address
+    # Logs are comming from proxy address
+    valid_logs_address? = String.to_lowercase(logs.address) == proxy_address
+    # Pool contract emmited ContractMinted event
+    event = List.at(logs.topics, 0)
+    valid_event? = String.to_lowercase(event) == "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+    # Contract minted match evm_contract in parameters
+    decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
+    topic_address = List.at(decoded_data, 0)
+    valid_contract_address? = topic_address == String.to_lowercase(evm_contract)
+    
+    valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
+  else
+    false
+  end
 end
 
 fun sign_for_evm(data, chain_id) do

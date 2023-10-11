@@ -177,21 +177,44 @@ function getTokenPoolCode(keychain, token, envName) {
 }
 
 function replaceCommonTemplate(poolCode, keychain, token, envName) {
+  const availableEvmNetworks = config.pools[token].availableEvmNetworks[envName]
+
   // Replace genesis pool address
   const poolServiceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
   poolCode = poolCode.replaceAll("@POOL_ADDRESS", "0x" + poolGenesisAddress)
+
   // Replace factory address
   const factoryAddress = getServiceGenesisAddress(keychain, "Factory")
   poolCode = poolCode.replaceAll("@FACTORY_ADDRESS", "0x" + factoryAddress)
+
   // Replace master address
   const masterAddress = getServiceGenesisAddress(keychain, "Master")
   poolCode = poolCode.replaceAll("@MASTER_GENESIS_ADDRESS", "0x" + masterAddress)
+
   // Replace available chain ids
-  const chainIds = []
-  for (let network of config.pools[token].availableEvmNetworks[envName]) {
-    const chainId = config.evmNetworks[network].chainId
-    chainIds.push(chainId)
-  }
-  return poolCode.replaceAll("@CHAIN_IDS", chainIds)
+  const chainIds = availableEvmNetworks.map(network => config.evmNetworks[network].chainId)
+  poolCode = poolCode.replaceAll("@CHAIN_IDS", chainIds)
+
+  // Replace endpoint conditions
+  const conditions = get_evm_data_conditions(token, availableEvmNetworks)
+  return poolCode.replaceAll("@EVM_DATA_CONDITIONS", conditions)
+}
+
+function get_evm_data_conditions(token, availableEvmNetworks) {
+  return availableEvmNetworks
+    .map(network => {
+      const { endpoint, chainId } = config.evmNetworks[network]
+      const proxyAddress = config.evmNetworks[network].proxyAddresses[token]
+      const tokenAddress = config.evmNetworks[network].tokenAddresses[token]
+
+      return `
+  if chain_id == ${chainId} do
+    data = Map.set(data, "endpoint", "${endpoint}")
+    data = Map.set(data, "proxy_address", "${proxyAddress}")
+    data = Map.set(data, "token_address", "${tokenAddress}")
+  end
+`
+    })
+    .join("")
 }
