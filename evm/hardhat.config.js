@@ -1,11 +1,13 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-chai-matchers");
 require('@openzeppelin/hardhat-upgrades');
 
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
         hardhat: {},
+        localhost: {
+            url: "http://127.0.0.1:8545"
+        },
         sepolia: {
             url: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
             accounts: [

@@ -1,28 +1,25 @@
 {
-  "name": "bridge-truffle-contracts",
+  "name": "bridge-evm-contracts",
   "version": "1.0.0",
   "scripts": {
-    "test": "truffle test"
+    "test": "npx hardhat test",
+    "start-node": "npx hardhat node",
+    "deploy": "npx hardhat run scripts/deploy/deploy_eth_pool.js --network localhost && npx hardhat run scripts/deploy/deploy_erc_pool.js --network localhost"
   },
   "author": "Archethic's Foundation",
   "license": "AGPL-3",
   "description": "",
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@openzeppelin/contracts": "^4.9.2",
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
     "@openzeppelin/hardhat-upgrades": "^2.3.2",
-    "@openzeppelin/truffle-upgrades": "^1.19.0",
     "ethers": "^6.6.2",
     "hardhat": "^2.18.0",
     "keccak256": "^1.0.6",
     "openzeppelin-solidity": "^3.4.2",
-    "secp256k1": "^5.0.0",
-    "truffle": "^5.1.16-truffleLogger.0",
-    "truffle-contract-size": "^2.0.1"
+    "secp256k1": "^5.0.0"
   },
   "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "@truffle/hdwallet-provider": "^2.1.15"
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0"
   }
 }

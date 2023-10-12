@@ -6,8 +6,7 @@ In order to develop and test the contracts, you need to have some prerequisites:
 
 - Node.js
 - EVM:
-  - Ganache (Simulation of the Ethereum's node)
-  - [Truffle](https://trufflesuite.com/docs/truffle/)
+  - [Hardhat](https://hardhat.org/)
 
 - Archethic:
   - Archethic node (running in devnet mode)
@@ -55,23 +54,16 @@ cd evm
 
 For tests you can use unit tests:
 ```bash
-truffle test
+npm run test
 ```
 
 To use the pool in a local environment you can use migrations with:
 ```bash
-truffle deploy
+npm run deploy
 ```
 
 This will create two pools for ETH and ERC.
 It will also create a dummy token, accessible via `LP_ERC.token()`
-
-In order to test the signature from the LP Archethic pool you can use this tool to generate the signature:
-```bash
-node signing_tool.js 0x[DIGEST] 0x00d171013047636e2af5c7645377ed3e82f07d8ffe95a2aa65520306046be93f
-```
-
-The last parameter being the private key of the accounts[6] configured as the signer key in the migrations for the development network on Ganache
 
 ## Archethic Smart Contracts
 

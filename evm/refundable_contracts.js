@@ -33,7 +33,6 @@ poolContract.provisionedSwaps().then(async swaps => {
 
     const HTLC_ABI = [
         "function finished() view returns(bool)",
-        "function startTime() view returns(uint256)",
         "function lockTime() view returns(uint256)"
     ]
 
@@ -45,10 +44,9 @@ poolContract.provisionedSwaps().then(async swaps => {
         const htlcContract = new ethers.Contract(swapAddress, HTLC_ABI, provider);
 
         const finished = await htlcContract.finished()
-        const startTime = await htlcContract.startTime()
         const lockTime = await htlcContract.lockTime()
 
-        const lockDate = new Date((toNumber(startTime) + toNumber(lockTime)) * 1000)
+        const lockDate = new Date(lockTime * 1000)
         const currentDate = new Date()
 
         if (!finished && lockDate.getTime() < currentDate.getTime()) {
