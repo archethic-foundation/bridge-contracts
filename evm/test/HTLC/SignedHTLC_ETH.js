@@ -1,70 +1,73 @@
-const HTLC = artifacts.require("SignedHTLC_ETH")
+const hre = require("hardhat");
+const { createHash, randomBytes } = require("crypto")
+const { expect } = require("chai");
+const { time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
-const { generateECDSAKey, createEthSign } = require("../utils")
-const { randomBytes, createHash } = require("crypto")
-const { ethers } = require("ethers")
-
-contract("Signed ETH HTLC", (accounts) => {
-
-    let archPoolSigner = {}
-
-    before(() => {
-        const { privateKey } = generateECDSAKey()
-        const { address } = web3.eth.accounts.privateKeyToAccount(`0x${privateKey.toString('hex')}`);
-        archPoolSigner = {
-            address: address,
-            privateKey: privateKey
-        }
-    })
+describe("Signed ETH HTLC", (accounts) => {
 
     it("should withdraw send funds once the secret is valid for the hash and the hash is signed by the Archethic pool", async () => {
+        const archPoolSigner = ethers.Wallet.createRandom()
+        const accounts = await ethers.getSigners()
+
         const secret = randomBytes(32)
 
         const hash = createHash("sha256")
             .update(secret)
             .digest()
 
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
 
-        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, date_sec, archPoolSigner.address, { value: web3.utils.toWei('1')})
+        const amount = ethers.parseEther("1.0")
 
-        const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
+        const HTLCInstance = await ethers.deployContract("SignedHTLC_ETH", [
+            accounts[2].address,
+            amount,
+            `0x${hash.toString('hex')}`,
+            lockTime,
+            archPoolSigner.address
+        ], { value: amount })
 
-        const balance1 = await web3.eth.getBalance(accounts[2])
-        await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, `0x${rSecret}`, `0x${sSecret}`, vSecret, { from: accounts[1] })
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(secret))
 
-        assert.ok(await HTLCInstance.finished())
-
-        const balance2 = await web3.eth.getBalance(accounts[2])
-
-        assert.ok(balance2 - balance1 == web3.utils.toWei('1'))
-        assert.equal(await HTLCInstance.secret(), `0x${secret.toString('hex')}`)
+        await expect(
+            HTLCInstance.withdraw(`0x${secret.toString('hex')}`, signature.r, signature.s, signature.v)
+        )
+        .to.changeEtherBalance(
+            accounts[2].address, 
+            amount
+        )
     })
 
     it("should return an error if the signature is invalid", async () => {
+        const archPoolSigner = ethers.Wallet.createRandom()
+        const accounts = await ethers.getSigners()
+
         const secret = randomBytes(32)
 
         const hash = createHash("sha256")
             .update(secret)
             .digest()
 
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
 
-        const HTLCInstance = await HTLC.new(accounts[2], web3.utils.toWei('1'), `0x${hash.toString('hex')}`, date_sec, archPoolSigner.address, { value: web3.utils.toWei('1')})
+        const amount = ethers.parseEther("1.0")
 
-        const { r: rSecret, s: sSecret, v: vSecret } = createEthSign(secret, archPoolSigner.privateKey)
+        const HTLCInstance = await ethers.deployContract("SignedHTLC_ETH", [
+            accounts[2].address,
+            amount,
+            `0x${hash.toString('hex')}`,
+            lockTime,
+            archPoolSigner.address
+        ], { value: amount })
 
-        try {
-            await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, `0x${rSecret}`, `0x${sSecret}`, vSecret, { from: accounts[1] })
-        }
-        catch (e) {
-            const interface = new ethers.Interface(HTLCInstance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "InvalidSignature")
-        }
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(randomBytes(32)))
+
+        await expect(
+            HTLCInstance.withdraw(`0x${secret.toString('hex')}`, signature.r, signature.s, signature.v)
+        )
+        .to.be.revertedWithCustomError(HTLCInstance, "InvalidSignature")
     })
 
 })

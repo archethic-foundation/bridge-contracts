@@ -1,309 +1,268 @@
-const HTLC = artifacts.require("HTLC_ETH")
+const hre = require("hardhat");
 
-const { increaseTime} = require('../utils')
+const { time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+
 const { createHash, randomBytes } = require("crypto")
-const { ethers } = require("ethers");
+const { expect } = require("chai")
 
-contract("ETH HTLC", (accounts) => {
+describe("ETH HTLC", () => {
 
   it("should create contract", async () => {
-    const recipientEthereum = accounts[2]
+    const accounts = await ethers.getSigners()
+    const recipientEthereum = accounts[2].address
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
-      web3.utils.toWei("1"),
+      ethers.parseEther("1.0"),
       "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-      date_sec,
+      lockTime,
       false,
-      { value: web3.utils.toWei("1") }
-    )
+    ], { value: ethers.parseEther("1.0") })
 
-    assert.equal(await HTLCInstance.amount(), web3.utils.toWei("1"))
-    assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-    assert.equal(await HTLCInstance.recipient(), recipientEthereum)
-    assert.equal(await HTLCInstance.finished(), false)
-    assert.equal(await HTLCInstance.lockTime(), date_sec)
+    expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("1.0"))
+    expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+    expect(await HTLCInstance.recipient()).to.equal(recipientEthereum)
+    expect(await HTLCInstance.finished()).to.be.false
+    expect(await HTLCInstance.lockTime()).to.equal(lockTime)
 
-    assert.equal(await web3.eth.getBalance(HTLCInstance.address), web3.utils.toWei('1'))
+    expect(await ethers.provider.getBalance(await HTLCInstance.getAddress()))
+      .to.equal(ethers.parseEther("1.0"))
   })
 
   it("should withdraw the funds with the hash preimage reveal", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 60)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
-    
-    const balance1 = await web3.eth.getBalance(recipientEthereum)
+    ], { value: amount })
 
-    const balance = await web3.eth.getBalance(HTLCInstance.address)
-    assert.equal(balance, await HTLCInstance.amount())
+    const tx = HTLCInstance
+      .connect(accounts[3])
+      .withdraw(`0x${secret.toString('hex')}`)
 
-    await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
+      await expect(tx).to.changeEtherBalance(
+        recipientEthereum, 
+        amount
+      )
+      await expect(tx).to.emit(HTLCInstance, "Withdrawn")
 
-    const balance2 = await web3.eth.getBalance(recipientEthereum)
-    assert.equal(1, web3.utils.fromWei(balance2) - web3.utils.fromWei(balance1))
+      expect(await HTLCInstance.finished()).to.be.true
   })
 
   it("should refuse the contract creation if the contract doesn't get the right funds", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 60)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    try {
-      await HTLC.new(
-        recipientEthereum,
-        amount,
-        `0x${secretHash}`,
-        date_sec,
-        false
-      )
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLC.abi);
-      assert.equal(interface.parseError(e.data.result).name, "ContractNotProvisioned")
-    }
+    const contract = await ethers.getContractFactory("HTLC_ETH")
 
-    try {
-      await HTLC.new(
-        recipientEthereum,
-        amount,
-        `0x${secretHash}`,
-        date_sec,
-        false,
-        { value: amount * 3}
-      )
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLC.abi);
-      assert.equal(interface.parseError(e.data.result).name, "ContractNotProvisioned")
-    }
+    await expect(ethers.deployContract("HTLC_ETH", [
+      recipientEthereum,
+      amount,
+      `0x${secretHash}`,
+      lockTime,
+      false,
+    ]))
+    .to.be.revertedWithCustomError(contract, "ContractNotProvisioned")
   })
 
   it("should refuse the withdraw is the swap is already done", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 60)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
+    ], { value: amount })
 
-    await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
-    try {
-      await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[2] })
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLCInstance.abi);
-      assert.equal(interface.parseError(e.data.result).name, "AlreadyFinished")
-    }
+    HTLCInstance.withdraw(`0x${secret.toString('hex')}`)
+
+    await expect(
+      HTLCInstance.withdraw(`0x${secret.toString('hex')}`)
+    )
+    .to.be.revertedWithCustomError(HTLCInstance, "AlreadyFinished")
   })
 
   it("should refuse the withdraw is secret is invalid", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 60)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
+    ], { value: amount })
 
-    try {
-      await HTLCInstance.withdraw(`0x${randomBytes(32).toString('hex')}`, { from: accounts[3] })
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLCInstance.abi);
-      assert.equal(interface.parseError(e.data.result).name, "InvalidSecret")
-    }
+    await expect(
+      HTLCInstance.withdraw(`0x${randomBytes(32).toString('hex')}`)
+    )
+    .to.be.revertedWithCustomError(HTLCInstance, "InvalidSecret")
   })
 
   it("should refuse the withdraw if the locktime passed", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 1
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
+    ], { value: amount })
    
-    await increaseTime(2)
+    time.increaseTo(lockTime + 5)
 
-    try {
-      await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[3] })
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLCInstance.abi);
-      assert.equal(interface.parseError(e.data.result).name, "TooLate")
-    }
+    await expect(HTLCInstance.withdraw(`0x${secret.toString('hex')}`))
+      .to.be.revertedWithCustomError(HTLCInstance, "TooLate")
   })
 
   it("should refund the owner after the lock time", async () => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 1
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
+    ], { value: amount })
     
-    const balance1 = await web3.eth.getBalance(recipientEthereum)
+    expect(await HTLCInstance.canRefund(lockTime + 5)).to.be.true
 
-    assert.equal(true, await HTLCInstance.canRefund(date_sec + 1))
+    time.increaseTo(lockTime + 5)
+    const tx = HTLCInstance.refund()
 
-    await increaseTime(2)
-    await HTLCInstance.refund()
+    await expect(tx).to.changeEtherBalance(
+      accounts[0], 
+      amount
+    )
+    await expect(tx).to.emit(HTLCInstance, "Refunded")
 
-    const balance2 = await web3.eth.getBalance(recipientEthereum)
-    assert.equal(web3.utils.fromWei(balance2), web3.utils.fromWei(balance1))
-    assert.equal(await HTLCInstance.finished(), true)
+    expect(await HTLCInstance.finished()).to.be.true
   })
 
   it ("should return an error if the swap is already finished", async() => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
-    
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
 
-    const HTLCInstance = await HTLC.new(
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 1
+
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       false,
-      { value: amount }
-    )
-    
-    await increaseTime(2)
+    ], { value: amount })
+
+    time.increaseTo(lockTime + 5)
     await HTLCInstance.refund()
-    
-    try {
-      await HTLCInstance.refund()
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLCInstance.abi);
-      assert.equal(interface.parseError(e.data.result).name, "AlreadyFinished")
-    }
+
+    await expect(HTLCInstance.refund())
+      .to.be.revertedWithCustomError(HTLCInstance, "AlreadyFinished")
   })
 
   it ("should return an error if the lock time is not reached", async() => {
+    const accounts = await ethers.getSigners()
     const recipientEthereum = accounts[2]
 
-    const amount = web3.utils.toWei('1')
+    const amount = ethers.parseEther('1')
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 5)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const previousBlockTimestamp = await time.latest()
 
-    const HTLCInstance = await HTLC.new(
+    const HTLCInstance = await ethers.deployContract("HTLC_ETH", [
       recipientEthereum,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      previousBlockTimestamp + 10,
       false,
-      { value: amount }
-    )
+    ], { value: amount })
 
     const now = new Date()
     const secondUNIX = Math.floor(now.getTime() / 1000)
 
-    assert.equal(false, await HTLCInstance.canRefund(secondUNIX))
-    
-    try {
-      await HTLCInstance.refund()
-    }
-    catch(e) {
-      const interface = new ethers.Interface(HTLCInstance.abi);
-      assert.equal(interface.parseError(e.data.result).name, "TooEarly")
-    }
+    expect(await HTLCInstance.canRefund(secondUNIX)).to.be.false
+
+    await expect(HTLCInstance.refund())
+      .to.be.revertedWithCustomError(HTLCInstance, "TooEarly")
   })
 })

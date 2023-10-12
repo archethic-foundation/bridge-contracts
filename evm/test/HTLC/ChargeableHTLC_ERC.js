@@ -1,112 +1,119 @@
-const DummyToken = artifacts.require("DummyToken")
-const HTLC = artifacts.require("ChargeableHTLC_ERC")
-
-const { increaseTime } = require("../utils")
+const hre = require("hardhat");
 const { createHash, randomBytes } = require("crypto")
+const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { expect } = require("chai");
 
-contract("Chargeable ERC HTLC", (accounts) => {
+describe("Chargeable ERC HTLC",() => {
 
-  let DummyTokenInstance
-
-  before(async() => {
-      DummyTokenInstance = await DummyToken.new(web3.utils.toWei('1000'))
-  })
+  async function deployTokenFixture() {
+    const contract = await ethers.deployContract("DummyToken", [ethers.parseEther('1000')])
+    return { instance: contract, address: await contract.getAddress() }
+  }
 
   it("should create contract and associated recipient and fee", async () => {
-    const satefyModuleAddress = accounts[3]
-    const reserveAddress = accounts[4]
+    const { address: tokenAddress } = await loadFixture(deployTokenFixture);
 
-    const fee = web3.utils.toWei("0.005")
+    const accounts = await ethers.getSigners()
+    const satefyModuleAddress = accounts[3].address
+    const reserveAddress = accounts[4].address
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const fee = ethers.parseEther("0.005")
 
-    const HTLCInstance = await HTLC.new(
-      DummyTokenInstance.address,
-      web3.utils.toWei("0.995"),
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
+
+    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ERC", [
+      tokenAddress,
+      ethers.parseEther("0.995"),
       "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-      date_sec,
+      lockTime,
       reserveAddress,
       satefyModuleAddress,
       fee
-    )
+    ])
 
-    assert.equal(await HTLCInstance.amount(), web3.utils.toWei("0.995"))
-    assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
-    assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-    assert.equal(await HTLCInstance.token(), DummyTokenInstance.address)
-    assert.equal(await HTLCInstance.recipient(), reserveAddress)
-    assert.equal(await HTLCInstance.finished(), false)
-    assert.equal(await HTLCInstance.lockTime(), date_sec)
+    expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("0.995"))
+    expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+    expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+    expect(await HTLCInstance.token()).to.equal(await tokenAddress)
+    expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
+    expect(await HTLCInstance.finished()).to.be.false
+    expect(await HTLCInstance.lockTime()).to.equal(lockTime)
   })
 
   it("withdraw should send tokens to the reserve address and fee to the safety module", async() => {
-    const satefyModuleAddress = accounts[3]
-    const reserveAddress = accounts[4]
+    const { instance: tokenInstance, address: tokenAddress } = await loadFixture(deployTokenFixture);
+    const accounts = await ethers.getSigners()
+
+    const satefyModuleAddress = accounts[3].address
+    const reserveAddress = accounts[4].address
     
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
       
-    const amount = web3.utils.toWei("0.995")
-    const fee = web3.utils.toWei("0.005")
+    const amount = ethers.parseEther("0.995")
+    const fee = ethers.parseEther("0.005")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 60)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 60
 
-    const HTLCInstance = await HTLC.new(
-      DummyTokenInstance.address,
+    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ERC", [
+      tokenAddress,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       reserveAddress,
       satefyModuleAddress,
-      fee,
+      fee
+    ])
+
+    await tokenInstance.transfer(HTLCInstance.getAddress(), ethers.parseEther("1.0"))
+
+    await expect(HTLCInstance
+      .connect(accounts[2])
+      .withdraw(`0x${secret.toString('hex')}`)
     )
-
-    await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei("1.0"))
-    await HTLCInstance.withdraw(`0x${secret.toString('hex')}`, { from: accounts[2] })
-
-    assert.equal(await DummyTokenInstance.balanceOf(satefyModuleAddress), web3.utils.toWei('0.005'))
-    assert.equal(await DummyTokenInstance.balanceOf(reserveAddress), web3.utils.toWei('0.995'))
+    .to.changeTokenBalances(tokenInstance, 
+      [satefyModuleAddress, reserveAddress, await HTLCInstance.getAddress()], 
+      [ethers.parseEther('0.005'), ethers.parseEther('0.995'), -ethers.parseEther("1.0")]
+    )
   })
 
   it("refund should send back tokens to the owner", async() => {
-    const satefyModuleAddress = accounts[3]
-    const reserveAddress = accounts[4]
-    
+    const { instance: tokenInstance, address: tokenAddress } = await loadFixture(deployTokenFixture);
+    const accounts = await ethers.getSigners()
+
+    const satefyModuleAddress = accounts[3].address
+    const reserveAddress = accounts[4].address
+
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
       
-    const amount = web3.utils.toWei("0.995")
-    const fee = web3.utils.toWei("0.005")
+    const amount = ethers.parseEther("0.995")
+    const fee = ethers.parseEther("0.005")
 
-    const date = new Date()
-    date.setSeconds(date.getSeconds() + 1)
-    const date_sec = Math.floor(date.getTime() / 1000)
+    const blockTimestamp = await time.latest()
+    const lockTime = blockTimestamp + 1
 
-    const HTLCInstance = await HTLC.new(
-      DummyTokenInstance.address,
+    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ERC", [
+      tokenAddress,
       amount,
       `0x${secretHash}`,
-      date_sec,
+      lockTime,
       reserveAddress,
       satefyModuleAddress,
-      fee,
-      { from: accounts[2] }
-    )
+      fee
+    ])
 
-    await DummyTokenInstance.transfer(HTLCInstance.address, web3.utils.toWei("1.0"))
+    await tokenInstance.transfer(HTLCInstance.getAddress(), ethers.parseEther("1.0"))
+    await time.increaseTo(lockTime + 5);
 
-    await increaseTime(2)
-
-    await HTLCInstance.refund()
-    
-    assert.equal(await DummyTokenInstance.balanceOf(accounts[2]), web3.utils.toWei('1'))
+    expect(await HTLCInstance.refund())
+      .to
+      .changeTokenBalance(tokenInstance, accounts[0].address, ethers.parseEther('1.0'))
   })
 })

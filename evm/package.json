@@ -8,10 +8,13 @@
   "license": "AGPL-3",
   "description": "",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@openzeppelin/contracts": "^4.9.2",
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "@openzeppelin/hardhat-upgrades": "^2.3.2",
     "@openzeppelin/truffle-upgrades": "^1.19.0",
     "ethers": "^6.6.2",
+    "hardhat": "^2.18.0",
     "keccak256": "^1.0.6",
     "openzeppelin-solidity": "^3.4.2",
     "secp256k1": "^5.0.0",
@@ -19,6 +22,7 @@
     "truffle-contract-size": "^2.0.1"
   },
   "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@truffle/hdwallet-provider": "^2.1.15"
   }
 }

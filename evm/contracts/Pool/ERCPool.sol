@@ -23,7 +23,7 @@ contract ERCPool is PoolBase {
     /// @notice Throws this pool cannot received ethers
     error CannotSendEthers();
 
-    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token) initializer public {
+    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token) initializer external {
         __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod);
         token = _token;
 	}

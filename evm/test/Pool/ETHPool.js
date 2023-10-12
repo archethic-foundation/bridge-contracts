@@ -1,127 +1,137 @@
-const LiquidityPool = artifacts.require("ETHPool")
-const SignedHTLC = artifacts.require("SignedHTLC_ETH")
-const ChargeableHTLC = artifacts.require("ChargeableHTLC_ETH")
+const { network: { config: networkConfig } } = require("hardhat");
+const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 const { randomBytes } = require("crypto")
-const { generateECDSAKey, hexToUintArray, createEthSign, concatUint8Arrays, uintArrayToHex } = require("../utils")
-const { ethers } = require("ethers")
+const { hexToUintArray, concatUint8Arrays, uintArrayToHex } = require("../utils")
 
-contract("ETH LiquidityPool", (accounts) => {
+const { expect } = require("chai")
 
-    let archPoolSigner = {}
+describe("ETH LiquidityPool", () => {
 
-    before(() => {
-        const { privateKey } = generateECDSAKey()
-        const { address } = web3.eth.accounts.privateKeyToAccount(`0x${privateKey.toString('hex')}`);
-        archPoolSigner = {
-            address: address,
-            privateKey: privateKey
-        }
-    })
+    async function deployPool() {
+        const accounts = await ethers.getSigners()
+        const archPoolSigner = ethers.Wallet.createRandom()
+
+        const pool = await ethers.deployContract("ETHPool")
+        await pool.initialize(
+            accounts[4].address, 
+            accounts[3].address, 
+            5, 
+            archPoolSigner.address, 
+            ethers.parseEther("2.0"), 
+            60
+        )
+
+        return { pool, archPoolSigner, accounts }
+    }
 
     it("should create contract", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts, archPoolSigner } = await loadFixture(deployPool)
 
-        assert.equal(await instance.reserveAddress(), accounts[4])
-        assert.equal(await instance.safetyModuleAddress(), accounts[3])
-        assert.equal(await instance.safetyModuleFeeRate(), 500)
-        assert.equal(await instance.archethicPoolSigner(), archPoolSigner.address)
-        assert.equal(await instance.poolCap(), web3.utils.toWei('2'))
-        assert.equal(await instance.locked(), false)
-        assert.equal(await instance.lockTimePeriod(), 60)
+        expect(await pool.reserveAddress()).to.equal(accounts[4].address)
+        expect(await pool.safetyModuleAddress()).to.equal(accounts[3].address)
+        expect(await pool.safetyModuleFeeRate()).to.equal(500)
+        expect(await pool.archethicPoolSigner()).to.equal(archPoolSigner.address)
+        expect(await pool.poolCap()).to.equal(ethers.parseEther('2.0'))
+        expect(await pool.locked()).to.be.false
+        expect(await pool.lockTimePeriod()).to.equal(60)
     })
 
     it("should update the reserve address", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts } = await loadFixture(deployPool)
 
-        await instance.setReserveAddress(accounts[8])
-        assert.equal(await instance.reserveAddress(), accounts[8])
+        const tx = pool.setReserveAddress(accounts[8].address)
+
+        await expect(tx).to.emit(pool, "ReserveAddressChanged").withArgs(accounts[8].address)
+        expect(await pool.reserveAddress()).to.equal(accounts[8].address)
     })
 
     it("should update the safety module address", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts } = await loadFixture(deployPool)
 
-        await instance.setSafetyModuleAddress(accounts[8])
-        assert.equal(await instance.safetyModuleAddress(), accounts[8])
+        const tx = pool.setSafetyModuleAddress(accounts[8].address)
+
+        await expect(tx).to.emit(pool, "SafetyModuleAddressChanged").withArgs(accounts[8].address)
+        expect(await pool.safetyModuleAddress()).to.equal(accounts[8].address)
     })
 
     it("should update the safety module fee", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool } = await loadFixture(deployPool)
 
-        await instance.setSafetyModuleFeeRate(10)
-        assert.equal(await instance.safetyModuleFeeRate(), 1000)
+        const tx = pool.setSafetyModuleFeeRate(10)
+
+        await expect(tx).to.emit(pool, "SafetyModuleFeeRateChanged").withArgs(10)
+        expect(await pool.safetyModuleFeeRate()).to.equal(1000)
     })
 
     it("should update the archethic pool signer address", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool } = await loadFixture(deployPool)
 
-        const { privateKey } = generateECDSAKey()
-        const { address } = web3.eth.accounts.privateKeyToAccount(`0x${privateKey.toString('hex')}`);
+        const signer = ethers.Wallet.createRandom()
+        const tx = pool.setArchethicPoolSigner(signer.address)
 
-        await instance.setArchethicPoolSigner(address)
-        assert.equal(await instance.archethicPoolSigner(), address)
+        await expect(tx).to.emit(pool, "ArchethicPoolSignerChanged").withArgs(signer.address)
+        expect(await pool.archethicPoolSigner()).to.equal(signer.address)
     })
 
     it("should update the pool cap", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool } = await loadFixture(deployPool)
 
-        await instance.setPoolCap(50000)
-        assert.equal(await instance.poolCap(), 50000)
+        const tx = pool.setPoolCap(50000)
+
+        await expect(tx).to.emit(pool, "PoolCapChanged").withArgs(50000)
+        expect(await pool.poolCap()).to.equal(50000)
     })
 
     it("should lock pool", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool } = await loadFixture(deployPool)
 
-        await instance.lock()
-        assert.equal(true, await instance.locked())
+        const tx = pool.lock()
+
+        await expect(tx).to.emit(pool, "Lock")
+        expect(await pool.locked()).to.be.true
     })
 
-    it("should lock pool after unlocked", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        
+    it("should lock pool", async () => {
+        const { pool } = await loadFixture(deployPool)
 
-        assert.equal(false, await instance.locked())
-        await instance.lock()
-        assert.equal(true, await instance.locked())
+        await pool.lock()
+        const tx = pool.unlock()
+
+        await expect(tx).to.emit(pool, "Unlock")
+        expect(await pool.locked()).to.be.false
     })
 
     it("should update owner", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts } = await loadFixture(deployPool)
 
-        await instance.transferOwnership(accounts[3])
-        await instance.acceptOwnership({ from: accounts[3] })
-        assert.equal(accounts[3], await instance.owner())
+        await pool.transferOwnership(accounts[3].address)
+        await pool
+            .connect(accounts[3])
+            .acceptOwnership()
+
+        expect(await pool.owner()).to.equal(accounts[3].address)
     })
 
     it("should update locktime period", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool } = await loadFixture(deployPool)
 
-        await instance.setLockTimePeriod(1000)
-        assert.equal(1000, await instance.lockTimePeriod())
+        const tx = pool.setLockTimePeriod(1000)
+        await expect(tx).to.emit(pool, "LockTimePeriodChanged").withArgs(1000)
+        expect(await pool.lockTimePeriod()).to.equal(1000)
     })
 
     it("should deploy and provision HTLC contract after verifying the signature", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts, archPoolSigner } = await loadFixture(deployPool)
 
-        
-        await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
-
-        const networkID = await web3.eth.getChainId()
+        await accounts[1].sendTransaction({
+            to: pool.getAddress(),
+            value: ethers.parseEther("2.0"),
+        });
 
         const buffer = new ArrayBuffer(32);
         const view = new DataView(buffer);
-        view.setUint32(0x0, networkID, true);
+        view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
         const sigPayload = concatUint8Arrays([
@@ -129,39 +139,186 @@ contract("ETH LiquidityPool", (accounts) => {
             networkIdUint8Array
         ])
 
-        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
-        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
 
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
+        const tx = pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        )
 
-        await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
-        const htlcAddress = await instance.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        const balanceHTLC = await web3.eth.getBalance(htlcAddress)
-        assert.equal(web3.utils.toWei('1'), balanceHTLC)
+        await expect(tx).to.emit(pool, "ContractProvisioned")
+        
+        const htlcAddress = await pool.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
 
-        const HTLCInstance = await SignedHTLC.at(htlcAddress)
-        assert.equal(await HTLCInstance.poolSigner(), archPoolSigner.address)
-        assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        assert.equal(await HTLCInstance.recipient(), accounts[0]);
-        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('1'))
-        assert.equal(await HTLCInstance.lockTime(), date_sec)
+        await expect(tx)
+            .to.changeEtherBalance(htlcAddress, ethers.parseEther("1"))
+
+        const HTLCInstance = await ethers.getContractAt("SignedHTLC_ETH", htlcAddress)
+        expect(await HTLCInstance.poolSigner()).to.equal(archPoolSigner.address)
+        expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        expect(await HTLCInstance.recipient()).to.equal(accounts[0].address);
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("1.0"))
+        expect(await HTLCInstance.lockTime()).to.equal(lockTime)
+    })
+
+    it("should return an error if a swap's provision is requested with the pool is locked", async() => {
+        const { pool, archPoolSigner } = await loadFixture(deployPool)
+
+        await pool.lock()
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkConfig.chainId, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWith("Locked")
+    })
+
+    it("should return an error if a swap's provision is requested with an invalid hash", async() => {
+        const { pool, archPoolSigner } = await loadFixture(deployPool)
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkConfig.chainId, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        await expect(pool.provisionHTLC(
+            "0x0000000000000000000000000000000000000000000000000000000000000000", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidHash")
+    })
+
+    it("should return an error if a swap's provision is requested with an invalid amount", async() => {
+        const { pool, archPoolSigner } = await loadFixture(deployPool)
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkConfig.chainId, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('0'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidAmount")
+    })
+
+    it("should return an error if a swap's provision is requested with an invalid locktime", async() => {
+        const { pool, archPoolSigner } = await loadFixture(deployPool)
+
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkConfig.chainId, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            0, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidLockTime")
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            await time.latest() - 10, // Before the latest block
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidLockTime")
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            await time.latest() + 90000, // More than 1 day from the latest block
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidLockTime")
     })
 
     it("should return an error an already provisioned hash contract is requested", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts, archPoolSigner } = await loadFixture(deployPool)
 
-        
-        await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
-
-        const networkID = await web3.eth.getChainId()
+        await accounts[1].sendTransaction({
+            to: pool.getAddress(),
+            value: ethers.parseEther("2.0"),
+        });
 
         const buffer = new ArrayBuffer(32);
         const view = new DataView(buffer);
-        view.setUint32(0x0, networkID, true);
+        view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
         const sigPayload = concatUint8Arrays([
@@ -169,59 +326,43 @@ contract("ETH LiquidityPool", (accounts) => {
             networkIdUint8Array
         ])
 
-        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
-        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
 
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
+        await pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        )
 
-        await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
-
-        try {
-            await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
-        }
-        catch (e) {
-            const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "AlreadyProvisioned")
-        }
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "AlreadyProvisioned")
     })
 
     it("should return an error when the signature is invalid", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
+        const { pool, accounts, archPoolSigner } = await loadFixture(deployPool)
 
-        
-        await web3.eth.sendTransaction({ from: accounts[1], to: instance.address, value: web3.utils.toWei('2') });
-
-        const sigHash = randomBytes(32)
-        const { r, s, v } = createEthSign(sigHash, archPoolSigner.privateKey)
-
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
-
-        try {
-            await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
-
-        }
-        catch (e) {
-            const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "InvalidSignature")
-        }
-    })
-
-    it("should return an error when the pool doesn't have enough funds to provide HTLC contract", async () => {
-        const instance = await LiquidityPool.new()
-        await instance.initialize(accounts[4], accounts[3], 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        
-        
-        const networkID = await web3.eth.getChainId()
+        await accounts[1].sendTransaction({
+            to: pool.getAddress(),
+            value: ethers.parseEther("2.0"),
+        });
 
         const buffer = new ArrayBuffer(32);
         const view = new DataView(buffer);
-        view.setUint32(0x0, networkID, true);
+        view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
         const sigPayload = concatUint8Arrays([
@@ -229,83 +370,114 @@ contract("ETH LiquidityPool", (accounts) => {
             networkIdUint8Array
         ])
 
-        const hashedSigPayload2 = hexToUintArray(web3.utils.sha3(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(randomBytes(32)))
 
-        const { r, s, v } = createEthSign(hashedSigPayload2, archPoolSigner.privateKey)
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
 
-        const date = new Date()
-        date.setSeconds(date.getSeconds() + 60)
-        const date_sec = Math.floor(date.getTime() / 1000)
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InvalidSignature")
+    })
 
-        try {
-            await instance.provisionHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), date_sec, `0x${r}`, `0x${s}`, v)
-        }
-        catch (e) {
-            const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "InsufficientFunds")
-        }
+    it("should return an error when the pool doesn't have enough funds to provide HTLC contract", async () => {
+        const { pool, archPoolSigner } = await loadFixture(deployPool)
+
+        const buffer = new ArrayBuffer(32);
+        const view = new DataView(buffer);
+        view.setUint32(0x0, networkConfig.chainId, true);
+        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+
+        const sigPayload = concatUint8Arrays([
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            networkIdUint8Array
+        ])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        await expect(pool.provisionHTLC(
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
+            ethers.parseEther('1'), 
+            lockTime, 
+            signature.r, 
+            signature.s, 
+            signature.v
+        ))
+        .to.be.revertedWithCustomError(pool, "InsufficientFunds")
     })
 
     it("should mint and send funds to the HTLC contract with fee integration", async () => {
-        const safetyModuleAddress = accounts[3]
-        const reserveAddress = accounts[4]
-
         const date = new Date()
+        const { pool } = await loadFixture(deployPool)
 
-        const instance = await LiquidityPool.new()
-        await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        
+        const amount = ethers.parseEther('1')
+        const tx = pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount })
+        await tx
 
-        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), { value: web3.utils.toWei('1') })
-        const htlcAddress = await instance.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        const HTLCInstance = await ChargeableHTLC.at(htlcAddress)
-        assert.equal(await HTLCInstance.safetyModuleAddress(), safetyModuleAddress)
-        assert.equal(await HTLCInstance.hash(), "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        assert.equal(await HTLCInstance.recipient(), reserveAddress);
-        assert.equal(await HTLCInstance.amount(), web3.utils.toWei('0.995'))
-        assert.equal(await HTLCInstance.fee(), web3.utils.toWei('0.005'))
+        await expect(tx)
+            .to.emit(pool, "ContractMinted")
+
+        const htlcAddress = await pool.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ETH", htlcAddress)
+
+        expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
+        expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
+        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)
         const roundedTimestamp = nowTimestamp - (nowTimestamp % 60)
 
-        assert.equal(true, (lockTime.toNumber() - roundedTimestamp) >= 60)
+        expect(ethers.toBigInt(lockTime) - ethers.toBigInt(roundedTimestamp) >= 60).to.be.true
     })
 
     it("should return an error if the sender does not provision the contract", async () => {
-        const safetyModuleAddress = accounts[3]
-        const reserveAddress = accounts[4]
+        const { pool } = await loadFixture(deployPool)
 
-        const instance = await LiquidityPool.new()
-        await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        
-
-        try {
-            await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('100000'))
-        }
-        catch (e) {
-            const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "ContractNotProvisioned")
-        }
+        await expect(
+            pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", ethers.parseEther('100000'))
+        )
+        .to.be.revertedWithCustomError(pool, "ContractNotProvisioned")
     })
 
     it("should return an error if a swap with this hash is already existing", async () => {
-        const safetyModuleAddress = accounts[3]
-        const reserveAddress = accounts[4]
+        const { pool } = await loadFixture(deployPool)
 
-        const instance = await LiquidityPool.new()
-        await instance.initialize(reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, web3.utils.toWei('2'), 60)
-        
+        const amount = ethers.parseEther('1')
+        await pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount })
 
-        await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'), { value: web3.utils.toWei('1') })
+        await expect(
+            pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount })
+        )
+        .to.be.revertedWithCustomError(pool, "AlreadyMinted")
+    })
 
-        try {
-            await instance.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", web3.utils.toWei('1'))
-        }
-        catch (e) {
-            const interface = new ethers.Interface(instance.abi);
-            assert.equal(interface.parseError(e.data.result).name, "AlreadyMinted")
-        }
+    it("should return an error if a swap is requested with an invalid hash", async() => {
+        const { pool } = await loadFixture(deployPool)
+
+        const amount = ethers.parseEther('1')
+        await expect(pool.mintHTLC("0x0000000000000000000000000000000000000000000000000000000000000000", amount, { value: amount }))
+            .to.be.revertedWithCustomError(pool, "InvalidHash")
+    })
+
+    it("should return an error if a swap is requested with an invalid amount", async() => {
+        const { pool } = await loadFixture(deployPool)
+
+        const amount = ethers.parseEther('0')
+        await expect(pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount }))
+            .to.be.revertedWithCustomError(pool, "InvalidAmount")
     })
 })
 
