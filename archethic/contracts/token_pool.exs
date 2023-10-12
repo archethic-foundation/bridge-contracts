@@ -17,22 +17,45 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
     valid? = false
 
     tx_receipt_request = get_tx_receipt_request(evm_tx_address)
-    body = Json.to_string([tx_receipt_request])
+    call_finished_request = get_call_request(evm_contract, "finished()", 2)
+    call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
+    call_hash_request = get_call_request(evm_contract, "hash()", 4)
+    call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
+    call_amount_request = get_call_request(evm_contract, "amount()", 6)
+
+    body = Json.to_string([
+      tx_receipt_request,
+      call_finished_request,
+      call_enough_funds_request,
+      call_hash_request,
+      call_end_time_request,
+      call_amount_request
+    ])
 
     chain_data = get_chain_data(chain_id)
     headers = ["Content-Type": "application/json"]
 
     res = Http.request(chain_data.endpoint, "POST", headers, body)
-    if res.status == 200 && res.body != nil do
+    if res.status == 200 && Json.is_valid?(res.body) do
       responses = Json.parse(res.body)
 
-      tx_receipt = get_tx_receipt_response(responses)
+      tx_receipt = get_response(responses, 1)
+      call_finished = get_response(responses, 2)
+      call_enough_funds = get_response(responses, 3)
+      call_hash = get_response(responses, 4)
+      call_end_time = get_response(responses, 5)
+      call_amount = get_response(responses, 6)
       
-      valid? = valid_tx_receipt?(
-        tx_receipt,
-        chain_data.proxy_address,
-        chain_data.token_address,
-        evm_contract)
+      if !any_nil?([tx_receipt, call_finished, call_enough_funds, call_hash, call_end_time, call_amount]) do
+        valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, chain_data.token_address, evm_contract)
+        finished? = finished?(call_finished)
+        enough_funds? = enough_funds?(call_enough_funds)
+        valid_hash? = valid_hash?(call_hash, secret_hash)
+        valid_end_time? = valid_end_time?(call_end_time, end_time)
+        valid_amount? = valid_amount?(call_amount, amount, chain_data.decimals)
+
+        valid? = valid_tx_receipt? && !finished? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+      end
     end
 
     valid?
@@ -262,6 +285,32 @@ fun get_chain_data(chain_id) do
   data
 end
 
+fun get_call_request(evm_contract, call, id) do
+  abi_data = Evm.abi_encode(call)
+  tx = [to: evm_contract, data: "0x#{abi_data}"]
+  [jsonrpc: "2.0", id: id, method: "eth_call", params: [tx]]
+end
+
+fun get_response(responses, id) do
+  response = nil
+  for res in responses do
+    if res.id == id do
+      response = Map.get(res, "result")
+    end
+  end
+  response
+end
+
+fun any_nil?(list) do
+  nil? = false
+  for i in list do
+    if i == nil do
+      nil? = true
+    end
+  end
+  nil?
+end
+
 fun get_tx_receipt_request(evm_tx_address) do
   [
     jsonrpc: "2.0",
@@ -271,45 +320,57 @@ fun get_tx_receipt_request(evm_tx_address) do
   ]
 end
 
-fun get_tx_receipt_response(responses) do
-  response = nil
-
-  for res in responses do
-    if res.id == 1 do
-      response = Map.get(res, "result")
-    end
+fun valid_tx_receipt?(tx_receipt, proxy_address, token_address, evm_contract) do
+  logs = []
+  if token_address == "NATIVE" do
+    logs = List.at(tx_receipt.logs, 1)
+  else
+    logs = List.at(tx_receipt.logs, 0)
   end
 
-  response
+  # Transaction is valid
+  valid_status? = tx_receipt.status == "0x1"
+  # Transaction interacted with proxy address
+  valid_proxy_address? = String.to_lowercase(tx_receipt.to) == proxy_address
+  # Logs are comming from proxy address
+  valid_logs_address? = String.to_lowercase(logs.address) == proxy_address
+  # Pool contract emmited ContractMinted event
+  event = List.at(logs.topics, 0)
+  valid_event? = String.to_lowercase(event) == "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+  # Contract minted match evm_contract in parameters
+  decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
+  topic_address = List.at(decoded_data, 0)
+  valid_contract_address? = topic_address == String.to_lowercase(evm_contract)
+  
+  valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
 end
 
-fun valid_tx_receipt?(tx_receipt, proxy_address, token_address, evm_contract) do
-  if tx_receipt != nil do
-    logs = []
-    if token_address == "NATIVE" do
-      logs = List.at(tx_receipt.logs, 1)
-    else
-      logs = List.at(tx_receipt.logs, 0)
-    end
+fun finished?(call_finished) do
+  decoded_data = Evm.abi_decode("(bool)", call_finished)
+  List.at(decoded_data, 0) == true
+end
 
-    # Transaction is valid
-    valid_status? = tx_receipt.status == "0x1"
-    # Transaction interacted with proxy address
-    valid_proxy_address? = String.to_lowercase(tx_receipt.to) == proxy_address
-    # Logs are comming from proxy address
-    valid_logs_address? = String.to_lowercase(logs.address) == proxy_address
-    # Pool contract emmited ContractMinted event
-    event = List.at(logs.topics, 0)
-    valid_event? = String.to_lowercase(event) == "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
-    # Contract minted match evm_contract in parameters
-    decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
-    topic_address = List.at(decoded_data, 0)
-    valid_contract_address? = topic_address == String.to_lowercase(evm_contract)
-    
-    valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
-  else
-    false
-  end
+fun enough_funds?(call_enough_funds) do
+  decoded_data = Evm.abi_decode("(bool)", call_enough_funds)
+  List.at(decoded_data, 0) == true
+end
+
+fun valid_hash?(call_hash, secret_hash) do
+  secret_hash = "0x#{String.to_lowercase(secret_hash)}"
+  decoded_data = Evm.abi_decode("(bytes32)", call_hash)
+  List.at(decoded_data, 0) == secret_hash
+end
+
+fun valid_end_time?(call_end_time, end_time) do
+  decoded_data = Evm.abi_decode("(uint256)", call_end_time)
+  List.at(decoded_data, 0) == end_time
+end
+
+fun valid_amount?(call_amount, amount, decimals) do
+  decoded_data = Evm.abi_decode("(uint256)", call_amount)
+  big_int_amount = List.at(decoded_data, 0)
+  decimal_amount = big_int_amount / Math.pow(10, decimals)
+  decimal_amount == amount
 end
 
 fun sign_for_evm(data, chain_id) do
