@@ -13,7 +13,7 @@ export default {
   evmNetworks: {
     local: {
       endpoint: "http://127.0.0.1:8545",
-      chainId: 1337
+      chainId: 31337
     },
     sepolia_ethereum: {
       endpoint: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
