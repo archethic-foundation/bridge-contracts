@@ -2,6 +2,9 @@
 pragma solidity 0.8.21;
 
 interface IHTLC {
+
+    enum HTLCStatus { PENDING, WITHDRAWN, REFUNDED }
+
     /// @notice Determines if the HTLC can be refunded
     /// @return bool
     function canRefund(uint256 timestamp) external view returns (bool);
@@ -30,9 +33,9 @@ interface IHTLC {
     /// @return Address
     function recipient() external returns(address);
 
-    /// @notice Determines whether the swap is finished: withdrawn or refunded
-    /// @return bool
-    function finished() external returns(bool);
+    /// @notice Determines the status of the swap: pending, withdrawn or refunded
+    /// @return HTLCStatus
+    function status() external returns(HTLCStatus);
 
     /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address
     function withdraw(bytes32) external;

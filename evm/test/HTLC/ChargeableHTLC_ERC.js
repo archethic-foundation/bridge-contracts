@@ -37,7 +37,7 @@ describe("Chargeable ERC HTLC",() => {
     expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
     expect(await HTLCInstance.token()).to.equal(await tokenAddress)
     expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
-    expect(await HTLCInstance.finished()).to.be.false
+    expect(await HTLCInstance.status()).to.equal(0)
     expect(await HTLCInstance.lockTime()).to.equal(lockTime)
   })
 

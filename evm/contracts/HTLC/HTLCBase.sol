@@ -6,9 +6,8 @@ import "../../interfaces/IHTLC.sol";
 /// @title HashTime-Lock Contract
 /// @author Archethic Foundation
 abstract contract HTLCBase is IHTLC {
-
     /// @inheritdoc IHTLC
-    bool public finished;
+    HTLCStatus public status;
 
     /// @inheritdoc IHTLC
     address public immutable recipient;
@@ -34,8 +33,11 @@ abstract contract HTLCBase is IHTLC {
     /// @notice Notifiew when the HTLC funds have been reclaimed to refund them
     event Refunded();
 
-    /// @notice Throws when the HTLC is already finished: withdrawn or refunded
-    error AlreadyFinished();
+    /// @notice Throws when the HTLC have been withdrawn already
+    error AlreadyWithdrawn();
+
+     /// @notice Throws when the HTLC have been refunded already
+    error AlreadyRefunded();
 
     /// @notice Throws when the HTLC's locktime is reached (see withdraw function)
     error TooLate();
@@ -79,7 +81,7 @@ abstract contract HTLCBase is IHTLC {
         amount = _amount;
         hash = _hash;
         lockTime = _lockTime;
-        finished = false;
+        status = HTLCStatus.PENDING;
         from = msg.sender;
     }
 
@@ -93,8 +95,8 @@ abstract contract HTLCBase is IHTLC {
     }
 
     function _withdraw(bytes32 _secret) internal {
-        if (finished) {
-            revert AlreadyFinished();
+        if (status != HTLCStatus.PENDING) {
+            revert AlreadyWithdrawn();
         }
         if (sha256(abi.encodePacked(_secret)) != hash) {
             revert InvalidSecret();
@@ -107,14 +109,14 @@ abstract contract HTLCBase is IHTLC {
         }
         secret = _secret;
         _transfer();
-        finished = true;
+        status = HTLCStatus.WITHDRAWN;
         emit Withdrawn();
     }
 
     /// @inheritdoc IHTLC
-    /// @dev The contract can be refunded if the HTLC is not yet finished, the given time is after the locktime and the contracts have funds
+    /// @dev The contract can be refunded if the HTLC is not yet refunded, the given time is after the locktime and the contracts have funds
     function canRefund(uint256 timestamp) external view returns (bool) {
-        return !finished && !_beforeLockTime(timestamp) && _enoughFunds();
+        return status == HTLCStatus.PENDING && !_beforeLockTime(timestamp) && _enoughFunds();
     }
 
     /// @inheritdoc IHTLC
@@ -122,8 +124,8 @@ abstract contract HTLCBase is IHTLC {
     /// @dev It raises if the HTLC doesn't have enough funds
     /// @dev It raises if it's called before the locktime
     function refund() external {
-        if (finished) {
-            revert AlreadyFinished();
+        if (status != HTLCStatus.PENDING) {
+            revert AlreadyRefunded();
         }
         if (!_enoughFunds()) {
             revert InsufficientFunds();
@@ -132,7 +134,7 @@ abstract contract HTLCBase is IHTLC {
             revert TooEarly();
         }
         _refund();
-        finished = true;
+        status = HTLCStatus.REFUNDED;
         emit Refunded();
     }
 
