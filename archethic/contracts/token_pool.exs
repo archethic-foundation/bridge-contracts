@@ -17,7 +17,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
     valid? = false
 
     tx_receipt_request = get_tx_receipt_request(evm_tx_address)
-    call_finished_request = get_call_request(evm_contract, "finished()", 2)
+    call_status_request = get_call_request(evm_contract, "status()", 2)
     call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
     call_hash_request = get_call_request(evm_contract, "hash()", 4)
     call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
@@ -25,7 +25,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
 
     body = Json.to_string([
       tx_receipt_request,
-      call_finished_request,
+      call_status_request,
       call_enough_funds_request,
       call_hash_request,
       call_end_time_request,
@@ -40,21 +40,22 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
       responses = Json.parse(res.body)
 
       tx_receipt = get_response(responses, 1)
-      call_finished = get_response(responses, 2)
+      call_status = get_response(responses, 2)
       call_enough_funds = get_response(responses, 3)
       call_hash = get_response(responses, 4)
       call_end_time = get_response(responses, 5)
       call_amount = get_response(responses, 6)
       
-      if !any_nil?([tx_receipt, call_finished, call_enough_funds, call_hash, call_end_time, call_amount]) do
+      if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
         valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, chain_data.token_address, evm_contract)
-        finished? = finished?(call_finished)
+        # Pending is status 0
+        valid_status? = valid_status?(call_status, 0)
         enough_funds? = enough_funds?(call_enough_funds)
         valid_hash? = valid_hash?(call_hash, secret_hash)
         valid_end_time? = valid_end_time?(call_end_time, end_time)
         valid_amount? = valid_amount?(call_amount, amount, chain_data.decimals)
 
-        valid? = valid_tx_receipt? && !finished? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+        valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
       end
     end
 
@@ -346,9 +347,9 @@ fun valid_tx_receipt?(tx_receipt, proxy_address, token_address, evm_contract) do
   valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
 end
 
-fun finished?(call_finished) do
-  decoded_data = Evm.abi_decode("(bool)", call_finished)
-  List.at(decoded_data, 0) == true
+fun valid_status?(call_status, expected_status) do
+  decoded_data = Evm.abi_decode("(uint)", call_status)
+  List.at(decoded_data, 0) == expected_status
 end
 
 fun enough_funds?(call_enough_funds) do
