@@ -4,9 +4,22 @@ require('@openzeppelin/hardhat-upgrades');
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
-        hardhat: {},
+        hardhat: {
+            accounts: {
+                mnemonic: "inflict author desk anxiety music swear acquire achieve link young benefit biology",
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 10,
+            },
+        },
         localhost: {
-            url: "http://127.0.0.1:8545"
+            url: "http://127.0.0.1:8545",
+            accounts: {
+                mnemonic: "inflict author desk anxiety music swear acquire achieve link young benefit biology",
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 10,
+            },
         },
         sepolia: {
             url: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
