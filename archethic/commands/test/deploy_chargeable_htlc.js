@@ -113,7 +113,7 @@ const handler = async function(argv) {
   const tx = archethic.transaction.new()
     .setType("contract")
     .setCode(htlcCode)
-    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash, evmTxAddress, evmContractAddress, 1337])
+    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash, evmTxAddress, evmContractAddress, 31337])
     .addOwnership(encryptedSecret, authorizedKeys)
     .build(seed, index)
     .originSign(Utils.originPrivateKey)
