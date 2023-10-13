@@ -16,13 +16,13 @@ export default {
       chainId: 31337,
       tokens: {
         UCO: {
-          tokenAddress: "0xc944370f51eda8179b5180f5ab512134540939e3",
-          proxyAddress: "0x24e57fc6cfb7f67928e32aee3e3ff98f0e968a5d",
+          tokenAddress: "0xbdec1c3bd0719dba0b82a06c66ebab35dc71240b",
+          proxyAddress: "0xaa74722d2cb78d4b5e52c2ee7f12fe08851baa5f",
           decimals: 18
         },
         aeETH: {
           tokenAddress: "NATIVE",
-          proxyAddress: "0x26f8c6db23a4aa5293eeeee8a3317773e849cf44",
+          proxyAddress: "0x39c9dbd60b0eaf256ebc509d2b837d508dd4f2da",
           decimals: 18
         }
       }
