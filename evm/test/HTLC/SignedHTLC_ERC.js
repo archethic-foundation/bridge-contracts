@@ -83,4 +83,76 @@ describe("Signed ERC HTLC", () => {
         )
         .to.be.revertedWithCustomError(HTLCInstance, "InvalidSignature")
     })
+
+    it ("should return an error if the signature is invalid for a refund", async () => {
+        const { address: tokenAddress, instance: tokenInstance } = await loadFixture(deployTokenFixture)
+        const archPoolSigner = ethers.Wallet.createRandom()
+        const accounts = await ethers.getSigners()
+
+        const secret = randomBytes(32)
+
+        const hash = createHash("sha256")
+            .update(secret)
+            .digest()
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        const amount = ethers.parseEther("1.0")
+
+        const HTLCInstance = await ethers.deployContract("SignedHTLC_ERC", [
+            accounts[2].address,
+            tokenAddress,
+            amount,
+            `0x${hash.toString('hex')}`,
+            lockTime,
+            archPoolSigner.address
+        ])
+
+        await tokenInstance.transfer(HTLCInstance.getAddress(), amount)
+
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(randomBytes(32)))
+
+        await expect(
+            HTLCInstance.refund(`0x${secret.toString('hex')}`, signature.r, signature.s, signature.v)
+        )
+        .to.be.revertedWithCustomError(HTLCInstance, "InvalidSignature")
+    })
+
+    it ("should refund after the signature is checked", async () => {
+        const { address: tokenAddress, instance: tokenInstance } = await loadFixture(deployTokenFixture)
+        const archPoolSigner = ethers.Wallet.createRandom()
+        const accounts = await ethers.getSigners()
+
+        const secret = randomBytes(32)
+
+        const hash = createHash("sha256")
+            .update(secret)
+            .digest()
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 1
+
+        const amount = ethers.parseEther("1.0")
+
+        const HTLCInstance = await ethers.deployContract("SignedHTLC_ERC", [
+            accounts[2].address,
+            tokenAddress,
+            amount,
+            `0x${hash.toString('hex')}`,
+            lockTime,
+            archPoolSigner.address
+        ])
+
+        await tokenInstance.transfer(HTLCInstance.getAddress(), amount)
+
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(secret))
+
+        await time.increaseTo(lockTime + 5)
+
+        await expect(
+            HTLCInstance.refund(`0x${secret.toString('hex')}`, signature.r, signature.s, signature.v)
+        )
+        .to.emit(HTLCInstance, "Refunded")
+    })
 })

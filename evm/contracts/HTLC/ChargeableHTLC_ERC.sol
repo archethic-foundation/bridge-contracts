@@ -56,7 +56,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     }
 
     /// @dev Send ERC20 to the HTLC's recipient and safety module fee
-    function _transfer() internal override {
+    function _transferAsWithdraw() internal override {
         IERC20 _token = token;
 
         uint _fee = fee;
@@ -96,8 +96,8 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     }
 
     /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
-    function _refund() internal override {
-        SafeERC20.safeTransfer(token, from, (amount + fee));
+    function _transferAsRefund() internal override {
+        SafeERC20.safeTransfer(token, from, amount + fee);
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
