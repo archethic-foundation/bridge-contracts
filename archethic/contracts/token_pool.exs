@@ -335,6 +335,7 @@ fun valid_tx_receipt?(tx_receipt, proxy_address, token_address, evm_contract) do
   # Logs are comming from proxy address
   valid_logs_address? = String.to_lowercase(logs.address) == proxy_address
   # Pool contract emmited ContractMinted event
+  # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
   event = List.at(logs.topics, 0)
   valid_event? = String.to_lowercase(event) == "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
   # Contract minted match evm_contract in parameters
