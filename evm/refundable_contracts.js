@@ -32,7 +32,7 @@ const poolContract = new ethers.Contract(poolAddress, poolABI, provider);
 poolContract.provisionedSwaps().then(async swaps => {
 
     const HTLC_ABI = [
-        "function finished() view returns(bool)",
+        "function status() view returns(uint256)",
         "function lockTime() view returns(uint256)"
     ]
 
@@ -43,13 +43,13 @@ poolContract.provisionedSwaps().then(async swaps => {
 
         const htlcContract = new ethers.Contract(swapAddress, HTLC_ABI, provider);
 
-        const finished = await htlcContract.finished()
+        const status = await htlcContract.status()
         const lockTime = await htlcContract.lockTime()
 
         const lockDate = new Date(lockTime * 1000)
         const currentDate = new Date()
 
-        if (!finished && lockDate.getTime() < currentDate.getTime()) {
+        if (status == 0 && lockDate.getTime() < currentDate.getTime()) {
             htlcToRefund.push(swapAddress)
         }
     }

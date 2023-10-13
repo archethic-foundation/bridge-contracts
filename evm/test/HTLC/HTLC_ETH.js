@@ -25,7 +25,7 @@ describe("ETH HTLC", () => {
     expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("1.0"))
     expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
     expect(await HTLCInstance.recipient()).to.equal(recipientEthereum)
-    expect(await HTLCInstance.finished()).to.be.false
+    expect(await HTLCInstance.status()).to.equal(0)
     expect(await HTLCInstance.lockTime()).to.equal(lockTime)
 
     expect(await ethers.provider.getBalance(await HTLCInstance.getAddress()))
@@ -63,7 +63,7 @@ describe("ETH HTLC", () => {
       )
       await expect(tx).to.emit(HTLCInstance, "Withdrawn")
 
-      expect(await HTLCInstance.finished()).to.be.true
+      expect(await HTLCInstance.status()).to.equal(1)
   })
 
   it("should refuse the contract creation if the contract doesn't get the right funds", async () => {
@@ -117,7 +117,7 @@ describe("ETH HTLC", () => {
     await expect(
       HTLCInstance.withdraw(`0x${secret.toString('hex')}`)
     )
-    .to.be.revertedWithCustomError(HTLCInstance, "AlreadyFinished")
+    .to.be.revertedWithCustomError(HTLCInstance, "AlreadyWithdrawn")
   })
 
   it("should refuse the withdraw is secret is invalid", async () => {
@@ -206,7 +206,7 @@ describe("ETH HTLC", () => {
     )
     await expect(tx).to.emit(HTLCInstance, "Refunded")
 
-    expect(await HTLCInstance.finished()).to.be.true
+    expect(await HTLCInstance.status()).to.equal(2)
   })
 
   it ("should return an error if the swap is already finished", async() => {
@@ -234,7 +234,7 @@ describe("ETH HTLC", () => {
     await HTLCInstance.refund()
 
     await expect(HTLCInstance.refund())
-      .to.be.revertedWithCustomError(HTLCInstance, "AlreadyFinished")
+      .to.be.revertedWithCustomError(HTLCInstance, "AlreadyRefunded")
   })
 
   it ("should return an error if the lock time is not reached", async() => {
