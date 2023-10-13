@@ -108,7 +108,7 @@ abstract contract HTLCBase is IHTLC {
             revert TooLate();
         }
         secret = _secret;
-        _transfer();
+        _transferAsWithdraw();
         status = HTLCStatus.WITHDRAWN;
         emit Withdrawn();
     }
@@ -123,7 +123,11 @@ abstract contract HTLCBase is IHTLC {
     /// @dev It raises if the HTLC has already been withdrawn or refunded
     /// @dev It raises if the HTLC doesn't have enough funds
     /// @dev It raises if it's called before the locktime
-    function refund() external {
+    function refund() virtual external {
+        _refund();
+    }
+
+    function _refund() internal {
         if (status != HTLCStatus.PENDING) {
             revert AlreadyRefunded();
         }
@@ -133,7 +137,7 @@ abstract contract HTLCBase is IHTLC {
         if (_beforeLockTime(block.timestamp)) {
             revert TooEarly();
         }
-        _refund();
+        _transferAsRefund();
         status = HTLCStatus.REFUNDED;
         emit Refunded();
     }
@@ -142,8 +146,8 @@ abstract contract HTLCBase is IHTLC {
         return timestamp < lockTime;
     }
 
-    function _transfer() virtual internal{}
-    function _refund() virtual internal{}
+    function _transferAsWithdraw() virtual internal{}
+    function _transferAsRefund() virtual internal{}
     function _enoughFunds() virtual internal view returns (bool) {}
 
     function enoughFunds() external view returns (bool) {
