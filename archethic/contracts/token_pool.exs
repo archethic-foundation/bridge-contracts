@@ -63,7 +63,9 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   )
 ]
 
-actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, _, _) do
+actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, evm_contract, chain_id) do
+  chain_data = get_chain_data(chain_id)
+
   args = [
     @TOKEN_ADDRESS,
     amount,
@@ -74,6 +76,11 @@ actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, _, _) d
     Contract.call_function(@FACTORY_ADDRESS, "get_token_resupply_definition", args)
 
   Contract.set_type("token")
+  Contract.add_recipient(
+    address: transaction.address,
+    action: "provision",
+    args: [evm_contract, chain_data.endpoint]
+  )
   Contract.set_content(token_definition)
 end
 

@@ -84,39 +84,79 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     """
   end
 
+  after_provision_code = """
+    @version 1
+
+    # Automate the refunding after the given timestamp
+    actions triggered_by: datetime, at: #{end_time} do
+      Contract.set_type "transfer"
+      #{return_transfer_code}
+      Contract.set_code ""
+    end
+
+    condition triggered_by: transaction, on: refund(), as: [
+      timestamp: timestamp >= #{end_time}
+    ]
+
+    actions triggered_by: transaction, on: refund() do
+      Contract.set_type "transfer"
+      #{return_transfer_code}
+      Contract.set_code ""
+    end
+
+    condition triggered_by: transaction, on: reveal_secret(secret), as: [
+      content: Crypto.hash(String.to_hex(secret)) == 0x#{secret_hash},
+      address: (
+        valid? = false
+
+        abi_data = Evm.abi_encode("status()")
+        tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
+        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx]]
+
+        headers = ["Content-Type": "application/json"]
+        body = Json.to_string(request)
+
+        res = Http.request("\#{url}", "POST", headers, body)
+        if res.status == 200 && Json.is_valid?(res.body) do
+          response = Json.parse(res.body)
+          result = Map.get(response, "result")
+          
+          if result != nil do
+            decoded_abi = Evm.abi_decode("(uint)", result)
+            # Withdrawn status is 1
+            valid? = List.at(decoded_abi, 0) == 1
+          end
+        end
+
+        valid?
+      )
+    ]
+
+    actions triggered_by: transaction, on: reveal_secret(secret) do
+      Contract.set_type "transfer"
+      #{valid_transfer_code}
+      Contract.set_code ""
+    end
+  """
+
   """
   @version 1
 
-  # Automate the refunding after the given timestamp
-  actions triggered_by: datetime, at: #{end_time} do
-    Contract.set_type "transfer"
-    #{return_transfer_code}
-    Contract.set_code ""
-  end
-
-  condition triggered_by: transaction, on: refund(), as: [
-    timestamp: timestamp >= #{end_time}
+  condition triggered_by: transaction, on: provision(_evm_contract, _url), as: [
+		previous_public_key: (
+	    # Transaction is not yet validated so we need to use previous address
+		  # to get the genesis address
+		  previous_address = Chain.get_previous_address()
+		  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+	  )
   ]
 
-  actions triggered_by: transaction, on: refund() do
-    Contract.set_type "transfer"
-    #{return_transfer_code}
-    Contract.set_code ""
-  end
+  actions triggered_by: transaction, on: provision(evm_contract, url) do
+    next_code = \"""
+    #{after_provision_code}
+    \"""
 
-  condition triggered_by: transaction, on: reveal_secret(secret), as: [
-    timestamp: transaction.timestamp < #{end_time},
-    content: Crypto.hash(String.to_hex(secret)) == 0x#{secret_hash},
-    address: (
-      # Here ensure withdraw is done on ethereum
-      true
-    )
-  ]
-
-  actions triggered_by: transaction, on: reveal_secret(secret) do
-    Contract.set_type "transfer"
-    #{valid_transfer_code}
-    Contract.set_code ""
+    Contract.set_code next_code
   end
   """
 end

@@ -68,8 +68,15 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   )
 ]
 
-actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, _, _) do
+actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, evm_contract, chain_id) do
+  chain_data = get_chain_data(chain_id)
+
   Contract.set_type("transfer")
+  Contract.add_recipient(
+    address: transaction.address,
+    action: "provision",
+    args: [evm_contract, chain_data.endpoint]
+  )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
 
