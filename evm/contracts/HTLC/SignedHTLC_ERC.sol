@@ -40,4 +40,23 @@ contract SignedHTLC_ERC is HTLC_ERC {
     function withdraw(bytes32) override pure external {
         revert InvalidSignature();
     }
+
+    function refund(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+        bytes32 sigHash = ECDSA.toEthSignedMessageHash(_secret);
+        address signer = ECDSA.recover(sigHash, _v, _r, _s);
+
+        if (signer != poolSigner) {
+            revert InvalidSignature();
+        }
+
+        if (sha256(abi.encodePacked(_secret)) != hash) {
+            revert InvalidSecret();
+        }
+        _refund();
+    }
+
+    /// @dev Prevent to use the direct refund's function without the signature
+    function refund() override pure external {
+        revert InvalidSignature();
+    }
  }

@@ -35,7 +35,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     }
 
     /// @dev Send ethers to the HTLC's recipient and safety module fee
-    function _transfer() internal override {
+    function _transferAsWithdraw() internal override {
         bool sent = false;
         if (fee > 0) {
             (sent, ) = safetyModuleAddress.call{value: fee}("");
@@ -46,7 +46,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     }
 
     /// @dev Send back ethers (amount + fee) to the HTLC's creator
-    function _refund() internal override {
+    function _transferAsRefund() internal override {
         (bool sent, ) = from.call{value: amount + fee}("");
         require(sent, "ETH transfer failed - refund");
     }
