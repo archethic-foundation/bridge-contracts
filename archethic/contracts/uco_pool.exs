@@ -52,7 +52,9 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
       call_amount = get_response(responses, 6)
 
       if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-        valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract)
+        # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
+        event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+        valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
         # Pending is status 0
         valid_status? = valid_status?(call_status, 0)
         enough_funds? = enough_funds?(call_enough_funds)
@@ -102,7 +104,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
     )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, _amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   contract_content = Map.new()
 
@@ -132,7 +134,8 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   htlc_map = [
     hmac_address: transaction.address,
     end_time: end_time,
-    chain_id: chain_id
+    chain_id: chain_id,
+    amount: amount
   ]
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
@@ -151,33 +154,91 @@ end
 # Archethic => EVM : Reveal secret #
 ####################################
 
-condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address), as: [
+condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm_tx_address, evm_contract), as: [
   type: "transfer",
-  content:
-    (
-      # Ensure htlc_genesis_address exists in pool state
-      # and end_time has not been reached
-      valid? = false
+  content: (
+    # Ensure htlc_genesis_address exists in pool state
+    # and end_time has not been reached
+    valid? = false
 
-      if Json.is_valid?(contract.content) do
-        htlc_genesis_address = String.to_hex(htlc_genesis_address)
-        htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
+    if Json.is_valid?(contract.content) do
+      htlc_genesis_address = String.to_hex(htlc_genesis_address)
+      htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
 
-        if htlc_map != nil do
-          valid? = htlc_map.end_time > Time.now()
+      if htlc_map != nil do
+        valid? = htlc_map.end_time > Time.now()
+      end
+    end
+
+    valid?
+  ),
+  address: (
+    valid? = false
+    htlc_map = nil
+
+    if Json.is_valid?(contract.content) do
+      htlc_genesis_address = String.to_hex(htlc_genesis_address)
+      htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
+    end
+
+    if htlc_map != nil do
+      tx_receipt_request = get_tx_receipt_request(evm_tx_address)
+      call_status_request = get_call_request(evm_contract, "status()", 2)
+      call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
+      call_hash_request = get_call_request(evm_contract, "hash()", 4)
+      call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
+      call_amount_request = get_call_request(evm_contract, "amount()", 6)
+
+      body = Json.to_string([
+        tx_receipt_request,
+        call_status_request,
+        call_enough_funds_request,
+        call_hash_request,
+        call_end_time_request,
+        call_amount_request
+      ])
+
+      chain_data = get_chain_data(htlc_map.chain_id)
+      headers = ["Content-Type": "application/json"]
+
+      res = Http.request(chain_data.endpoint, "POST", headers, body)
+      if res.status == 200 && Json.is_valid?(res.body) do
+        responses = Json.parse(res.body)
+
+        tx_receipt = get_response(responses, 1)
+        call_status = get_response(responses, 2)
+        call_enough_funds = get_response(responses, 3)
+        call_hash = get_response(responses, 4)
+        call_end_time = get_response(responses, 5)
+        call_amount = get_response(responses, 6)
+
+        if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+          # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
+          event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
+
+          secret = Crypto.hmac(htlc_map.hmac_address)
+          secret_hash = Crypto.hash(secret, "sha256")
+
+          htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
+
+          valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
+          # Pending is status 0
+          valid_status? = valid_status?(call_status, 0)
+          enough_funds? = enough_funds?(call_enough_funds)
+          valid_hash? = valid_hash?(call_hash, secret_hash)
+          valid_end_time? = valid_end_time?(call_end_time, htlc_map.end_time)
+          valid_amount? = valid_amount?(call_amount, htlc_data.amount, chain_data.decimals)
+
+          valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
         end
       end
+    end
 
-      valid?
-    ),
-  # Here ensure Ethereum contract exists and check rules
-  # How to ensure Ethereum contract is a valid one ?
-  # Maybe get the ABI of HTLC on github and compare it to the one on Ethereum
-  # Then control rules
-  address: true
+    valid?
+  )
 ]
 
-actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address) do
+actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, _evm_contract) do
   contract_content = Json.parse(contract.content)
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
@@ -308,20 +369,24 @@ fun get_tx_receipt_request(evm_tx_address) do
   ]
 end
 
-fun valid_tx_receipt?(tx_receipt, proxy_address, evm_contract) do
-  if tx_receipt != nil do
-    logs = List.at(tx_receipt.logs, 0)
+fun valid_tx_receipt?(tx_receipt, proxy_address, evm_contract, expected_event) do
+  logs = nil
+  for log in tx_receipt.logs do
+    if String.to_lowercase(log.address) == proxy_address do
+      logs = log
+    end
+  end
 
+  if logs != nil do
     # Transaction is valid
     valid_status? = tx_receipt.status == "0x1"
     # Transaction interacted with proxy address
     valid_proxy_address? = String.to_lowercase(tx_receipt.to) == proxy_address
     # Logs are comming from proxy address
     valid_logs_address? = String.to_lowercase(logs.address) == proxy_address
-    # Pool contract emmited ContractMinted event
-    # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
+    # Pool contract emmited expected event
     event = List.at(logs.topics, 0)
-    valid_event? = String.to_lowercase(event) == "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+    valid_event? = String.to_lowercase(event) == expected_event
     # Contract minted match evm_contract in parameters
     decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
     topic_address = List.at(decoded_data, 0)
