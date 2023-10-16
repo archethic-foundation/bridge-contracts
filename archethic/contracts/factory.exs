@@ -228,6 +228,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
     export fun get_htlc_data() do
       [
+        amount: #{user_amount},
         end_time: \#{end_time},
         secret_hash: 0x\#{secret_hash},
         secret_hash_signature: [
