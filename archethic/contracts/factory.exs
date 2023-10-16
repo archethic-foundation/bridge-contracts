@@ -61,10 +61,14 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
-  if token == "UCO" do
-    fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+  if fee_amount == 0 do
+    fee_transfer_code = "# Transfer fee is less than the minimum decimals"
   else
-    fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+    if token == "UCO" do
+      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+    else
+      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+    end
   end
 
   valid_transfer_code = ""
@@ -139,10 +143,14 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
-  if token == "UCO" do
-    fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+  if fee_amount == 0 do
+    fee_transfer_code = "# Transfer fee is less than the minimum decimals"
   else
-    fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+    if token == "UCO" do
+      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+    else
+      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+    end
   end
 
   valid_transfer_code = ""
