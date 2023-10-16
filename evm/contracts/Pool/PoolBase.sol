@@ -226,14 +226,23 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     
     /// @notice Returns the swap fee to be send to the safety module
     /// @dev The fee is multiplied by 100000 to convert back from 2 decimals using wei in the amount
+    /// @dev The fee is truncated after 8 decimals to match Archethic decimals policy
     /// @param _amount Asset's amount to swap
-    function swapFee(uint256 _amount) internal view returns (uint256) {
+    /// @param _decimals Number of decimals for the token
+    function swapFee(uint256 _amount, uint8 _decimals) internal view returns (uint256) {
         uint256 _safetyModuleFeeRate = safetyModuleFeeRate;
         
         if (_safetyModuleFeeRate == 0) {
             return 0;
         }
-        return (_amount * _safetyModuleFeeRate) / 100000;
+        uint256 _fee = (_amount * _safetyModuleFeeRate) / 100000;
+
+        if (_decimals > 8) {
+            uint256 _decimalsToTrunc = 10 ** (_decimals - 8);
+            return (_fee / _decimalsToTrunc) * _decimalsToTrunc;
+        } else {
+            return _fee;
+        }
     }
 
     /// @inheritdoc IPool

@@ -58,14 +58,14 @@ contract ETHPool is PoolBase {
         if (msg.value != _amount) {
             revert ContractNotProvisioned();
         }
-        uint256 _fee = swapFee(_amount);
+        uint256 _fee = swapFee(_amount, 18);
 
         ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_amount - _fee, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;
     }
 
     function checkAmountWithDecimals(uint256 _amount) pure private {
-        // Make sure the decimals matches the Archethic's decimal policy about 10e8. (The trailing decimals must be assigned to 0)
+        // Make sure the decimals matches the Archethic's decimal policy about 1e8. (The trailing decimals must be assigned to 0)
         uint8 mod = 18 - 8;
         if(_amount % (10 ** mod) != 0) {
             revert InvalidAmount();
