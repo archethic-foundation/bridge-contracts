@@ -205,13 +205,12 @@ function get_evm_data_conditions(token, availableEvmNetworks) {
   return availableEvmNetworks
     .map(network => {
       const { endpoint, chainId } = config.evmNetworks[network]
-      const { tokenAddress, proxyAddress, decimals } = config.evmNetworks[network].tokens[token]
+      const { proxyAddress, decimals } = config.evmNetworks[network].tokens[token]
 
       return `
   if chain_id == ${chainId} do
     data = Map.set(data, "endpoint", "${endpoint}")
     data = Map.set(data, "proxy_address", "${proxyAddress}")
-    data = Map.set(data, "token_address", "${tokenAddress}")
     data = Map.set(data, "decimals", ${decimals})
   end
 `

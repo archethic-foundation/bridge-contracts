@@ -15,7 +15,7 @@ async function requestAmount() {
 }
 
 async function main() {
-  const amount = requestAmount()
+  const amount = await requestAmount()
   const secret = crypto.randomBytes(32)
   const hash = "0x" + crypto.createHash("sha256").update(secret).digest("hex")
 
