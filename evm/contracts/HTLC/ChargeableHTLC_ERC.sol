@@ -37,7 +37,9 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     function _transfer() internal override {
         IERC20 _token = token;
 
-        SafeERC20.safeTransfer(_token, safetyModuleAddress, fee);
+        if (fee > 0) {
+            SafeERC20.safeTransfer(_token, safetyModuleAddress, fee);
+        }
         SafeERC20.safeTransfer(_token, recipient, amount);
     }
 

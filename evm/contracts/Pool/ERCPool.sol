@@ -68,13 +68,13 @@ contract ERCPool is PoolBase {
     /// The amount of the HTLC is then reduced by the pool's safety module rate
     /// The recipients will be the pool's reserve address and safety module's address
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        uint256 _fee = swapFee(_amount);
+        uint256 _fee = swapFee(_amount, token.decimals());
         ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _amount - _fee, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee);
         return htlcContract;
     }
 
     function checkAmountWithDecimals(uint256 _amount) view private {
-        // Make sure the decimals matches the Archethic's decimal policy about 10e8. (The trailing decimals must be assigned to 0)
+        // Make sure the decimals matches the Archethic's decimal policy about 1e8. (The trailing decimals must be assigned to 0)
         uint8 _tokenDecimals = token.decimals();
         if (_tokenDecimals > 8) {
             uint8 mod = _tokenDecimals - 8;

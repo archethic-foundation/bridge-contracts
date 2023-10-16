@@ -13,20 +13,20 @@ describe("ERC LiquidityPool", () => {
 
         const pool = await ethers.deployContract("ERCPool")
         await pool.initialize(
-            accounts[4].address, 
-            accounts[3].address, 
-            5, 
-            archPoolSigner.address, 
-            ethers.parseEther("2.0"), 
+            accounts[4].address,
+            accounts[3].address,
+            5,
+            archPoolSigner.address,
+            ethers.parseEther("2.0"),
             60,
             await token.getAddress()
         )
 
-        return { 
-            pool, 
-            archPoolSigner, 
-            accounts, 
-            tokenInstance: token, 
+        return {
+            pool,
+            archPoolSigner,
+            accounts,
+            tokenInstance: token,
             tokenAddress: await token.getAddress()
         }
     }
@@ -57,7 +57,7 @@ describe("ERC LiquidityPool", () => {
 
     it("should create HTLC and provision ERC20 to the HTLC contract after verifying the signature", async () => {
         const { pool, tokenInstance, archPoolSigner, accounts } = await loadFixture(deployPool)
-        
+
         await tokenInstance.transfer(await pool.getAddress(), ethers.parseEther("2"))
 
         const buffer = new ArrayBuffer(32);
@@ -77,16 +77,16 @@ describe("ERC LiquidityPool", () => {
         const lockTime = blockTimestamp + 60
 
         const tx = pool.provisionHTLC(
-            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
-            ethers.parseEther('1'), 
-            lockTime, 
-            signature.r, 
-            signature.s, 
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            ethers.parseEther('1'),
+            lockTime,
+            signature.r,
+            signature.s,
             signature.v
         )
 
         await expect(tx).to.emit(pool, "ContractProvisioned")
-        
+
         const htlcAddress = await pool.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
 
         await expect(tx)
@@ -100,7 +100,7 @@ describe("ERC LiquidityPool", () => {
         expect(await HTLCInstance.lockTime()).to.equal(lockTime)
         expect(await HTLCInstance.token()).to.equal(await tokenInstance.getAddress())
     })
-    
+
     it("should return an error when the pool doesn't have enough funds to provide HTLC contract", async () => {
         const { pool, archPoolSigner } = await loadFixture(deployPool)
 
@@ -121,19 +121,19 @@ describe("ERC LiquidityPool", () => {
         const lockTime = blockTimestamp + 60
 
         await expect(pool.provisionHTLC(
-            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
-            ethers.parseEther('1'), 
-            lockTime, 
-            signature.r, 
-            signature.s, 
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            ethers.parseEther('1'),
+            lockTime,
+            signature.r,
+            signature.s,
             signature.v
         ))
-        .to.be.revertedWithCustomError(pool, "InsufficientFunds")
+            .to.be.revertedWithCustomError(pool, "InsufficientFunds")
     })
 
     it("should mint and send funds to the HTLC contract with fee integration", async () => {
         const date = new Date()
-        const { pool, tokenInstance, tokenAddress } = await loadFixture(deployPool)
+        const { pool, tokenAddress } = await loadFixture(deployPool)
 
         const amount = ethers.parseEther('1')
         const tx = pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount)
@@ -157,6 +157,32 @@ describe("ERC LiquidityPool", () => {
         const roundedTimestamp = nowTimestamp - (nowTimestamp % 60)
 
         expect(ethers.toBigInt(lockTime) - ethers.toBigInt(roundedTimestamp) >= 60).to.be.true
+    })
+
+    it("should mint and send funds to the HTLC contract with fee handling low decimals", async () => {
+        const { pool } = await loadFixture(deployPool)
+
+        let amount = ethers.parseEther('0.000001')
+        let tx = await pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount)
+
+        await expect(tx).to.emit(pool, "ContractMinted")
+
+        let htlcAddress = await pool.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        let HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ETH", htlcAddress)
+
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
+        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0'))
+
+        amount = ethers.parseEther('0.00001')
+        tx = await pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a09", amount)
+
+        await expect(tx).to.emit(pool, "ContractMinted")
+
+        htlcAddress = await pool.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a09")
+        HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ETH", htlcAddress)
+
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.00000995'))
+        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.00000005'))
     })
 })
 
