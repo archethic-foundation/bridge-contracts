@@ -80,7 +80,7 @@ npm run fill-eth
 You can also use script to deploy chargeable HTLC contract
 ```bash
 npx hardhat run scripts/fixture/create_erc_chargeable_htlc.js --network localhost
-npx hardhat run scripts/fixture/create_erc_chargeable_htlc.js --network localhost
+npx hardhat run scripts/fixture/create_eth_chargeable_htlc.js --network localhost
 npx hardhat run scripts/fixture/reveal_chargeable_secret.js --network localhost
 ```
 
