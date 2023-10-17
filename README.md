@@ -10,6 +10,12 @@ In order to develop and test the contracts, you need to have some prerequisites:
 
 - Archethic:
   - Archethic node (running in devnet mode)
+ 
+### Installation
+```bash
+npm install --prefix evm
+npm install --prefix archethic
+```
 
 ## EVM contracts
 
@@ -59,7 +65,23 @@ npm run test
 
 To use the pool in a local environment you can use migrations with:
 ```bash
+npm run start-node
+```
+```bash
 npm run deploy
+```
+
+You can use script to fill the pools
+```bash
+npm run fill-erc
+npm run fill-eth
+```
+
+You can also use script to deploy chargeable HTLC contract
+```bash
+npx hardhat run scripts/fixture/create_erc_chargeable_htlc.js --network localhost
+npx hardhat run scripts/fixture/create_erc_chargeable_htlc.js --network localhost
+npx hardhat run scripts/fixture/reveal_chargeable_secret.js --network localhost
 ```
 
 This will create two pools for ETH and ERC.
@@ -127,6 +149,10 @@ This contract provides these actions:
 To help interaction with smart contracts, some helper scripts are available in js.  
 A `bridge.js` script can be used as entry point for any commands.  
 A `config.js` file is provided to configure the environment with `endpoint`, `availableEvmNetworks`
+
+```bash
+cd archethic
+```
 
 ```bash
 node bridge --help
