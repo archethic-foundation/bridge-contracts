@@ -79,7 +79,7 @@ const handler = async function(argv) {
   if (token != "UCO") {
     poolTx.setType("token").setContent(getTokenDefinition(token))
   } else {
-    poolTx.setType("contract")
+    poolTx.setType("contract").setContent("{}")
   }
 
   poolTx = keychain.buildTransaction(poolTx, serviceName, index).originSign(Utils.originPrivateKey)

@@ -18,6 +18,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
     balance >= amount
   ),
   content: List.in?([@CHAIN_IDS], chain_id),
+  token_transfers: !contract_already_charged?(Json.parse(contract.content), chain_id, evm_contract),
   address: (
     valid? = false
 
@@ -70,9 +71,20 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   )
 ]
 
-actions triggered_by: transaction, on: request_funds(_, amount, _, _, _, evm_contract, chain_id) do
+actions triggered_by: transaction, on: request_funds(end_time, amount, _, _, _, evm_contract, chain_id) do
   chain_data = get_chain_data(chain_id)
 
+  contract_content = Json.parse(contract.content)
+
+  # Delete old contract where end_time is over
+  charged_contracts = Map.get(contract_content, "charged_contracts", Map.new())
+  charged_contracts = delete_old_charged_contracts(charged_contracts)
+
+  # Update state to keep contract already used
+  new_charged_contracts = add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time)
+  contract_content = Map.set(contract_content, "charged_contracts", new_charged_contracts)
+
+  Contract.set_content(Json.to_string(contract_content))
   Contract.set_type("transfer")
   Contract.add_recipient(
     address: transaction.address,
@@ -106,11 +118,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
 
 actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
-  contract_content = Map.new()
-
-  if Json.is_valid?(contract.content) do
-    contract_content = Json.parse(contract.content)
-  end
+  contract_content = Json.parse(contract.content)
 
   for key in Map.keys(contract_content) do
     htlc_map = Map.get(contract_content, key)
@@ -161,13 +169,11 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
     # and end_time has not been reached
     valid? = false
 
-    if Json.is_valid?(contract.content) do
-      htlc_genesis_address = String.to_hex(htlc_genesis_address)
-      htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
+    htlc_genesis_address = String.to_hex(htlc_genesis_address)
+    htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
 
-      if htlc_map != nil do
-        valid? = htlc_map.end_time > Time.now()
-      end
+    if htlc_map != nil do
+      valid? = htlc_map.end_time > Time.now()
     end
 
     valid?
@@ -176,10 +182,8 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
     valid? = false
     htlc_map = nil
 
-    if Json.is_valid?(contract.content) do
-      htlc_genesis_address = String.to_hex(htlc_genesis_address)
-      htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
-    end
+    htlc_genesis_address = String.to_hex(htlc_genesis_address)
+    htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
 
     if htlc_map != nil do
       tx_receipt_request = get_tx_receipt_request(evm_tx_address)
@@ -290,13 +294,50 @@ end
 # Public functions #
 ####################
 
-export fun(get_token_address()) do
+export fun get_token_address() do
   "UCO"
 end
 
 #####################
 # Private functions #
 #####################
+
+fun contract_already_charged?(content, chain_id, evm_contract) do
+  chain_id = String.from_number(chain_id)
+  evm_contract = String.to_lowercase(evm_contract)
+
+  charged_contracts = Map.get(content, "charged_contracts", Map.new())
+  contracts = Map.get(charged_contracts, chain_id, Map.new())
+
+  Map.get(contracts, evm_contract, nil) != nil
+end
+
+fun add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time) do
+  chain_id = String.from_number(chain_id)
+  evm_contract = String.to_lowercase(evm_contract)
+
+  contracts = Map.get(charged_contracts, chain_id, Map.new())
+  updated_contracts = Map.set(contracts, evm_contract, end_time)
+
+  Map.set(charged_contracts, chain_id, updated_contracts)
+end
+
+fun delete_old_charged_contracts(charged_contracts) do
+  for chain_id in Map.keys(charged_contracts) do
+    contracts = Map.get(charged_contracts, chain_id)
+
+    for address in Map.keys(contracts) do
+      contract_end_time = Map.get(contracts, address)
+      if contract_end_time <= now do
+        contracts = Map.delete(contracts, address)
+      end
+    end
+
+    charged_contracts = Map.set(charged_contracts, chain_id, contracts)
+  end
+
+  charged_contracts
+end
 
 fun valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
   args = [
