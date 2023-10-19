@@ -25,27 +25,27 @@ async function poolConfiguration() {
     switch (network.name) {
         case "sepolia":
             return {
-                reserveAddress: "0x3FDf8f04cBe76c1376F593634096A5299B494678",
-                safetyModuleAddress: "0x57B5Fe2F6A28E108208BA4965d9879FACF629442",
-                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
+                reserveAddress: "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
+                safetyModuleAddress: "0xbEF25E2b992494aF270092562e92aAC8394e0982",
+                archethicPoolSigner: '0x28c9efc42e2cbdfb581c212fe1e918a480ca1421',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0xCBBd3374090113732393DAE1433Bc14E5233d5d7'
             }
 
         case "mumbai":
             return {
-                reserveAddress: "0x64d75D315c592cCE1F83c53A201313C82b30FA8d",
-                safetyModuleAddress: "0xc20BcA1a8155c65964e5280D93d379aeB3A4c2e7",
-                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
+                reserveAddress: "0x5aAD864466491E81701103F04775EA7dE6d76fE3",
+                safetyModuleAddress: "0xbADc499dA1F766599d19dBa805CB62eFaa439Adc",
+                archethicPoolSigner: '0x4e57f0bf5813f5a516d23a59df1c767c4a3e8eef',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0x51279e98d99AA8D65763a885BEFA5463dCd84Af6'
             }
 
         case "bsc_testnet":
             return {
-                reserveAddress: "0x7F9E1c2Bb1Ab391bA9987070ED8e7db77A9c8818",
-                safetyModuleAddress: "0x6f3dec2738b063D9aFe4436b1ec307D84f9C2EDe",
-                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
+                reserveAddress: "0x157aB6F84d3a3874d1dEd1b0a63EC834C640FBda",
+                safetyModuleAddress: "0x95Cc38814d37E0A9b08f77a02Ff4045CeAd2106c",
+                archethicPoolSigner: '0x461ac2fa849767e4059fd98903a61315434ccf64',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0x51279e98d99AA8D65763a885BEFA5463dCd84Af6'
             }
