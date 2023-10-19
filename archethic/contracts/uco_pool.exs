@@ -337,7 +337,7 @@ end
 fun get_call_request(evm_contract, call, id) do
   abi_data = Evm.abi_encode(call)
   tx = [to: evm_contract, data: "0x#{abi_data}"]
-  [jsonrpc: "2.0", id: id, method: "eth_call", params: [tx]]
+  [jsonrpc: "2.0", id: id, method: "eth_call", params: [tx, "latest"]]
 end
 
 fun get_response(responses, id) do
