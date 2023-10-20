@@ -27,7 +27,7 @@ async function poolConfiguration() {
             return {
                 reserveAddress: "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
                 safetyModuleAddress: "0xbEF25E2b992494aF270092562e92aAC8394e0982",
-                archethicPoolSigner: '0x28c9efc42e2cbdfb581c212fe1e918a480ca1421',
+                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0xCBBd3374090113732393DAE1433Bc14E5233d5d7'
             }
@@ -36,7 +36,7 @@ async function poolConfiguration() {
             return {
                 reserveAddress: "0x5aAD864466491E81701103F04775EA7dE6d76fE3",
                 safetyModuleAddress: "0xbADc499dA1F766599d19dBa805CB62eFaa439Adc",
-                archethicPoolSigner: '0x4e57f0bf5813f5a516d23a59df1c767c4a3e8eef',
+                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0x51279e98d99AA8D65763a885BEFA5463dCd84Af6'
             }
@@ -45,7 +45,7 @@ async function poolConfiguration() {
             return {
                 reserveAddress: "0x157aB6F84d3a3874d1dEd1b0a63EC834C640FBda",
                 safetyModuleAddress: "0x95Cc38814d37E0A9b08f77a02Ff4045CeAd2106c",
-                archethicPoolSigner: '0x461ac2fa849767e4059fd98903a61315434ccf64',
+                archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
                 poolCap: ethers.parseEther('5'),
                 tokenAddress: '0x51279e98d99AA8D65763a885BEFA5463dCd84Af6'
             }
