@@ -27,15 +27,45 @@ export default {
     },
     sepolia_ethereum: {
       endpoint: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-      chainId: 11155111
+      chainId: 11155111,
+      tokens: {
+        UCO: {
+          proxyAddress: "0x50b8b73327613468e5605ed59b980555daac354a",
+          decimals: 18
+        },
+        aeETH: {
+          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          decimals: 18
+        }
+      }
     },
     mumbai_polygon: {
-      endpoint: "https://polygon-mumbai.g.alchemy.com/v2/-8zo2X19AmwNv7AGVIsGF5LWJQLc92Oj",
-      chainId: 80001
+      endpoint: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      chainId: 80001,
+      tokens: {
+        UCO: {
+          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          decimals: 18
+        },
+        aeMATIC: {
+          proxyAddress: "0xb7b2e4de4d386b73afa7f79c9769beda06ea6b4f",
+          decimals: 18
+        }
+      }
     },
     bnb_chain_testnet: {
-      endpoint: "https://polygon-mumbai.g.alchemy.com/v2/-8zo2X19AmwNv7AGVIsGF5LWJQLc92Oj",
-      chainId: 97
+      endpoint: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+      chainId: 97,
+      tokens: {
+        UCO: {
+          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          decimals: 18
+        },
+        aeBNB: {
+          proxyAddress: "0xef695c0c4034304300bd01f6c300a28000f2c163",
+          decimals: 18
+        }
+      }
     }
   },
   pools: {
