@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@archethicjs/sdk": "^1.19.0",
+    "@archethicjs/sdk": "^1.20.0",
     "keccak256": "^1.0.6",
     "yargs": "^17.7.2"
   },
