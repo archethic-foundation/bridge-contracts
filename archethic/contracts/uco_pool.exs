@@ -120,13 +120,8 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   # Here delete old secret that hasn't been used before endTime
   contract_content = Json.parse(contract.content)
 
-  for key in Map.keys(contract_content) do
-    htlc_map = Map.get(contract_content, key)
-
-    if htlc_map.end_time <= Time.now() do
-      contract_content = Map.delete(contract_content, key)
-    end
-  end
+  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+  requested_secrets = delete_unused_secrets(requested_secrets)
 
   secret = Crypto.hmac(transaction.address)
   secret_hash = Crypto.hash(secret, "sha256")
@@ -142,12 +137,12 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   htlc_map = [
     hmac_address: transaction.address,
     end_time: end_time,
-    chain_id: chain_id,
-    amount: amount
+    chain_id: chain_id
   ]
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
-  contract_content = Map.set(contract_content, htlc_genesis_address, htlc_map)
+  new_requested_secrest = Map.set(requested_secrets, htlc_genesis_address, htlc_map)
+  contract_content = Map.set(contract_content, "requested_secrets", new_requested_secrest)
 
   Contract.set_content(Json.to_string(contract_content))
 
@@ -169,8 +164,11 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
     # and end_time has not been reached
     valid? = false
 
+    contract_content = Json.parse(contract.content)
+
     htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
+    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
       valid? = htlc_map.end_time > Time.now()
@@ -182,8 +180,11 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
     valid? = false
     htlc_map = nil
 
+    contract_content = Json.parse(contract.content)
+
     htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    htlc_map = Map.get(Json.parse(contract.content), htlc_genesis_address)
+    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
       tx_receipt_request = get_tx_receipt_request(evm_tx_address)
@@ -244,11 +245,13 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
 
 actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, _evm_contract) do
   contract_content = Json.parse(contract.content)
+  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
-  htlc_map = Map.get(contract_content, htlc_genesis_address)
+  htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
-  contract_content = Map.delete(contract_content, htlc_genesis_address)
+  requested_secrets = Map.delete(requested_secrets, htlc_genesis_address)
+  contract_content = Map.set(contract_content, "requested_secrets", requested_secrets)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
   # Do not use chain ID in signature for the secret reveal
@@ -323,6 +326,7 @@ fun add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time) d
 end
 
 fun delete_old_charged_contracts(charged_contracts) do
+  now = Time.now()
   for chain_id in Map.keys(charged_contracts) do
     contracts = Map.get(charged_contracts, chain_id)
 
@@ -337,6 +341,18 @@ fun delete_old_charged_contracts(charged_contracts) do
   end
 
   charged_contracts
+end
+
+fun delete_unused_secrets(requested_secrets) do
+  for address in Map.keys(requested_secrets) do
+    htlc_map = Map.get(requested_secrets, address)
+
+    if htlc_map.end_time <= Time.now() do
+      requested_secrets = Map.delete(requested_secrets, address)
+    end
+  end
+
+  requested_secrets
 end
 
 fun valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
