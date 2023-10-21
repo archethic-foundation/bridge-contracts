@@ -111,7 +111,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 
         abi_data = Evm.abi_encode("status()")
         tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
-        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx]]
+        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
 
         headers = ["Content-Type": "application/json"]
         body = Json.to_string(request)
