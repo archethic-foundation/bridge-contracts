@@ -47,7 +47,7 @@ async function poolConfiguration() {
                 safetyModuleAddress: "0x95Cc38814d37E0A9b08f77a02Ff4045CeAd2106c",
                 archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
                 poolCap: ethers.parseEther('5'),
-                tokenAddress: '0x51279e98d99AA8D65763a885BEFA5463dCd84Af6'
+                tokenAddress: '0x5e6554593E4fe61276AD09094f16A6D5133461A5'
             }
 
         default:

@@ -38,12 +38,11 @@ module.exports = {
         },
 
         bsc_testnet: {
-            url: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+            url: "https://endpoints.omniatech.io/v1/bsc/testnet/public",
             accounts: [
                 "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
             ],
-            timeout: 100000,
-            gas: 10000000
+            timeout: 100000
         }
   },
 
