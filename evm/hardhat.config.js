@@ -25,21 +25,25 @@ module.exports = {
             url: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
             accounts: [
                 "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
-            ]
+            ],
+            timeout: 100000
         },
 
         mumbai: {
             url: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
             accounts: [
                 "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
-            ]
+            ],
+            timeout: 100000
         },
 
         bsc_testnet: {
-            url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+            url: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
             accounts: [
                 "49368e0291eaafffea4ee78fb3a713049bc7c1091a5926979eb842607ede147c"
-            ]
+            ],
+            timeout: 100000,
+            gas: 10000000
         }
   },
 

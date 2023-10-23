@@ -1,25 +1,25 @@
 {
   "manifestVersion": "3.2",
   "admin": {
-    "address": "0x57f7128771eE81eEdD5d1d147A7Aeb6a7D4D6424",
-    "txHash": "0x7dab3ae9c270d53f6b51f7158dae113c458a99e3eef23e28990456a683dfdb27"
+    "address": "0x785ac1A760D49537A9515862EB8A32188af6c3Ee",
+    "txHash": "0xbd6d04fe91660c090c180b3b9c7e5fc27f306c686d1093e34ccf18d2a75ffb95"
   },
   "proxies": [
     {
-      "address": "0x5A1905F2BC406Ef3cfba9a99428C9498BCA63214",
-      "txHash": "0xfe1c1191ec6db59e533e25e5cfd20f94197a112ea86b4cb76688cd9e7951fa6c",
+      "address": "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650",
+      "txHash": "0x390b56fcd387555459a94fca0045398efec53b1d66c3820df96eb17367df20b6",
       "kind": "transparent"
     },
     {
-      "address": "0xEF695C0C4034304300bD01f6C300a28000F2c163",
-      "txHash": "0xe39c0376f2869978f7a76ad07749599ece854ddeae7314411be2bc98a9a2a444",
+      "address": "0x50b8B73327613468e5605eD59B980555DAAC354a",
+      "txHash": "0x653484204ff482a015a1709f813f270f7bda18496b3c7d2b4857a40fdee0205e",
       "kind": "transparent"
     }
   ],
   "impls": {
-    "7472a4cbc7e441d4086f18cb8b7edf136849f6cc059de9d4a71ea35359214497": {
-      "address": "0xD687D445df9d657F15e47727CCA5c955A12d53A7",
-      "txHash": "0x7ee285307c1d0f4a7ba790e9a13987ed3d7850d93b4b018a19c700e0d2229ac9",
+    "db358be64abd0008294247461968ba82d431b5032ea9f777e465abe34d7cc6e7": {
+      "address": "0xb7b2e4de4D386B73afa7F79C9769beda06EA6B4F",
+      "txHash": "0xa630e017d223cc4acf26ea4b5ec90844d648ca7a9c5962636324f88b00370b7c",
       "layout": {
         "solcVersion": "0.8.21",
         "storage": [
@@ -140,7 +140,7 @@
             "label": "_refProvisionedSwaps",
             "offset": 0,
             "slot": "157",
-            "type": "t_mapping(t_bytes32,t_contract(IHTLC)4041)",
+            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6114)",
             "contract": "PoolBase",
             "src": "contracts/Pool/PoolBase.sol:36"
           },
@@ -148,7 +148,7 @@
             "label": "_refMintedSwaps",
             "offset": 0,
             "slot": "158",
-            "type": "t_mapping(t_bytes32,t_contract(IHTLC)4041)",
+            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6114)",
             "contract": "PoolBase",
             "src": "contracts/Pool/PoolBase.sol:37"
           },
@@ -194,11 +194,11 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IHTLC)4041": {
+          "t_contract(IHTLC)6114": {
             "label": "contract IHTLC",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_bytes32,t_contract(IHTLC)4041)": {
+          "t_mapping(t_bytes32,t_contract(IHTLC)6114)": {
             "label": "mapping(bytes32 => contract IHTLC)",
             "numberOfBytes": "32"
           },
@@ -214,9 +214,9 @@
         "namespaces": {}
       }
     },
-    "b0b5b4b4875a70c5d230076357be14da40ae2a38c145e5826c5264042dfc00ce": {
-      "address": "0x3e16DE26a74096F5278Eeb44fc6867995202a835",
-      "txHash": "0x39494b88e4f8050a00b83ed5c2cef71faf219c35e6f77ecba31f90568adcf907",
+    "04fca1e61bf5efd98a8d683811b9d74451437db7c129008cc2f4ad9f97cb1654": {
+      "address": "0x9C603FBCbF28f8Aa0dBeaa477F046C6842d3f428",
+      "txHash": "0x388d89c10920ad3a98cdc4d2a0bb3dec657e223a5272ac08e177d8a9b9f59c51",
       "layout": {
         "solcVersion": "0.8.21",
         "storage": [
@@ -337,7 +337,7 @@
             "label": "_refProvisionedSwaps",
             "offset": 0,
             "slot": "157",
-            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6373)",
+            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6114)",
             "contract": "PoolBase",
             "src": "contracts/Pool/PoolBase.sol:36"
           },
@@ -345,7 +345,7 @@
             "label": "_refMintedSwaps",
             "offset": 0,
             "slot": "158",
-            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6373)",
+            "type": "t_mapping(t_bytes32,t_contract(IHTLC)6114)",
             "contract": "PoolBase",
             "src": "contracts/Pool/PoolBase.sol:37"
           },
@@ -369,7 +369,7 @@
             "label": "token",
             "offset": 0,
             "slot": "161",
-            "type": "t_contract(ERC20)1561",
+            "type": "t_contract(ERC20)1365",
             "contract": "ERCPool",
             "src": "contracts/Pool/ERCPool.sol:18"
           }
@@ -399,15 +399,15 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(ERC20)1561": {
+          "t_contract(ERC20)1365": {
             "label": "contract ERC20",
             "numberOfBytes": "20"
           },
-          "t_contract(IHTLC)6373": {
+          "t_contract(IHTLC)6114": {
             "label": "contract IHTLC",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_bytes32,t_contract(IHTLC)6373)": {
+          "t_mapping(t_bytes32,t_contract(IHTLC)6114)": {
             "label": "mapping(bytes32 => contract IHTLC)",
             "numberOfBytes": "32"
           },
