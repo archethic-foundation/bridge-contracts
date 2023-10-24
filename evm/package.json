@@ -16,7 +16,10 @@
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
     "@openzeppelin/hardhat-upgrades": "^2.3.2",
     "ethers": "^6.6.2",
+    "fs-extra": "^11.1.1",
     "hardhat": "^2.18.0",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-tracer": "^2.6.0",
     "keccak256": "^1.0.6",
     "openzeppelin-solidity": "^3.4.2",
     "secp256k1": "^5.0.0"

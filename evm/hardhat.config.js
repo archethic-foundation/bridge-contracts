@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require('@openzeppelin/hardhat-upgrades');
+require("hardhat-tracer");
+require("hardhat-contract-sizer");
 
 module.exports = {
     defaultNetwork: "hardhat",
@@ -60,5 +62,11 @@ module.exports = {
             runs: 10000, // Optimize gas for function call instead of deployment
         },
     }
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    strict: true
   }
 };
