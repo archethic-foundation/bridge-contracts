@@ -58,7 +58,7 @@ export default {
       chainId: 97,
       tokens: {
         UCO: {
-          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          proxyAddress: "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
           decimals: 18
         },
         aeBNB: {
