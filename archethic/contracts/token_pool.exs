@@ -312,16 +312,6 @@ condition triggered_by: transaction, on: update_code(new_code), as: [
 ]
 
 actions triggered_by: transaction, on: update_code(new_code) do
-  # Update state to new format
-  current_state = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-  new_state = Map.set(Map.new(), "requested_secrets", current_state)
-
-  Contract.add_recipient(
-    address: @STATE_ADDRESS,
-    action: "update_state",
-    args: [new_state]
-  )
-
   Contract.set_type("contract")
   Contract.set_code(new_code)
 end

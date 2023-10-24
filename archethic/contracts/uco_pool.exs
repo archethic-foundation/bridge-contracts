@@ -280,16 +280,9 @@ condition triggered_by: transaction, on: update_code(new_code), as: [
 ]
 
 actions triggered_by: transaction, on: update_code(new_code) do
-  # Update state to new format
-  current_state = Map.new()
-  if Json.is_valid?(contract.content) do
-    current_state = Json.parse(contract.content)
-  end
-  new_state = Map.set(Map.new(), "requested_secrets", current_state)
-
   Contract.set_type("contract")
   # Keep contract state
-  Contract.set_content(Json.to_string(new_state))
+  Contract.set_content(contract.content)
   Contract.set_code(new_code)
 end
 
