@@ -17,12 +17,12 @@ contract HTLC_ERC is HTLCBase {
     }
 
     /// @dev Send ERC20 to the HTLC's recipient
-    function _transfer() internal override virtual {
+    function _transferAsWithdraw() internal override virtual {
         SafeERC20.safeTransfer(token, recipient, amount);
     }
 
     /// @dev Send back ERC20 to the HTLC's creator
-    function _refund() internal override virtual {
+    function _transferAsRefund() internal override virtual {
         SafeERC20.safeTransfer(token, from, amount);
     }
 

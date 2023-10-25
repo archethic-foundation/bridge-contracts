@@ -30,13 +30,13 @@ contract HTLC_ETH is HTLCBase {
     }
 
     /// @dev Send ethers to the HTLC's recipient
-    function _transfer() override virtual internal {
+    function _transferAsWithdraw() override virtual internal {
         (bool sent,) = recipient.call{value: amount}("");
         require(sent, "ETH transfer failed - withdraw");
     }
 
     /// @dev Send back ethers to the HTLC's creator
-    function _refund() override virtual internal {
+    function _transferAsRefund() override virtual internal {
         (bool sent,) = from.call{value: amount}("");
         require(sent, "ETH transfer failed - refund");
     }
