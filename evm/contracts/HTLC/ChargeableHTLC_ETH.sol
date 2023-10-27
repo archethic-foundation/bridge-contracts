@@ -10,6 +10,9 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     /// @notice Return the fee's amount
     uint256 public immutable fee;
 
+    /// @notice Return the amount to refill the owner of the contract (i.e Pool)
+    uint256 public immutable refillAmount;
+
     /// @notice Return the satefy module destination wallet
     address public immutable safetyModuleAddress;
 
@@ -21,34 +24,45 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         uint _lockTime,
         address payable _reserveAddress,
         address payable _safetyModuleAddress,
-        uint256 _fee
+        uint256 _fee,
+        uint256 _refillAmount
     ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
+        refillAmount = _refillAmount;
         // We check if the received ethers adds the deducted amount from the fee
-        _assertReceivedFunds(_amount + _fee);
+        _assertReceivedFunds(_amount + _fee + _refillAmount);
     }
 
      /// @dev Check whether the HTLC have enough tokens to cover fee + amount
     function _enoughFunds() internal view override returns (bool) {
-        return address(this).balance == amount + fee;
+        return address(this).balance == (amount + fee + refillAmount);
     }
 
     /// @dev Send ethers to the HTLC's recipient and safety module fee
     function _transfer() internal override {
         bool sent = false;
-        if (fee > 0) {
-            (sent, ) = safetyModuleAddress.call{value: fee}("");
+        uint _fee = fee;
+        uint _amount = amount;
+        uint _refillAmount = refillAmount;
+
+        if (_fee > 0) {
+            (sent, ) = safetyModuleAddress.call{value: _fee}("");
             require(sent, "ETH transfer failed - withdraw/safety");
         }
-        (sent, ) = recipient.call{value: amount}("");
+        (sent, ) = recipient.call{value: _amount}("");
         require(sent, "ETH transfer failed - withdraw/recipient");
+
+        if (_refillAmount > 0) {
+            (sent, ) = from.call{value: _refillAmount}("");
+            require(sent, "ETH transfer failed - withdraw/refill");
+        } 
     }
 
     /// @dev Send back ethers (amount + fee) to the HTLC's creator
     function _refund() internal override {
-        (bool sent, ) = from.call{value: amount + fee}("");
+        (bool sent, ) = from.call{value: amount + fee + refillAmount}("");
         require(sent, "ETH transfer failed - refund");
     }
 }

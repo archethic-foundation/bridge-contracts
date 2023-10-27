@@ -34,9 +34,10 @@ describe("LP Proxy", () => {
 
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        expect(await HTLCInstance.recipient()).to.equal(accounts[3].address);
+        expect(await HTLCInstance.recipient()).to.equal(await proxy.getAddress());
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+        expect(await HTLCInstance.refillAmount()).to.equal(0);
     })
 
     it("delegate provision call", async () => {

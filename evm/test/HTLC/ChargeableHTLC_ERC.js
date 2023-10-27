@@ -17,23 +17,27 @@ describe("Chargeable ERC HTLC",() => {
     const satefyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
 
+    const amount = ethers.parseEther("0.990")
     const fee = ethers.parseEther("0.005")
+    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 60
 
     const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ERC", [
       tokenAddress,
-      ethers.parseEther("0.995"),
+      amount,
       "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
       lockTime,
       reserveAddress,
       satefyModuleAddress,
-      fee
+      fee,
+      refillAmount
     ])
 
-    expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("0.995"))
-    expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+    expect(await HTLCInstance.amount()).to.equal(amount)
+    expect(await HTLCInstance.fee()).to.equal(fee)
+    expect(await HTLCInstance.refillAmount()).to.equal(refillAmount)
     expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
     expect(await HTLCInstance.token()).to.equal(await tokenAddress)
     expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
@@ -53,8 +57,9 @@ describe("Chargeable ERC HTLC",() => {
       .update(secret)
       .digest("hex")
       
-    const amount = ethers.parseEther("0.995")
+    const amount = ethers.parseEther("0.990")
     const fee = ethers.parseEther("0.005")
+    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 60
@@ -66,7 +71,8 @@ describe("Chargeable ERC HTLC",() => {
       lockTime,
       reserveAddress,
       satefyModuleAddress,
-      fee
+      fee,
+      refillAmount
     ])
 
     await tokenInstance.transfer(HTLCInstance.getAddress(), ethers.parseEther("1.0"))
@@ -76,8 +82,8 @@ describe("Chargeable ERC HTLC",() => {
       .withdraw(`0x${secret.toString('hex')}`)
     )
     .to.changeTokenBalances(tokenInstance, 
-      [satefyModuleAddress, reserveAddress, await HTLCInstance.getAddress()], 
-      [ethers.parseEther('0.005'), ethers.parseEther('0.995'), -ethers.parseEther("1.0")]
+      [satefyModuleAddress, reserveAddress, accounts[0], await HTLCInstance.getAddress()], 
+      [ethers.parseEther('0.005'), ethers.parseEther('0.990'), ethers.parseEther('0.005'), -ethers.parseEther("1.0")]
     )
   })
 
@@ -93,8 +99,9 @@ describe("Chargeable ERC HTLC",() => {
       .update(secret)
       .digest("hex")
       
-    const amount = ethers.parseEther("0.995")
+    const amount = ethers.parseEther("0.990")
     const fee = ethers.parseEther("0.005")
+    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 1
@@ -106,7 +113,8 @@ describe("Chargeable ERC HTLC",() => {
       lockTime,
       reserveAddress,
       satefyModuleAddress,
-      fee
+      fee,
+      refillAmount
     ])
 
     await tokenInstance.transfer(HTLCInstance.getAddress(), ethers.parseEther("1.0"))

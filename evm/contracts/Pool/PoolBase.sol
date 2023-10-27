@@ -347,4 +347,24 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         uint256 minuteRoundedBlockTimestamp = block.timestamp - (block.timestamp % (60));
         return minuteRoundedBlockTimestamp + lockTimePeriod;
     }
+
+    /// @dev Redirect the funds toward the reserve's wallet if the pool can accept assets below its cap
+    /// @return (address, uint256, uint256) represeting the main's recipient address, the recipient's amount and the additional refill amount
+    function _maybeRedirectAmountToPool(uint256 _poolBalance, uint256 _recipientAmount) internal view returns (address, uint256, uint256) {
+        uint256 _poolPlace = poolCap - _poolBalance;
+        if(_poolPlace > 0) {
+            if (_recipientAmount < _poolPlace) {
+                // To avoid the constraint of HTLC contract(amount > 0),
+                // we change the recipient to target directly the pool instead of the reserve's wallet
+                return (address(this), _recipientAmount, 0);
+            }
+            else {
+                // We allocate the maxium to the pool and the overflow goes to the reserve
+                uint256 _refillPoolAmount = _recipientAmount - _poolPlace;
+                return (reserveAddress, _refillPoolAmount, _poolPlace);
+            }
+        }
+
+        return (reserveAddress, _recipientAmount, 0);
+    }
 }

@@ -421,7 +421,7 @@ describe("ETH LiquidityPool", () => {
         const date = new Date()
         const { pool, accounts } = await loadFixture(deployPool)
 
-        const amount = ethers.parseEther('1')
+        const amount = ethers.parseEther('3')
         const tx = pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount })
         await tx
 
@@ -434,9 +434,10 @@ describe("ETH LiquidityPool", () => {
         expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
         expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.985'))
+        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
+        expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('2.0'))
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)
@@ -458,6 +459,8 @@ describe("ETH LiquidityPool", () => {
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0'))
+        expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
+        expect(await HTLCInstance.refillAmount()).to.equal(0)
 
         amount = ethers.parseEther('0.00001')
         tx = await pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a09", amount, { value: amount })
@@ -469,6 +472,8 @@ describe("ETH LiquidityPool", () => {
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.00000995'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.00000005'))
+        expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
+        expect(await HTLCInstance.refillAmount()).to.equal(0)
     })
 
     it("should return an error if the sender does not provision the contract", async () => {
