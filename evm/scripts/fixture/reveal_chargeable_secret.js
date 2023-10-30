@@ -27,14 +27,14 @@ async function main() {
 
   const htlc = await ethers.getContractAt("HTLCBase", contractAddress)
 
-  htlc.withdraw(secret)
-    .then(() => console.log("Withdraw successfull"))
+  return htlc.withdraw(secret)
+    .then(() => console.log("Withdraw successful"))
     .catch(er => console.log(er.message))
 }
 
 main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1)
-    });
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1)
+  });
