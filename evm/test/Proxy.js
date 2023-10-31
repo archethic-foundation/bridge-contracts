@@ -32,7 +32,7 @@ describe("LP Proxy", () => {
         const htlcAddress = await proxy.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ETH", htlcAddress)
 
-        expect(await HTLCInstance.from()).to.equal(await proxy.getAddress())
+        expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         expect(await HTLCInstance.recipient()).to.equal(accounts[3].address);
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
