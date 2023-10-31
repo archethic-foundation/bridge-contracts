@@ -434,7 +434,8 @@ describe("ETH LiquidityPool", () => {
         expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
         expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.985'))
+        expect(await HTLCInstance.withdrawAmount()).to.equal(ethers.parseEther('0.985'))
+        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('2.985'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('2.0'))

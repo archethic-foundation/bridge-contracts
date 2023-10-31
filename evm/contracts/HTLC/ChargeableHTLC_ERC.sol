@@ -15,6 +15,9 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @notice Return the amount to refill the owner of the contract (i.e Pool)
     uint256 public immutable refillAmount;
 
+    /// @notice Return the amount to withdraw to the main's recipient
+    uint256 public immutable withdrawAmount;
+
     /// @notice Return the satefy module destination wallet
     address public immutable safetyModuleAddress;
 
@@ -27,16 +30,17 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         address _safetyModuleAddress,
         uint256 _fee,
         uint256 _refillAmount
-    ) HTLC_ERC(_reserveAddress, _token, _amount, _hash, _lockTime) {
+    ) HTLC_ERC(_reserveAddress, _token, _amount + _refillAmount, _hash, _lockTime) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAmount = _refillAmount;
+        withdrawAmount = _amount;
     }
 
     /// @dev Check whether the HTLC have enough tokens to cover fee + amount
     function _enoughFunds() internal view override returns (bool) {
-        return token.balanceOf(address(this)) == (amount + fee + refillAmount);
+        return token.balanceOf(address(this)) == (amount + fee);
     }
 
     /// @dev Send ERC20 to the HTLC's recipient and safety module fee
@@ -49,7 +53,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         if (_fee > 0) {
             SafeERC20.safeTransfer(_token, safetyModuleAddress, _fee);
         }
-        SafeERC20.safeTransfer(_token, recipient, amount);
+        SafeERC20.safeTransfer(_token, recipient, withdrawAmount);
 
         if (_refillAmount > 0) {
             SafeERC20.safeTransfer(_token, from, _refillAmount);
@@ -58,6 +62,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
     /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
     function _refund() internal override {
-        SafeERC20.safeTransfer(token, from, (amount + fee + refillAmount));
+        SafeERC20.safeTransfer(token, from, (amount + fee));
     }
 }

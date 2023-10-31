@@ -35,7 +35,8 @@ describe("Chargeable ERC HTLC",() => {
       refillAmount
     ])
 
-    expect(await HTLCInstance.amount()).to.equal(amount)
+    expect(await HTLCInstance.amount()).to.equal(amount + refillAmount)
+    expect(await HTLCInstance.withdrawAmount()).to.equal(amount)
     expect(await HTLCInstance.fee()).to.equal(fee)
     expect(await HTLCInstance.refillAmount()).to.equal(refillAmount)
     expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
