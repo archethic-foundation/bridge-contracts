@@ -167,6 +167,7 @@ describe("ETH LiquidityPool", () => {
         expect(await HTLCInstance.recipient()).to.equal(accounts[0].address);
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("1.0"))
         expect(await HTLCInstance.lockTime()).to.equal(lockTime)
+        expect(await HTLCInstance.from()).to.equal(await pool.getAddress())
     })
 
     it("should return an error if a swap's provision is requested with the pool is locked", async () => {
@@ -418,7 +419,7 @@ describe("ETH LiquidityPool", () => {
 
     it("should mint and send funds to the HTLC contract with fee integration", async () => {
         const date = new Date()
-        const { pool } = await loadFixture(deployPool)
+        const { pool, accounts } = await loadFixture(deployPool)
 
         const amount = ethers.parseEther('1')
         const tx = pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount, { value: amount })
@@ -435,6 +436,7 @@ describe("ETH LiquidityPool", () => {
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+        expect(await HTLCInstance.from()).to.equal(accounts[0].address)
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)

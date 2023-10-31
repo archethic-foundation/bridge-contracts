@@ -26,6 +26,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     ) HTLC_ERC(_reserveAddress, _token, _amount, _hash, _lockTime) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
+        from = tx.origin;
     }
 
     /// @dev Check whether the HTLC have enough tokens to cover fee + amount

@@ -25,6 +25,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
+        from = tx.origin;
         // We check if the received ethers adds the deducted amount from the fee
         _assertReceivedFunds(_amount + _fee);
     }
