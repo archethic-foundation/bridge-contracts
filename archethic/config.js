@@ -44,11 +44,11 @@ export default {
       chainId: 80001,
       tokens: {
         UCO: {
-          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          proxyAddress: "0xe55915D112711127339f073e75185E6311Dd72C8",
           decimals: 18
         },
         aeMATIC: {
-          proxyAddress: "0xb7b2e4de4d386b73afa7f79c9769beda06ea6b4f",
+          proxyAddress: "0x56c86b45fCe906af9dF535EB27968aE46CBF170E",
           decimals: 18
         }
       }
