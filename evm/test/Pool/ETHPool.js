@@ -439,6 +439,7 @@ describe("ETH LiquidityPool", () => {
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('2.0'))
+        expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)

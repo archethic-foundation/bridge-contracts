@@ -21,6 +21,9 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @notice Return the satefy module destination wallet
     address public immutable safetyModuleAddress;
 
+    /// @notice Return the refill address to send the refillAmount
+    address public immutable refillAddress;
+
     constructor(
         IERC20 _token,
         uint256 _amount,
@@ -34,6 +37,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
+        refillAddress = msg.sender;
         refillAmount = _refillAmount;
         withdrawAmount = _amount;
     }
@@ -56,7 +60,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         SafeERC20.safeTransfer(_token, recipient, withdrawAmount);
 
         if (_refillAmount > 0) {
-            SafeERC20.safeTransfer(_token, from, _refillAmount);
+            SafeERC20.safeTransfer(_token, refillAddress, _refillAmount);
         } 
     }
 

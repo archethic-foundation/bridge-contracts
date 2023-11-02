@@ -19,6 +19,9 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     /// @notice Return the satefy module destination wallet
     address public immutable safetyModuleAddress;
 
+    /// @notice Return the refill address to send the refillAmount
+    address public immutable refillAddress;
+
     /// @dev Create HTLC instance but delegates funds control after the HTLC constructor
     /// @dev This way we can check funds with decorrelation between amount/fee and the sent ethers. 
     constructor(
@@ -33,6 +36,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
+        refillAddress = msg.sender;
         refillAmount = _refillAmount;
         withdrawAmount = _amount;
         // We check if the received ethers adds the deducted amount from the fee
@@ -58,7 +62,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         require(sent, "ETH transfer failed - withdraw/recipient");
 
         if (_refillAmount > 0) {
-            (sent, ) = from.call{value: _refillAmount}("");
+            (sent, ) = refillAddress.call{value: _refillAmount}("");
             require(sent, "ETH transfer failed - withdraw/refill");
         } 
     }

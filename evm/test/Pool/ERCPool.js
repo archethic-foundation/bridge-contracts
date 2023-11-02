@@ -155,6 +155,7 @@ describe("ERC LiquidityPool", () => {
         expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('2.0'))
         expect(await HTLCInstance.token()).to.equal(tokenAddress)
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
+        expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)
