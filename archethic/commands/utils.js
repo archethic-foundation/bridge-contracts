@@ -210,7 +210,7 @@ function get_evm_data_conditions(token, availableEvmNetworks) {
       return `
   if chain_id == ${chainId} do
     data = Map.set(data, "endpoint", "${endpoint}")
-    data = Map.set(data, "proxy_address", "${proxyAddress}")
+    data = Map.set(data, "proxy_address", "${proxyAddress.toLowerCase()}")
     data = Map.set(data, "decimals", ${decimals})
   end
 `
