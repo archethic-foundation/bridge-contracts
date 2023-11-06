@@ -3,14 +3,22 @@ const { ethers, upgrades } = require("hardhat");
 async function main() {
 
     const proxyAddress = process.env["PROXY_ADDRESS"]
-    if(proxyAddress === undefined) {
+    if (proxyAddress === undefined) {
         throw "PROXY_ADDRESS is not defined"
     }
 
-    const ERCPool = await ethers.getContractFactory("ERCPool");
-    await upgrades.upgradeProxy(proxyAddress, ERCPool);
+    const pool = await ethers.getContractAt("ERCPool", proxyAddress)
+    try {
+        // Ensure this pool is a ERCPool by calling the token() function
+        await pool.token()
+        const ERCPool = await ethers.getContractFactory("ERCPool");
+        await upgrades.upgradeProxy(proxyAddress, ERCPool);
 
-    console.log("ERC Pool upgraded");
+        console.log("ERC Pool upgraded");
+    } catch (_err) {
+        console.log("This pool is not an ERCPool")
+        process.exit(1)
+    }
 }
 
 main()
