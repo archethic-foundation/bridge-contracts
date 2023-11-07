@@ -7,19 +7,27 @@ async function main() {
         throw "PROXY_ADDRESS is not defined"
     }
 
-    const pool = await ethers.getContractAt("ERCPool", proxyAddress)
-    try {
-        // Ensure this pool is not an ERCPool by calling the token() function
-        await pool.token()
+    const adminPrivateKey = process.env["ADMIN_PRIVATE_KEY"]
+    if (adminPrivateKey === undefined) {
+        throw "ADMIN_PRIVATE_KEY is not defined"
+    }
 
+    const signer = new ethers.Wallet(adminPrivateKey, ethers.provider)
+    const pool = await ethers.getContractAt("ERCPool", proxyAddress)
+
+    // Ensure this pool is a ERCPool by calling the token() function
+    try {
+        await pool.token()
         console.log("This pool is not an ETHPool")
         process.exit(1)
     } catch (_err) {
-        const ETHPool = await ethers.getContractFactory("ETHPool");
-        await upgrades.upgradeProxy(proxyAddress, ETHPool);
-
-        console.log("ETH Pool upgraded");
+        null
     }
+
+    const ETHPool = await ethers.getContractFactory("ETHPool", signer);
+    await upgrades.upgradeProxy(proxyAddress, ETHPool);
+
+    console.log("ETH Pool upgraded");
 }
 
 main()
