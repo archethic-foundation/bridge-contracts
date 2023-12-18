@@ -15,6 +15,7 @@
     "@openzeppelin/contracts": "^4.9.2",
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
     "@openzeppelin/hardhat-upgrades": "^2.3.2",
+    "bars": "github:jstrace/bars",
     "ethers": "^6.6.2",
     "fs-extra": "^11.1.1",
     "hardhat": "^2.18.0",
