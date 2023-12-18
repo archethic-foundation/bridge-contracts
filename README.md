@@ -87,6 +87,26 @@ npx hardhat run scripts/fixture/reveal_chargeable_secret.js --network localhost
 This will create two pools for ETH and ERC.
 It will also create a dummy token, accessible via `LP_ERC.token()`
 
+### Analytics
+
+In order to run some analytics from the pools, there are two scripts to run:
+
+- UCO pool: 
+
+This script will give swap statistics from the ERC pool using the chargeable and signed HTLC contracts.
+
+```bash
+npx hardhat run scripts/analytics/uco_bridged.js --network sepolia 
+```
+
+- ETH/MATIC/BSC pool: 
+
+This script will give swap statistics from the ETH pool using the chargeable and signed HTLC contracts.
+
+```bash
+npx hardhat run scripts/analytics/coin_bridged.js --network sepolia 
+```
+
 ## Archethic Smart Contracts
 
 There is three kind of SC:
