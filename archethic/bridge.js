@@ -15,6 +15,8 @@ import reveal_secret from './commands/test/reveal_secret.js'
 import provision_htlc from './commands/test/provision_htlc.js'
 import request_secret from './commands/test/request_secret.js'
 
+import analytics from './commands/analytics/analytics.js'
+
 const y = yargs(hideBin(process.argv))
 
 y.command(deploy_pool).help()
@@ -28,5 +30,7 @@ y.command(deploy_signed_htlc).help()
 y.command(reveal_secret).help()
 y.command(provision_htlc).help()
 y.command(request_secret).help()
+
+y.command(analytics).help()
 
 y.parse()
