@@ -48,7 +48,7 @@ export default {
     mumbai_polygon: {
       endpoints: [
         "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-        "https://polygon-mainnet.g.alchemy.com/v2/gLTYVSedvKUouWmxlqajqeqbi4Vtqy2i"
+        "https://polygon-mumbai.g.alchemy.com/v2/YrTBjcxLttewqhFia5IhwwHqesNkLmBC"
       ],
       chainId: 80001,
       tokens: {
