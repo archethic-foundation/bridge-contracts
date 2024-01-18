@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./HTLC_ERC.sol";
+import "../../interfaces/IPool.sol";
 
 /// @title HTLC contract with chargeable fee towards pool's safety module
 /// @author Archethic Foundation
@@ -12,11 +13,11 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @notice Return the fee's amount
     uint256 public immutable fee;
 
-    /// @notice Return the amount to refill the owner of the contract (i.e Pool)
-    uint256 public immutable refillAmount;
+    /// @notice Return the amount to refill the pool
+    uint256 public refillAmount;
 
     /// @notice Return the amount to withdraw to the main's recipient
-    uint256 public immutable withdrawAmount;
+    uint256 public withdrawAmount;
 
     /// @notice Return the satefy module destination wallet
     address public immutable safetyModuleAddress;
@@ -32,14 +33,12 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         address _reserveAddress,
         address _safetyModuleAddress,
         uint256 _fee,
-        uint256 _refillAmount
-    ) HTLC_ERC(_reserveAddress, _token, _amount + _refillAmount, _hash, _lockTime) {
+        address _refillAddress
+    ) HTLC_ERC(_reserveAddress, _token, _amount, _hash, _lockTime) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
-        refillAddress = msg.sender;
-        refillAmount = _refillAmount;
-        withdrawAmount = _amount;
+        refillAddress = _refillAddress;
     }
 
     /// @dev Check whether the HTLC have enough tokens to cover fee + amount
@@ -52,15 +51,35 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         IERC20 _token = token;
 
         uint _fee = fee;
-        uint _refillAmount = refillAmount;
+        address _refillAddress = refillAddress;
+
+        IPool pool = IPool(_refillAddress);
+        uint256 _poolCap = pool.poolCap();
+        uint256 _poolBalance = _token.balanceOf(_refillAddress);
+
+        uint256 _withdrawAmount = amount;
+        uint256 _refillAmount;
+
+        if (_poolBalance < _poolCap) {
+            uint256 _poolCapacity = _poolCap - _poolBalance;
+            if(_poolCapacity > 0 && _withdrawAmount > _poolCapacity) {
+                _withdrawAmount = _withdrawAmount - _poolCapacity;
+                _refillAmount = _poolCapacity;
+            }
+        }
 
         if (_fee > 0) {
             SafeERC20.safeTransfer(_token, safetyModuleAddress, _fee);
         }
-        SafeERC20.safeTransfer(_token, recipient, withdrawAmount);
+
+        if (_withdrawAmount > 0) {
+            withdrawAmount = _withdrawAmount;
+            SafeERC20.safeTransfer(_token, recipient, _withdrawAmount);
+        }
 
         if (_refillAmount > 0) {
-            SafeERC20.safeTransfer(_token, refillAddress, _refillAmount);
+            refillAmount = _refillAmount;
+            SafeERC20.safeTransfer(_token, _refillAddress, _refillAmount);
         } 
     }
 

@@ -62,14 +62,7 @@ contract ETHPool is PoolBase {
         uint256 _fee = swapFee(_amount, 18);
         uint256 _recipientAmount = _amount - _fee;
 
-        // We need to subtract the msg.value, as the balance is already filled by the transaction's value
-        uint256 _poolBalance = address(this).balance - msg.value;
-
-        address _recipientAddress;
-        uint256 _refillAmount;
-        (_recipientAddress, _recipientAmount, _refillAmount) = _maybeRedirectAmountToPool(_poolBalance, _recipientAmount);
-
-        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(_recipientAddress), payable(safetyModuleAddress), _fee, _refillAmount);
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee, payable(address(this)));
         return htlcContract;
     }
 

@@ -150,44 +150,8 @@ describe("ERC LiquidityPool", () => {
         expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
         expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.withdrawAmount()).to.equal(ethers.parseEther('0.985'))
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('2.985'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
-        expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('2.0'))
-        expect(await HTLCInstance.token()).to.equal(tokenAddress)
-        expect(await HTLCInstance.from()).to.equal(accounts[0].address)
-        expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
-
-        const lockTime = await HTLCInstance.lockTime()
-        const nowTimestamp = Math.floor(date.getTime() / 1000)
-        const roundedTimestamp = nowTimestamp - (nowTimestamp % 60)
-
-        expect(ethers.toBigInt(lockTime) - ethers.toBigInt(roundedTimestamp) >= 60).to.be.true
-    })
-
-    it("should calculate funds correctly if Pool balance is over poolCap", async () => {
-        const date = new Date()
-        const { pool, tokenAddress, accounts, tokenInstance } = await loadFixture(deployPool)
-
-        // Fill the pool with an amount > poolCap
-        const amountToFill = ethers.parseEther("10")
-        await tokenInstance.transfer(pool.getAddress(), amountToFill)
-
-        const amount = ethers.parseEther('3')
-        const tx = await pool.mintHTLC("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", amount)
-
-        await expect(tx).to.emit(pool, "ContractMinted")
-
-        const htlcAddress = await pool.mintedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)
-
-        expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
-        expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-        expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.withdrawAmount()).to.equal(ethers.parseEther('2.985'))
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('2.985'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
-        expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther('0.0'))
         expect(await HTLCInstance.token()).to.equal(tokenAddress)
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
@@ -212,7 +176,7 @@ describe("ERC LiquidityPool", () => {
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
         expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0'))
-        expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
+        expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress())
         expect(await HTLCInstance.refillAmount()).to.equal(0)
     })
 })
