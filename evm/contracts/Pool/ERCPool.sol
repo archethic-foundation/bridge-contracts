@@ -71,14 +71,7 @@ contract ERCPool is PoolBase {
         uint256 _fee = swapFee(_amount, token.decimals());
         uint256 _recipientAmount = _amount - _fee;
 
-        ERC20 _token = token;
-        uint256 _poolBalance = _token.balanceOf(address(this));
-
-        uint256 _refillAmount;
-        address _recipientAddress;
-        (_recipientAddress, _recipientAmount, _refillAmount) = _maybeRedirectAmountToPool(_poolBalance, _recipientAmount);
-
-        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(_token, _recipientAmount, _hash, _lockTime, _recipientAddress, safetyModuleAddress, _fee, _refillAmount);
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, safetyModuleAddress, _fee, address(this));
         return htlcContract;
     }
 

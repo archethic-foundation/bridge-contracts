@@ -10,9 +10,8 @@ describe("Chargeable ETH HTLC", () => {
     const satefyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
 
-    const amount = ethers.parseEther("0.990")
+    const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
-    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 60
@@ -24,13 +23,11 @@ describe("Chargeable ETH HTLC", () => {
       reserveAddress,
       satefyModuleAddress,
       fee,
-      refillAmount
+      accounts[5].address
     ], { value: ethers.parseEther("1.0") })
 
-    expect(await HTLCInstance.amount()).to.equal(amount + refillAmount)
-    expect(await HTLCInstance.withdrawAmount()).to.equal(amount)
+    expect(await HTLCInstance.amount()).to.equal(amount)
     expect(await HTLCInstance.fee()).to.equal(fee)
-    expect(await HTLCInstance.refillAmount()).to.equal(refillAmount)
     expect(await HTLCInstance.hash()).to.equal("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
     expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
     expect(await HTLCInstance.status()).to.equal(0)
@@ -40,14 +37,13 @@ describe("Chargeable ETH HTLC", () => {
       .to.equal(ethers.parseEther("1.0"))
   })
 
-  it("should raise if the funds sending to the contract doesn't match the fee + amount + refillAmount", async () => {
+  it("should raise if the funds sending to the contract doesn't match the fee + amount", async () => {
     const accounts = await ethers.getSigners()
     const satefyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
 
-    const amount = ethers.parseEther("0.990")
+    const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
-    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 60
@@ -61,14 +57,28 @@ describe("Chargeable ETH HTLC", () => {
         reserveAddress,
         satefyModuleAddress,
         fee,
-        refillAmount
+        accounts[5].address
       ], { value: ethers.parseEther("0.995") })
     )
     .to.be.revertedWithCustomError(contract, "ContractNotProvisioned")
   })
 
-  it("withdraw should send tokens to the reserve address and fee to the safety module", async() => {
+  it("withdraw should send tokens to the reserve address, fee to the safety module and to the refill address", async() => {
     const accounts = await ethers.getSigners()
+
+    const archPoolSigner = ethers.Wallet.createRandom()
+
+    const pool = await ethers.deployContract("ETHPool")
+    await pool.initialize(
+        accounts[4].address,
+        accounts[3].address,
+        5,
+        archPoolSigner.address,
+        ethers.parseEther("0.95"),
+        60
+    )
+    const poolAddress = await pool.getAddress()
+
     const safetyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
 
@@ -77,9 +87,8 @@ describe("Chargeable ETH HTLC", () => {
       .update(secret)
       .digest("hex")
       
-    const amount = ethers.parseEther("0.990")
+    const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
-    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 60
@@ -91,7 +100,7 @@ describe("Chargeable ETH HTLC", () => {
       reserveAddress,
       safetyModuleAddress,
       fee,
-      refillAmount
+      poolAddress
     ], { value: ethers.parseEther("1.0") })
 
     await expect(HTLCInstance
@@ -99,9 +108,12 @@ describe("Chargeable ETH HTLC", () => {
       .withdraw(`0x${secret.toString('hex')}`)
     )
     .to.changeEtherBalances(
-      [safetyModuleAddress, reserveAddress, accounts[0], await HTLCInstance.getAddress()], 
-      [ethers.parseEther("0.005"), ethers.parseEther("0.990"), ethers.parseEther("0.005"), -ethers.parseEther("1.0")]
+      [safetyModuleAddress, reserveAddress, poolAddress, await HTLCInstance.getAddress()], 
+      [ethers.parseEther("0.005"), ethers.parseEther("0.045"), ethers.parseEther("0.95"), -ethers.parseEther("1.0")]
     )
+
+    expect(await HTLCInstance.withdrawAmount()).to.equal(ethers.parseEther("0.045"))
+    expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther("0.95"))
   })
 
   it("refund should send back tokens to the owner", async() => {
@@ -114,9 +126,8 @@ describe("Chargeable ETH HTLC", () => {
       .update(secret)
       .digest("hex")
       
-    const amount = ethers.parseEther("0.990")
+    const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
-    const refillAmount = ethers.parseEther("0.005")
 
     const blockTimestamp = await time.latest()
     const lockTime = blockTimestamp + 1
@@ -128,7 +139,7 @@ describe("Chargeable ETH HTLC", () => {
       reserveAddress,
       safetyModuleAddress,
       fee,
-      refillAmount
+      accounts[5].address
     ], { value: ethers.parseEther("1.0") })
 
     await time.increaseTo(lockTime + 5);
