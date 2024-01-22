@@ -218,11 +218,26 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     """
   end
 
+  code_after_refund = """
+  @version 1
+
+  export fun get_secret() do
+    [
+      secret: 0x\\\#{secret},
+      secret_signature: [
+        r: 0x\\\#{secret_signature.r},
+        s: 0x\\\#{secret_signature.s},
+        v: \\\#{secret_signature.v}
+      ]
+    ]
+  end
+"""
+
   refund_code = """
     Contract.set_type "transfer"
     # Send back the token to the user address
     #{return_transfer_code}
-    Contract.set_code ""
+    Contract.set_code "#{code_after_refund}"
   """
 
   code_after_withdraw = """
@@ -244,14 +259,15 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     @version 1
     # Automate the refunding after the given timestamp
     actions triggered_by: datetime, at: \#{end_time} do
-    #{refund_code}
+      htlc_genesis_address = Chain.get_genesis_address(contract.address)
+      Contract.add_recipient(address: 0x#{pool_address}, action: "refund", args: [htlc_genesis_address])
     end
 
-    condition triggered_by: transaction, on: refund(), as: [
+    condition triggered_by: transaction, on: refund(secret, secret_signature), as: [
       timestamp: timestamp >= \#{end_time}
     ]
 
-    actions triggered_by: transaction, on: refund() do
+    actions triggered_by: transaction, on: refund(secret, secret_signature) do
     #{refund_code}
     end
 

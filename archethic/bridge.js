@@ -16,6 +16,7 @@ import provision_htlc from './commands/test/provision_htlc.js'
 import request_secret from './commands/test/request_secret.js'
 
 import analytics from './commands/analytics/analytics.js'
+import refund from './commands/test/refund.js'
 
 const y = yargs(hideBin(process.argv))
 
@@ -30,6 +31,7 @@ y.command(deploy_signed_htlc).help()
 y.command(reveal_secret).help()
 y.command(provision_htlc).help()
 y.command(request_secret).help()
+y.command(refund).help()
 
 y.command(analytics).help()
 
