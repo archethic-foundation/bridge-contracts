@@ -2,6 +2,7 @@ const hre = require("hardhat");
 const { createHash, randomBytes } = require("crypto")
 const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
+const { uintArrayToHex, hexToUintArray, concatUint8Arrays } = require("../utils")
 
 
 describe("Signed ERC HTLC", () => {
@@ -146,7 +147,12 @@ describe("Signed ERC HTLC", () => {
 
         await tokenInstance.transfer(HTLCInstance.getAddress(), amount)
 
-        const signature = ethers.Signature.from(await archPoolSigner.signMessage(secret))
+        const sigPayload = concatUint8Arrays([
+            secret,
+            new TextEncoder().encode("refund")
+        ])
+        const sigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(sigPayload2))
 
         await time.increaseTo(lockTime + 5)
 
