@@ -91,6 +91,9 @@ abstract contract HTLCBase is IHTLC {
     /// @dev It raises if the HTLC doesn't have enough funds
     /// @dev It raises if it's called after the locktime
     function withdraw(bytes32 _secret) virtual external {
+        if (!_beforeLockTime(block.timestamp)) {
+            revert TooLate();
+        }
         _withdraw(_secret);
     }
 
@@ -104,9 +107,7 @@ abstract contract HTLCBase is IHTLC {
         if (!_enoughFunds()) {
             revert InsufficientFunds();
         }
-        if (!_beforeLockTime(block.timestamp)) {
-            revert TooLate();
-        }
+
         secret = _secret;
         _transferAsWithdraw();
         status = HTLCStatus.WITHDRAWN;
@@ -124,6 +125,9 @@ abstract contract HTLCBase is IHTLC {
     /// @dev It raises if the HTLC doesn't have enough funds
     /// @dev It raises if it's called before the locktime
     function refund() virtual external {
+        if (_beforeLockTime(block.timestamp)) {
+             revert TooEarly();
+        }
         _refund();
     }
 
@@ -134,9 +138,7 @@ abstract contract HTLCBase is IHTLC {
         if (!_enoughFunds()) {
             revert InsufficientFunds();
         }
-        if (_beforeLockTime(block.timestamp)) {
-            revert TooEarly();
-        }
+
         _transferAsRefund();
         status = HTLCStatus.REFUNDED;
         emit Refunded();
