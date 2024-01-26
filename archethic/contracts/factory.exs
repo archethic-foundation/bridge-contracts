@@ -264,6 +264,10 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     end
 
     condition triggered_by: transaction, on: refund(secret, secret_signature), as: [
+      previous_public_key: (
+        previous_address = Chain.get_previous_address()
+        Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+      ),
       timestamp: timestamp >= \#{end_time}
     ]
 
