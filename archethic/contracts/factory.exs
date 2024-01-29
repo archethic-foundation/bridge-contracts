@@ -94,11 +94,34 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       Contract.set_code ""
     end
 
-    condition triggered_by: transaction, on: refund(), as: [
-      timestamp: timestamp >= #{end_time}
+    condition triggered_by: transaction, on: refund(evm_contract), as: [
+      content: (
+        valid? = false
+
+        abi_data = Evm.abi_encode("status()")
+        tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
+        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
+
+        headers = ["Content-Type": "application/json"]
+        body = Json.to_string(request)
+
+        res = Http.request("\#{url}", "POST", headers, body)
+        if res.status == 200 && Json.is_valid?(res.body) do
+          response = Json.parse(res.body)
+          result = Map.get(response, "result")
+
+          if result != nil do
+            decoded_abi = Evm.abi_decode("(uint)", result)
+            # Refund status is 2
+            valid? = List.at(decoded_abi, 0) == 2
+          end
+        end
+
+        valid?
+      )
     ]
 
-    actions triggered_by: transaction, on: refund() do
+    actions triggered_by: transaction, on: refund(evm_tx_address) do
       Contract.set_type "transfer"
       #{return_transfer_code}
       Contract.set_code ""
