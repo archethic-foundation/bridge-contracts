@@ -2,7 +2,7 @@ import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
 import { getGenesisAddress, getPoolServiceName, getServiceGenesisAddress } from "../utils.js"
 
-const command = "refund"
+const command = "pool_refund"
 const describe = "Request a pool to refund a signed htlc"
 const builder = {
   token: {
