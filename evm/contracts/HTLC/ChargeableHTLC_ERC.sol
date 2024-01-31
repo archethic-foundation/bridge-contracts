@@ -62,9 +62,12 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
         if (_poolBalance < _poolCap) {
             uint256 _poolCapacity = _poolCap - _poolBalance;
-            if(_poolCapacity > 0 && _withdrawAmount > _poolCapacity) {
+            if(_withdrawAmount > _poolCapacity) {
                 _withdrawAmount = _withdrawAmount - _poolCapacity;
                 _refillAmount = _poolCapacity;
+            } else {
+                _refillAmount = _withdrawAmount;
+                _withdrawAmount = 0;
             }
         }
 
@@ -80,7 +83,7 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         if (_refillAmount > 0) {
             refillAmount = _refillAmount;
             SafeERC20.safeTransfer(_token, _refillAddress, _refillAmount);
-        } 
+        }
     }
 
     /// @dev Send back ERC20 (amount + fee) to the HTLC's creator

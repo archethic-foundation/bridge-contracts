@@ -24,7 +24,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     address public immutable refillAddress;
 
     /// @dev Create HTLC instance but delegates funds control after the HTLC constructor
-    /// @dev This way we can check funds with decorrelation between amount/fee and the sent ethers. 
+    /// @dev This way we can check funds with decorrelation between amount/fee and the sent ethers.
     constructor(
         uint256 _amount,
         bytes32 _hash,
@@ -34,7 +34,7 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         uint256 _fee,
         address payable _refillAddress
     ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
-        fee = _fee;     
+        fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAddress = _refillAddress;
@@ -62,9 +62,12 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
 
         if (_poolBalance < _poolCap) {
             uint256 _poolCapacity = _poolCap - _poolBalance;
-            if(_poolCapacity > 0 && _withdrawAmount > _poolCapacity) {
+            if(_withdrawAmount > _poolCapacity) {
                 _withdrawAmount = _withdrawAmount - _poolCapacity;
                 _refillAmount = _poolCapacity;
+            } else {
+                _refillAmount = _withdrawAmount;
+                _withdrawAmount = 0;
             }
         }
 
