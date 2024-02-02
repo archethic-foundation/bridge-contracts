@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3
 pragma solidity 0.8.21;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 import "./HTLC_ETH.sol";
 import "../../interfaces/IPool.sol";
 
@@ -23,6 +25,12 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     /// @notice Return the refill address to send the pool's capacity below its cap
     address public immutable refillAddress;
 
+    /// @notice Returns the Archethic's pool signer address
+    address public immutable poolSigner;
+
+    /// @notice Throws when the Archethic's pool signature is invalid
+    error InvalidSignature();
+
     /// @dev Create HTLC instance but delegates funds control after the HTLC constructor
     /// @dev This way we can check funds with decorrelation between amount/fee and the sent ethers.
     constructor(
@@ -32,12 +40,15 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         address payable _reserveAddress,
         address payable _safetyModuleAddress,
         uint256 _fee,
-        address payable _refillAddress
+        address _refillAddress,
+        address _poolSigner
     ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAddress = _refillAddress;
+        poolSigner = _poolSigner;
+
         // We check if the received ethers adds the deducted amount from the fee
         _assertReceivedFunds(_amount + _fee);
     }
@@ -93,5 +104,26 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     function _refund() internal override {
         (bool sent, ) = from.call{value: amount + fee}("");
         require(sent, "ETH transfer failed - refund");
+    }
+
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+        bytes32 hash = sha256(abi.encodePacked(_secret));
+        bytes32 sigHash = ECDSA.toEthSignedMessageHash(hash);
+        address signer = ECDSA.recover(sigHash, _v, _r, _s);
+
+        if (signer != poolSigner) {
+            revert InvalidSignature();
+        }
+
+        delete sigHash;
+        delete signer;
+        delete hash;
+
+        _withdraw(_secret);
+    }
+
+    /// @dev Prevent to use the direct withdraw's function without the signature
+    function withdraw(bytes32) override pure external {
+        revert InvalidSignature();
     }
 }

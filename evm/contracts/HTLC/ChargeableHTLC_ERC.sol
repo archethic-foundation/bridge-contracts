@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./HTLC_ERC.sol";
 import "../../interfaces/IPool.sol";
@@ -25,6 +26,12 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @notice Return the refill address to send the refillAmount
     address public immutable refillAddress;
 
+     /// @notice Returns the Archethic's pool signer address
+    address public immutable poolSigner;
+
+    /// @notice Throws when the Archethic's pool signature is invalid
+    error InvalidSignature();
+
     constructor(
         IERC20 _token,
         uint256 _amount,
@@ -33,12 +40,14 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         address _reserveAddress,
         address _safetyModuleAddress,
         uint256 _fee,
-        address _refillAddress
+        address _refillAddress,
+        address _poolSigner
     ) HTLC_ERC(_reserveAddress, _token, _amount, _hash, _lockTime) {
         fee = _fee;
         safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAddress = _refillAddress;
+        poolSigner = _poolSigner;
     }
 
     /// @dev Check whether the HTLC have enough tokens to cover fee + amount
@@ -89,5 +98,26 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
     function _refund() internal override {
         SafeERC20.safeTransfer(token, from, (amount + fee));
+    }
+
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+        bytes32 hash = sha256(abi.encodePacked(_secret));
+        bytes32 sigHash = ECDSA.toEthSignedMessageHash(hash);
+        address signer = ECDSA.recover(sigHash, _v, _r, _s);
+
+        if (signer != poolSigner) {
+            revert InvalidSignature();
+        }
+
+        delete sigHash;
+        delete signer;
+        delete hash;
+
+        _withdraw(_secret);
+    }
+
+    /// @dev Prevent to use the direct withdraw's function without the signature
+    function withdraw(bytes32) override pure external {
+        revert InvalidSignature();
     }
 }

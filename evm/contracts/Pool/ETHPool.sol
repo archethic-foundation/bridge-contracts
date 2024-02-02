@@ -40,7 +40,7 @@ contract ETHPool is PoolBase {
     function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal override returns (IHTLC) {
         if (address(this).balance < _amount) {
             revert InsufficientFunds();
-        } 
+        }
 
         checkAmountWithDecimals(_amount);
 
@@ -62,7 +62,7 @@ contract ETHPool is PoolBase {
         uint256 _fee = swapFee(_amount, 18);
         uint256 _recipientAmount = _amount - _fee;
 
-        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee, payable(address(this)));
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee, payable(address(this)), archethicPoolSigner);
         return htlcContract;
     }
 

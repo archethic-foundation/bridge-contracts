@@ -42,7 +42,7 @@ contract ERCPool is PoolBase {
         ERC20 _token = token;
         if (_token.balanceOf(address(this)) < _amount) {
             revert InsufficientFunds();
-        } 
+        }
 
         checkAmountWithDecimals(_amount);
 
@@ -71,7 +71,7 @@ contract ERCPool is PoolBase {
         uint256 _fee = swapFee(_amount, token.decimals());
         uint256 _recipientAmount = _amount - _fee;
 
-        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, safetyModuleAddress, _fee, address(this));
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, safetyModuleAddress, _fee, address(this), archethicPoolSigner);
         return htlcContract;
     }
 
