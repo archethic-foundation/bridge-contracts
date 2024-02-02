@@ -1,14 +1,15 @@
 const hre = require("hardhat");
-const { createHash, randomBytes } = require("crypto")
+const { createHash, randomBytes } = require("crypto");
 const { expect } = require("chai");
 const { time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { hexToUintArray } = require("../utils");
 
 describe("Chargeable ETH HTLC", () => {
-
   it("should create contract and associated recipient and fee", async () => {
-    const accounts = await ethers.getSigners()
-    const satefyModuleAddress = accounts[3].address
-    const reserveAddress = accounts[4].address
+    const accounts = await ethers.getSigners();
+    const satefyModuleAddress = accounts[3].address;
+    const reserveAddress = accounts[4].address;
+    const archPoolSigner = ethers.Wallet.createRandom();
 
     const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
@@ -23,7 +24,8 @@ describe("Chargeable ETH HTLC", () => {
       reserveAddress,
       satefyModuleAddress,
       fee,
-      accounts[5].address
+      accounts[5].address,
+      archPoolSigner.address
     ], { value: ethers.parseEther("1.0") })
 
     expect(await HTLCInstance.amount()).to.equal(amount)
@@ -32,6 +34,7 @@ describe("Chargeable ETH HTLC", () => {
     expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
     expect(await HTLCInstance.status()).to.equal(0)
     expect(await HTLCInstance.lockTime()).to.equal(lockTime)
+    expect(await HTLCInstance.poolSigner()).to.equal(archPoolSigner.address)
 
     await expect(await ethers.provider.getBalance(await HTLCInstance.getAddress()))
       .to.equal(ethers.parseEther("1.0"))
@@ -41,6 +44,7 @@ describe("Chargeable ETH HTLC", () => {
     const accounts = await ethers.getSigners()
     const satefyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
+    const archPoolSigner = ethers.Wallet.createRandom();
 
     const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
@@ -57,16 +61,18 @@ describe("Chargeable ETH HTLC", () => {
         reserveAddress,
         satefyModuleAddress,
         fee,
-        accounts[5].address
+        accounts[5].address,
+        archPoolSigner.address
       ], { value: ethers.parseEther("0.995") })
     )
     .to.be.revertedWithCustomError(contract, "ContractNotProvisioned")
   })
 
-  it("withdraw should send tokens to the reserve address, fee to the safety module and to the refill address", async() => {
-    const accounts = await ethers.getSigners()
-
-    const archPoolSigner = ethers.Wallet.createRandom()
+  it("withdraw should send tokens to the reserve address and fee to the safety module and the hash is signed by the Archethic pool", async () => {
+    const accounts = await ethers.getSigners();
+    const safetyModuleAddress = accounts[3].address;
+    const reserveAddress = accounts[4].address;
+    const archPoolSigner = ethers.Wallet.createRandom();
 
     const pool = await ethers.deployContract("ETHPool")
     await pool.initialize(
@@ -79,72 +85,91 @@ describe("Chargeable ETH HTLC", () => {
     )
     const poolAddress = await pool.getAddress()
 
-    const safetyModuleAddress = accounts[3].address
-    const reserveAddress = accounts[4].address
+    const secret = randomBytes(32);
+    const secretHash = createHash("sha256").update(secret).digest("hex");
 
-    const secret = randomBytes(32)
-    const secretHash = createHash("sha256")
-      .update(secret)
-      .digest("hex")
-      
-    const amount = ethers.parseEther("0.995")
-    const fee = ethers.parseEther("0.005")
+    const amount = ethers.parseEther("0.995");
+    const fee = ethers.parseEther("0.005");
 
-    const blockTimestamp = await time.latest()
-    const lockTime = blockTimestamp + 60
+    const blockTimestamp = await time.latest();
+    const lockTime = blockTimestamp + 60;
 
-    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ETH", [
-      amount,
-      `0x${secretHash}`,
-      lockTime,
-      reserveAddress,
-      safetyModuleAddress,
-      fee,
-      poolAddress
-    ], { value: ethers.parseEther("1.0") })
+    const HTLCInstance = await ethers.deployContract(
+      "ChargeableHTLC_ETH",
+      [
+        amount,
+        `0x${secretHash}`,
+        lockTime,
+        reserveAddress,
+        safetyModuleAddress,
+        fee,
+        poolAddress,
+        archPoolSigner.address,
+      ],
+      { value: ethers.parseEther("1.0") },
+    );
 
-    await expect(HTLCInstance
-      .connect(accounts[2])
-      .withdraw(`0x${secret.toString('hex')}`)
-    )
-    .to.changeEtherBalances(
-      [safetyModuleAddress, reserveAddress, poolAddress, await HTLCInstance.getAddress()], 
-      [ethers.parseEther("0.005"), ethers.parseEther("0.045"), ethers.parseEther("0.95"), -ethers.parseEther("1.0")]
-    )
+    const signature = ethers.Signature.from(
+      await archPoolSigner.signMessage(hexToUintArray(secretHash)),
+    );
 
-    expect(await HTLCInstance.withdrawAmount()).to.equal(ethers.parseEther("0.045"))
-    expect(await HTLCInstance.refillAmount()).to.equal(ethers.parseEther("0.95"))
-  })
+   await expect(
+     HTLCInstance.connect(accounts[2]).withdraw(
+       `0x${secret.toString("hex")}`,
+       signature.r,
+       signature.s,
+       signature.v,
+     ),
+   ).to.changeEtherBalances(
+     [
+       safetyModuleAddress,
+       reserveAddress,
+       poolAddress,
+       await HTLCInstance.getAddress()
+     ],
+     [
+       ethers.parseEther("0.005"),
+       ethers.parseEther("0.045"),
+       ethers.parseEther("0.95"),
+       -ethers.parseEther("1.0")
+     ],
+   );
+  });
 
-  it("refund should send back tokens to the owner", async() => {
-    const accounts = await ethers.getSigners()
-    const safetyModuleAddress = accounts[3].address
-    const reserveAddress = accounts[4].address
-    
-    const secret = randomBytes(32)
-    const secretHash = createHash("sha256")
-      .update(secret)
-      .digest("hex")
-      
-    const amount = ethers.parseEther("0.995")
-    const fee = ethers.parseEther("0.005")
+  it("refund should send back tokens to the owner", async () => {
+    const accounts = await ethers.getSigners();
+    const safetyModuleAddress = accounts[3].address;
+    const reserveAddress = accounts[4].address;
+    const archPoolSigner = ethers.Wallet.createRandom();
 
-    const blockTimestamp = await time.latest()
-    const lockTime = blockTimestamp + 1
+    const secret = randomBytes(32);
+    const secretHash = createHash("sha256").update(secret).digest("hex");
 
-    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ETH", [
-      amount,
-      `0x${secretHash}`,
-      lockTime,
-      reserveAddress,
-      safetyModuleAddress,
-      fee,
-      accounts[5].address
-    ], { value: ethers.parseEther("1.0") })
+    const amount = ethers.parseEther("0.995");
+    const fee = ethers.parseEther("0.005");
+
+    const blockTimestamp = await time.latest();
+    const lockTime = blockTimestamp + 1;
+
+    const HTLCInstance = await ethers.deployContract(
+      "ChargeableHTLC_ETH",
+      [
+        amount,
+        `0x${secretHash}`,
+        lockTime,
+        reserveAddress,
+        safetyModuleAddress,
+        fee,
+        accounts[5].address,
+        archPoolSigner.address,
+      ],
+      { value: ethers.parseEther("1.0") },
+    );
 
     await time.increaseTo(lockTime + 5);
-    expect(await HTLCInstance.refund())
-      .to
-      .changeEtherBalance(accounts[0].address, ethers.parseEther('1.0'))
-  })
-})
+    expect(await HTLCInstance.refund()).to.changeEtherBalance(
+      accounts[0].address,
+      ethers.parseEther("1.0"),
+    );
+  });
+});
