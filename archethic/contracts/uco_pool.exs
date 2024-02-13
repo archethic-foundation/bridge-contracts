@@ -71,7 +71,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   )
 ]
 
-actions triggered_by: transaction, on: request_funds(end_time, amount, _, _, _, evm_contract, chain_id) do
+actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret_hash, _, evm_contract, chain_id) do
   chain_data = get_chain_data(chain_id)
 
   contract_content = Json.parse(contract.content)
@@ -84,12 +84,14 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, _, _, 
   new_charged_contracts = add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time)
   contract_content = Map.set(contract_content, "charged_contracts", new_charged_contracts)
 
+  signature = sign_for_evm(secret_hash, chain_id)
+
   Contract.set_content(Json.to_string(contract_content))
   Contract.set_type("transfer")
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint]
+    args: [evm_contract, chain_data.endpoint, signature]
   )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -448,7 +450,7 @@ fun valid_tx_receipt?(tx_receipt, proxy_address, evm_contract, expected_event) d
     decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
     topic_address = List.at(decoded_data, 0)
     valid_contract_address? = topic_address == String.to_lowercase(evm_contract)
-    
+
     valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
   else
     false

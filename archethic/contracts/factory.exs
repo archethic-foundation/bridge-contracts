@@ -120,7 +120,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
         if res.status == 200 && Json.is_valid?(res.body) do
           response = Json.parse(res.body)
           result = Map.get(response, "result")
-          
+
           if result != nil do
             decoded_abi = Evm.abi_decode("(uint)", result)
             # Withdrawn status is 1
@@ -137,12 +137,22 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       #{valid_transfer_code}
       Contract.set_code ""
     end
+
+    export fun get_provision_signature() do
+        [
+          signature: [
+            r: 0x\#{signature.r},
+            s: 0x\#{signature.s},
+            v: \#{signature.v}
+          ]
+        ]
+      end
   """
 
   """
   @version 1
 
-  condition triggered_by: transaction, on: provision(_evm_contract, _url), as: [
+  condition triggered_by: transaction, on: provision(_evm_contract, _url, _signature), as: [
 		previous_public_key: (
 	    # Transaction is not yet validated so we need to use previous address
 		  # to get the genesis address
@@ -151,7 +161,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 	  )
   ]
 
-  actions triggered_by: transaction, on: provision(evm_contract, url) do
+  actions triggered_by: transaction, on: provision(evm_contract, url, signature) do
     next_code = \"""
     #{after_provision_code}
     \"""
@@ -301,4 +311,3 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   end
   """
 end
-

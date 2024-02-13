@@ -49,7 +49,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
       call_hash = get_response(responses, 4)
       call_end_time = get_response(responses, 5)
       call_amount = get_response(responses, 6)
-      
+
       if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
         # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
         event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
@@ -69,7 +69,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   )
 ]
 
-actions triggered_by: transaction, on: request_funds(end_time, amount, _, _, _, evm_contract, chain_id) do
+actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret_hash, _, evm_contract, chain_id) do
   chain_data = get_chain_data(chain_id)
 
   contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
@@ -97,11 +97,13 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, _, _, 
   token_definition =
     Contract.call_function(@FACTORY_ADDRESS, "get_token_resupply_definition", args)
 
+  signature = sign_for_evm(secret_hash, chain_id)
+
   Contract.set_type("token")
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint]
+    args: [evm_contract, chain_data.endpoint, signature]
   )
   Contract.set_content(token_definition)
 end
@@ -478,7 +480,7 @@ fun valid_tx_receipt?(tx_receipt, proxy_address, evm_contract, expected_event) d
     decoded_data = Evm.abi_decode("(address)", List.at(logs.topics, 1))
     topic_address = List.at(decoded_data, 0)
     valid_contract_address? = topic_address == String.to_lowercase(evm_contract)
-    
+
     valid_status? && valid_proxy_address? && valid_logs_address? && valid_event? && valid_contract_address?
   else
     false
