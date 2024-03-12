@@ -4,11 +4,11 @@ export default {
       endpoint: "http://127.0.0.1:4000",
       userSeed: "user",
       keychainAccessSeed: "access",
-      keychainSeed: "keychain"
+      keychainSeed: "keychain",
     },
     testnet: {
       endpoint: "https://testnet.archethic.net",
-    }
+    },
   },
   evmNetworks: {
     local: {
@@ -17,13 +17,13 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0xaa74722d2cb78d4b5e52c2ee7f12fe08851baa5f",
-          decimals: 18
+          decimals: 18,
         },
         aeETH: {
           proxyAddress: "0x39c9dbd60b0eaf256ebc509d2b837d508dd4f2da",
-          decimals: 18
-        }
-      }
+          decimals: 18,
+        },
+      },
     },
     sepolia_ethereum: {
       endpoint: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
@@ -31,27 +31,32 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0x50b8b73327613468e5605ed59b980555daac354a",
-          decimals: 18
+          decimals: 18,
         },
         aeETH: {
           proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
-          decimals: 18
-        }
-      }
+          decimals: 18,
+        },
+      },
     },
     mumbai_polygon: {
-      endpoint: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      endpoint:
+        "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       chainId: 80001,
       tokens: {
         UCO: {
           proxyAddress: "0xe55915d112711127339f073e75185e6311dd72c8",
-          decimals: 18
+          decimals: 18,
         },
         aeMATIC: {
           proxyAddress: "0x56c86b45fce906af9df535eb27968ae46cbf170e",
-          decimals: 18
-        }
-      }
+          decimals: 18,
+        },
+        aeETH: {
+          proxyAddress: "0x3Fa0d410064FcE2744e4feebB3Be338e1fA3C967",
+          decimals: 18,
+        },
+      },
     },
     bnb_chain_testnet: {
       endpoint: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
@@ -59,39 +64,39 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
-          decimals: 18
+          decimals: 18,
         },
         aeBNB: {
           proxyAddress: "0xef695c0c4034304300bd01f6c300a28000f2c163",
-          decimals: 18
-        }
-      }
-    }
+          decimals: 18,
+        },
+      },
+    },
   },
   pools: {
     UCO: {
       availableEvmNetworks: {
         local: ["local"],
-        testnet: ["sepolia_ethereum", "mumbai_polygon", "bnb_chain_testnet"]
-      }
+        testnet: ["sepolia_ethereum", "mumbai_polygon", "bnb_chain_testnet"],
+      },
     },
     aeETH: {
       availableEvmNetworks: {
         local: ["local"],
-        testnet: ["sepolia_ethereum"]
-      }
+        testnet: ["sepolia_ethereum", "mumbai_polygon"],
+      },
     },
     aeBNB: {
       availableEvmNetworks: {
         local: ["local"],
-        testnet: ["bnb_chain_testnet"]
-      }
+        testnet: ["bnb_chain_testnet"],
+      },
     },
     aeMATIC: {
       availableEvmNetworks: {
         local: ["local"],
-        testnet: ["mumbai_polygon"]
-      }
-    }
-  }
-}
+        testnet: ["mumbai_polygon"],
+      },
+    },
+  },
+};
