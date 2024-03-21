@@ -300,6 +300,52 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_
   )
 end
 
+condition triggered_by: transaction, on: refund(htlc_genesis_address), as: [
+  content: (
+    # Ensure htlc_genesis_address exists in pool state
+    # and end_time has not been reached
+    valid? = false
+
+    contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
+
+    htlc_genesis_address = String.to_hex(htlc_genesis_address)
+    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
+
+    if htlc_map != nil do
+      valid? = htlc_map.end_time <= Time.now()
+    end
+
+    valid?
+  )
+]
+
+actions triggered_by: transaction, on: refund(htlc_genesis_address) do
+  contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
+
+  htlc_genesis_address = String.to_hex(htlc_genesis_address)
+  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+  htlc_map = Map.get(requested_secrets, htlc_genesis_address)
+
+  secret = Crypto.hmac(htlc_map.hmac_address)
+  signature = sign_for_evm_refund(secret)
+
+  requested_secrets = Map.delete(requested_secrets, htlc_genesis_address)
+  contract_content = Map.set(contract_content, "requested_secrets", requested_secrets)
+
+  Contract.add_recipient(
+    address: @STATE_ADDRESS,
+    action: "update_state",
+    args: [contract_content]
+  )
+
+  Contract.add_recipient(
+    address: htlc_genesis_address,
+    action: "refund",
+    args: [secret, signature]
+  )
+end
+
 condition triggered_by: transaction, on: update_code(new_code), as: [
   previous_public_key:
     (
@@ -523,6 +569,25 @@ fun sign_for_evm(data, chain_id) do
     abi_data = Evm.abi_encode("(bytes32,uint)", [data, chain_id])
     hash = Crypto.hash(abi_data, "keccak256")
   end
+
+  prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
+  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
+
+  sig = Crypto.sign_with_recovery(signature_payload)
+
+  if sig.v == 0 do
+    sig = Map.set(sig, "v", 27)
+  else
+    sig = Map.set(sig, "v", 28)
+  end
+
+  sig
+end
+
+fun sign_for_evm_refund(data) do
+  # Perform a first hash to combine data and "refund"
+  abi_data = Evm.abi_encode("(bytes32,string)", [data, "refund"])
+  hash = Crypto.hash(abi_data, "keccak256")
 
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
   signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
