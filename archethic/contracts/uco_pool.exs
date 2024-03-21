@@ -281,7 +281,7 @@ condition triggered_by: transaction, on: refund(htlc_genesis_address), as: [
     htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
-      valid? = htlc_map.end_time < Time.now()
+      valid? = htlc_map.end_time <= Time.now()
     end
 
     valid?
