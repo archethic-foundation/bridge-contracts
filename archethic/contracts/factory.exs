@@ -94,7 +94,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       Contract.set_code ""
     end
 
-    condition triggered_by: transaction, on: refund(evm_contract), as: [
+    condition triggered_by: transaction, on: refund(), as: [
       content: (
         valid? = false
 
@@ -121,7 +121,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       )
     ]
 
-    actions triggered_by: transaction, on: refund(evm_tx_address) do
+    actions triggered_by: transaction, on: refund() do
       Contract.set_type "transfer"
       #{return_transfer_code}
       Contract.set_code ""
