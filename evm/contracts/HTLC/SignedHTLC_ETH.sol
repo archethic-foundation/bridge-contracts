@@ -44,7 +44,7 @@ contract SignedHTLC_ETH is HTLC_ETH {
     /// @notice Refund the HTLC contract upon the Archethic's pool signature
     /// @dev Signature verification is done before to do the usual refund flow of the HTLC
     function refund(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
-        bytes32 messagePayload = keccak256(abi.encodePacked(_secret, "refund"));
+        bytes32 messagePayload = keccak256(bytes.concat(_secret, "refund"));
         bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayload);
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
 
