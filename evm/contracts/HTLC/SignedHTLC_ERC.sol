@@ -43,7 +43,7 @@ contract SignedHTLC_ERC is HTLC_ERC {
     }
 
     function refund(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
-        bytes32 messagePayload = keccak256(abi.encodePacked(_secret, "refund"));
+        bytes32 messagePayload = keccak256(bytes.concat(_secret, "refund"));
         bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayload);
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
 

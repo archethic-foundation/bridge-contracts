@@ -586,8 +586,8 @@ end
 
 fun sign_for_evm_refund(data) do
   # Perform a first hash to combine data and "refund"
-  abi_data = Evm.abi_encode("(bytes32,string)", [data, "refund"])
-  hash = Crypto.hash(abi_data, "keccak256")
+  sig_payload = "#{data}#{String.to_hex("refund")}"
+  hash = Crypto.hash(sig_payload, "keccak256")
 
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
   signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
