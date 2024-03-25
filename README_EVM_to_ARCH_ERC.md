@@ -12,6 +12,12 @@ cd archethic
 iex -S mix
 ```
 
+## Create Archethic Keychain
+
+```bash
+node bridge init_keychain
+```
+
 ## Create ERC20 Token on EVM
 
 ```bash
@@ -21,6 +27,7 @@ npx hardhat run scripts/cli/deploy_erc_token.js --network localhost
 ## Deploy ERC20 pool on EVM
 
 ```bash
+node bridge derive_eth_address --token aeDTK # give you the pool signer
 npx hardhat run scripts/cli/deploy_erc_pool.js --network localhost
 ```
 
@@ -28,12 +35,6 @@ npx hardhat run scripts/cli/deploy_erc_pool.js --network localhost
 
 ```bash
 npx hardhat run scripts/cli/fill_erc.js --network localhost
-```
-
-## Create Archethic Keychain
-
-```bash
-node bridge init_keychain
 ```
 
 ## Create Archethic Factory
@@ -52,7 +53,9 @@ node bridge deploy_pool --token aeDTK
 ```
 
 ---
+
 ---
+
 ---
 
 ## Create the EVM HTLC

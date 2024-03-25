@@ -51,8 +51,12 @@ node bridge deploy_factory
 node bridge deploy_pool --token UCO
 ```
 
+**/!\ DO A FAUCET ON THE POOL GENESIS**
+
 ---
+
 ---
+
 ---
 
 ## Create the EVM HTLC
@@ -67,7 +71,7 @@ the endtime / amount / hash are given by the previous command
 No 0x in the secret
 
 ```bash
-node bridge.js deploy_chargeable_htlc --token UCO --seed htlc1 --endtime 1699461240 --amount 14.925 --secret_hash ea83a8316cfd3ff0706bc2e63932446316cd2d2df9367199108fc9a475bbf45f --evm_tx_address 0xd018b746af5bcfc9a2e2f82e8ca01724876daca8eb421cda7ee3f77d0f3a2560 --evm_contract_address 0xdA1eC8398C9dd5482dF534135f11bAC6A802E492
+node bridge.js deploy_chargeable_htlc --token UCO --seed htlc1 --endtime 1711128300 --amount 9.95 --secret_hash ed08914866b945eab4784e378d8cf1840eba34679dec0e5fcbe3777d9870be27 --evm_tx_address 0x31c4f2a1a8549d4f59d0c11b68f417d6194a14fed7de5859ad8726dfde07a8c9 --evm_contract_address 0xdA1eC8398C9dd5482dF534135f11bAC6A802E492
 ```
 
 ## Reveal EVM
