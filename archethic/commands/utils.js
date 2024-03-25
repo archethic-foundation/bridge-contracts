@@ -11,7 +11,6 @@ const CONFIRMATION_THRESHOLD = 50
 
 const ucoContractPath = path.resolve(__dirname, "../contracts/uco_pool.exs")
 const tokenContractPath = path.resolve(__dirname, "../contracts/token_pool.exs")
-const stateContractPath = path.resolve(__dirname, "../contracts/state_contract.exs")
 const factoryContractPath = path.resolve(__dirname, "../contracts/factory.exs")
 
 export function getGenesisAddress(seed) {
@@ -135,13 +134,6 @@ export function getTokenDefinition(token) {
   })
 }
 
-export function getStateCode(keychain, poolServiceName) {
-  const poolGenesisAddress = getServiceGenesisAddress(keychain, poolServiceName)
-  const code = fs.readFileSync(stateContractPath, "utf8")
-
-  return code.replaceAll("@POOL_ADDRESS", "0x" + poolGenesisAddress)
-}
-
 export function getFactoryCode(keychain) {
   // Replace protocol fee address
   const code = fs.readFileSync(factoryContractPath, "utf8")
@@ -165,13 +157,10 @@ function getTokenPoolCode(keychain, token, envName) {
   // the first transaction if the chain
   const serviceName = getPoolServiceName(token)
   const tokenAddress = Utils.uint8ArrayToHex(keychain.deriveAddress(serviceName, 1))
-  const stateContractAddress = getServiceGenesisAddress(keychain, serviceName, "_state")
 
   let poolCode = fs.readFileSync(tokenContractPath, "utf8")
   // Replace token address
   poolCode = poolCode.replaceAll("@TOKEN_ADDRESS", "0x" + tokenAddress)
-  // Replace state address
-  poolCode = poolCode.replaceAll("@STATE_ADDRESS", "0x" + stateContractAddress)
 
   return replaceCommonTemplate(poolCode, keychain, token, envName)
 }

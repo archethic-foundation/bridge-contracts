@@ -14,8 +14,8 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   ),
   content: List.in?([@CHAIN_IDS], chain_id),
   token_transfers: (
-    contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-    !contract_already_charged?(contract_content, chain_id, evm_contract)
+    charged_contracts = State.get("charged_contracts", Map.new())
+    !contract_already_charged?(charged_contracts, chain_id, evm_contract)
   ),
   address: (
     valid? = false
@@ -72,21 +72,10 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
 actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret_hash, _, evm_contract, chain_id) do
   chain_data = get_chain_data(chain_id)
 
-  contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
-  # Delete old contract where end_time is over
-  charged_contracts = Map.get(contract_content, "charged_contracts", Map.new())
+  charged_contracts = State.get("charged_contracts", Map.new())
   charged_contracts = delete_old_charged_contracts(charged_contracts)
-
-  # Update state to keep contract already used
-  new_charged_contracts = add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time)
-  contract_content = Map.set(contract_content, "charged_contracts", new_charged_contracts)
-
-  Contract.add_recipient(
-    address: @STATE_ADDRESS,
-    action: "update_state",
-    args: [contract_content]
-  )
+  charged_contracts = add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time)
+  State.set("charged_contracts", charged_contracts)
 
   args = [
     @TOKEN_ADDRESS,
@@ -144,9 +133,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
 
 actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
-  contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
-  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+  requested_secrets = State.get("requested_secrets", Map.new())
   requested_secrets = delete_unused_secrets(requested_secrets)
 
   secret = Crypto.hmac(transaction.address)
@@ -167,14 +154,8 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   ]
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
-  new_requested_secrest = Map.set(requested_secrets, htlc_genesis_address, htlc_map)
-  contract_content = Map.set(contract_content, "requested_secrets", new_requested_secrest)
-
-  Contract.add_recipient(
-    address: @STATE_ADDRESS,
-    action: "update_state",
-    args: [contract_content]
-  )
+  requested_secrets = Map.set(requested_secrets, htlc_genesis_address, htlc_map)
+  State.set("requested_secrets", requested_secrets)
 
   Contract.add_recipient(
     address: htlc_genesis_address,
@@ -192,12 +173,10 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
   content: (
     # Ensure htlc_genesis_address exists in pool state
     # and end_time has not been reached
-    contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
     valid? = false
 
     htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    requested_secrets = State.get("requested_secrets", Map.new())
     htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
@@ -210,10 +189,8 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
     valid? = false
     htlc_map = nil
 
-    contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
     htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    requested_secrets = State.get("requested_secrets", Map.new())
     htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
@@ -274,24 +251,17 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
 ]
 
 actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, _evm_contract_address) do
-  contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+  requested_secrets = State.get("requested_secrets", Map.new())
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
   htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
   requested_secrets = Map.delete(requested_secrets, htlc_genesis_address)
-  contract_content = Map.set(contract_content, "requested_secrets", requested_secrets)
+  State.set("requested_secrets", requested_secrets)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
   # Do not use chain ID in signature for the secret reveal
   signature = sign_for_evm(secret, nil)
-
-  Contract.add_recipient(
-    address: @STATE_ADDRESS,
-    action: "update_state",
-    args: [contract_content]
-  )
 
   Contract.add_recipient(
     address: htlc_genesis_address,
@@ -306,10 +276,8 @@ condition triggered_by: transaction, on: refund(htlc_genesis_address), as: [
     # and end_time has not been reached
     valid? = false
 
-    contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
     htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+    requested_secrets = State.get("requested_secrets", Map.new())
     htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
     if htlc_map != nil do
@@ -321,23 +289,15 @@ condition triggered_by: transaction, on: refund(htlc_genesis_address), as: [
 ]
 
 actions triggered_by: transaction, on: refund(htlc_genesis_address) do
-  contract_content = Contract.call_function(@STATE_ADDRESS, "get_state", [])
-
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
-  requested_secrets = Map.get(contract_content, "requested_secrets", Map.new())
+  requested_secrets = State.get("requested_secrets", Map.new())
   htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
   signature = sign_for_evm_refund(secret)
 
   requested_secrets = Map.delete(requested_secrets, htlc_genesis_address)
-  contract_content = Map.set(contract_content, "requested_secrets", requested_secrets)
-
-  Contract.add_recipient(
-    address: @STATE_ADDRESS,
-    action: "update_state",
-    args: [contract_content]
-  )
+  State.set("requested_secrets", requested_secrets)
 
   Contract.add_recipient(
     address: htlc_genesis_address,
@@ -376,11 +336,9 @@ end
 # Private functions #
 #####################
 
-fun contract_already_charged?(content, chain_id, evm_contract) do
+fun contract_already_charged?(charged_contracts, chain_id, evm_contract) do
   chain_id = String.from_number(chain_id)
   evm_contract = String.to_lowercase(evm_contract)
-
-  charged_contracts = Map.get(content, "charged_contracts", Map.new())
   contracts = Map.get(charged_contracts, chain_id, Map.new())
 
   Map.get(contracts, evm_contract, nil) != nil
