@@ -12,6 +12,12 @@ cd archethic
 iex -S mix
 ```
 
+## Create Archethic Keychain
+
+```bash
+node bridge init_keychain
+```
+
 ## Create ERC20 Token on EVM
 
 ```bash
@@ -21,6 +27,7 @@ npx hardhat run scripts/cli/deploy_erc_token.js --network localhost
 ## Deploy ERC20 pool on EVM
 
 ```bash
+node bridge derive_eth_address --token aeDTK # give you the pool signer
 npx hardhat run scripts/cli/deploy_erc_pool.js --network localhost
 ```
 
@@ -28,12 +35,6 @@ npx hardhat run scripts/cli/deploy_erc_pool.js --network localhost
 
 ```bash
 npx hardhat run scripts/cli/fill_erc.js --network localhost
-```
-
-## Create Archethic Keychain
-
-```bash
-node bridge init_keychain
 ```
 
 ## Create Archethic Factory
@@ -44,15 +45,11 @@ node bridge deploy_factory
 
 ## Create Archethic WETH pool
 
-THE CONFIG.JS PROXY_ADDRESS MUST BE SET BECAUSE IT WILL BE WRITTEN IN THE POOL CONTRACT
+THE CONFIG.JS PROXY_ADDRESS MUST BE SET BECAUSE IT WILL BE WRITTEN IN THE POOL CONTRACT. PROXY_ADDRESS => EVM ERC20 POOL ADDRESS
 
 ```bash
 node bridge deploy_pool --token aeDTK
 ```
-
----
----
----
 
 ## Create Archethic HTLC
 
@@ -72,14 +69,14 @@ export function getTokenDefinition(token) {
     recipients: [
       {
         to: "0000b620e024f1c5f84d3b016ff5e9fcfbba79af2a4fb88a154ddaa0e52ba20d2cd7",
-        amount: 100_000_000_000
+        amount: 100_000_000_000,
       },
       {
         to: "00000000000000000000000000000000000000000000000000000000000000000000",
-        amount: 1
-      }
-    ]
-  })
+        amount: 1,
+      },
+    ],
+  });
 }
 ```
 
@@ -98,7 +95,7 @@ node bridge provision_htlc --token aeDTK --htlc_address 00003c4ab952924fc90236b0
 using variables from the get_htlc_data that is written in the 2nd transaction of the archethic HTLC
 
 ```bash
-npx hardhat run scripts/cli/create_erc_signed_htlc.js --network localhost
+npx hardhat run scripts/cli/deploy_erc_signed_htlc.js --network localhost
 ```
 
 ## Request secret from Archethic LP
