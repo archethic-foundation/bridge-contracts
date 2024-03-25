@@ -14,7 +14,7 @@ export default {
     local: {
       endpoints: [
         "http://127.0.0.1:8545",
-        "http://127.0.0.1:8546"
+        "http://127.0.0.1:8545"
       ],
       chainId: 31337,
       tokens: {
