@@ -101,7 +101,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
-        bytes32 hash = sha256(abi.encodePacked(_secret));
         bytes32 sigHash = ECDSA.toEthSignedMessageHash(hash);
         address signer = ECDSA.recover(sigHash, _v, _r, _s);
 
@@ -111,7 +110,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
         delete sigHash;
         delete signer;
-        delete hash;
 
         _withdraw(_secret);
     }
