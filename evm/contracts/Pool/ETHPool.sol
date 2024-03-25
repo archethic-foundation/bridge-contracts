@@ -22,8 +22,8 @@ contract ETHPool is PoolBase {
     /// @notice Throws if the contract is not provisioned
     error ContractNotProvisioned();
 
-	function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod) initializer external {
-        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod);
+	function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) initializer external {
+        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
 	}
 
     /// @notice Accept the reception of ethers

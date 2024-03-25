@@ -8,6 +8,8 @@ const {
   TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS,
 } = require("hardhat/builtin-tasks/task-names");
 
+require("dotenv").config();
+
 module.exports = {
   defaultNetwork: "hardhat",
   networks: {
@@ -102,6 +104,11 @@ module.exports = {
     alphaSort: true,
     disambiguatePaths: false,
     strict: true,
+  },
+
+  defender: {
+    apiKey: process.env.DEFENDER_KEY,
+    apiSecret: process.env.DEFENDER_SECRET,
   },
 };
 
