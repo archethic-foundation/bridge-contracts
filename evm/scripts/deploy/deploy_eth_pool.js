@@ -6,13 +6,15 @@ async function main() {
     const lockTimePeriod = 7200; // 2H
 
     const ETHPool = await ethers.getContractFactory("ETHPool");
+    const accounts = await ethers.getSigners()
     const instance = await upgrades.deployProxy(ETHPool, [
         reserveAddress, 
         safetyModuleAddress, 
         safetyModuleFeeRate, 
         archethicPoolSigner, 
         poolCap, 
-        lockTimePeriod
+        lockTimePeriod,
+        accounts[0].address
     ]);
 
     console.log(`ETH pool deployed at: ${await instance.getAddress()}`)

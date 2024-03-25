@@ -3,6 +3,9 @@ require('@openzeppelin/hardhat-upgrades');
 require("hardhat-tracer");
 require("hardhat-contract-sizer");
 
+require("dotenv").config();
+
+
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
@@ -95,5 +98,10 @@ module.exports = {
         alphaSort: true,
         disambiguatePaths: false,
         strict: true
+    },
+
+    defender: {
+        apiKey: process.env.DEFENDER_KEY,
+        apiSecret: process.env.DEFENDER_SECRET
     }
 };

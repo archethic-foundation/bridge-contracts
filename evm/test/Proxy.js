@@ -15,7 +15,7 @@ describe("LP Proxy", () => {
         const satefyModuleAddress = accounts[4].address
 
         const pool = await ethers.getContractFactory("ETHPool");
-        const proxiedPoolInstance = await deployProxy(pool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, ethers.parseEther('200'), 60]);
+        const proxiedPoolInstance = await deployProxy(pool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, ethers.parseEther('200'), 60, accounts[0].address]);
 
         return { proxy: proxiedPoolInstance, archPoolSigner, accounts }
     }

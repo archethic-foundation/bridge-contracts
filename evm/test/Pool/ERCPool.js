@@ -19,7 +19,8 @@ describe("ERC LiquidityPool", () => {
             archPoolSigner.address,
             ethers.parseEther("2.0"),
             60,
-            await token.getAddress()
+            await token.getAddress(),
+            accounts[0].address
         )
 
         return {

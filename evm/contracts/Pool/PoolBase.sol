@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 import "../../interfaces/IPool.sol";
@@ -10,7 +11,7 @@ import "../../interfaces/IHTLC.sol";
 
 /// @title Pool to manage assets for Archethic's bridge on EVM's side
 /// @author Archethic Foundation
-abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
+abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
 
     /// @inheritdoc IPool
     bool public locked;
@@ -113,7 +114,8 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @param _poolCap The maximum capacity of the pool's asset
     /// @param _lockTimePeriod The locktime period of the new HTLC contracts
     /// @dev The safety module fee rate is multiplied by 100 to match 2 decimals percentage
-    function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod) onlyInitializing virtual internal {
+    function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
+        __UUPSUpgradeable_init();
         __Ownable2Step_init();
 
         if(_reserveAddress == address(0)) {
@@ -138,9 +140,12 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         poolCap = _poolCap;
         locked = false;
         lockTimePeriod = _lockTimePeriod;
+
+        // Initialize OwnableUpgradeable explicitly with given multisig address.
+        transferOwnership(_multisig);
     }
 
-    /// @dev Check whether the pool is locked. 
+    /// @dev Check whether the pool is locked.
     /// @dev This is used instead of modifier to be more gas efficient
     function checkUnlocked() internal view {
         require(!locked, "Locked");
@@ -223,7 +228,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         lockTimePeriod = _lockTimePeriod;
         emit LockTimePeriodChanged(_lockTimePeriod);
     }
-    
+
     /// @notice Returns the swap fee to be send to the safety module
     /// @dev The fee is multiplied by 100000 to convert back from 2 decimals using wei in the amount
     /// @dev The fee is truncated after 8 decimals to match Archethic decimals policy
@@ -231,7 +236,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @param _decimals Number of decimals for the token
     function swapFee(uint256 _amount, uint8 _decimals) internal view returns (uint256) {
         uint256 _safetyModuleFeeRate = safetyModuleFeeRate;
-        
+
         if (_safetyModuleFeeRate == 0) {
             return 0;
         }
@@ -301,7 +306,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         _provisionedSwaps.push(address(htlcContract));
 
         emit ContractProvisioned(htlcContract, _amount);
-    } 
+    }
 
     /// @inheritdoc IPool
     function mintedSwaps() external view returns (address[] memory) {
@@ -371,4 +376,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
 
         return (reserveAddress, _recipientAmount, 0);
     }
+
+    // @dev Upgrades the implementation of the proxy to new address.
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }
