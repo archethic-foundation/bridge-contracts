@@ -84,7 +84,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   new_charged_contracts = add_charged_contracts(charged_contracts, chain_id, evm_contract, end_time)
   contract_content = Map.set(contract_content, "charged_contracts", new_charged_contracts)
 
-  signature = sign_for_evm(secret_hash, chain_id)
+  signature = sign_for_evm(secret_hash, nil)
 
   Contract.set_content(Json.to_string(contract_content))
   Contract.set_type("transfer")

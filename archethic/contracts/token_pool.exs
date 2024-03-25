@@ -97,7 +97,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   token_definition =
     Contract.call_function(@FACTORY_ADDRESS, "get_token_resupply_definition", args)
 
-  signature = sign_for_evm(secret_hash, chain_id)
+  signature = sign_for_evm(secret_hash, nil)
 
   Contract.set_type("token")
   Contract.add_recipient(
