@@ -116,15 +116,17 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
         headers = ["Content-Type": "application/json"]
         body = Json.to_string(request)
 
-        res = Http.request("\#{url}", "POST", headers, body)
-        if res.status == 200 && Json.is_valid?(res.body) do
-          response = Json.parse(res.body)
-          result = Map.get(response, "result")
-          
-          if result != nil do
-            decoded_abi = Evm.abi_decode("(uint)", result)
-            # Withdrawn status is 1
-            valid? = List.at(decoded_abi, 0) == 1
+        responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
+        for res in responses do
+          if !valid? && res.status == 200 && Json.is_valid?(res.body) do
+            response = Json.parse(res.body)
+            result = Map.get(response, "result")
+
+            if result != nil do
+              decoded_abi = Evm.abi_decode("(uint)", result)
+              # Withdrawn status is 1
+              valid? = List.at(decoded_abi, 0) == 1
+            end
           end
         end
 
@@ -137,12 +139,20 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       #{valid_transfer_code}
       Contract.set_code ""
     end
+
+    fun query_evm_apis(endpoints, method, headers, body) do
+      requests = []
+      for endpoint in endpoints do
+        requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+      end
+      Http.request_many(requests, false)
+    end
   """
 
   """
   @version 1
 
-  condition triggered_by: transaction, on: provision(_evm_contract, _url), as: [
+  condition triggered_by: transaction, on: provision(_evm_contract, _endpoints), as: [
 		previous_public_key: (
 	    # Transaction is not yet validated so we need to use previous address
 		  # to get the genesis address
@@ -151,7 +161,8 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 	  )
   ]
 
-  actions triggered_by: transaction, on: provision(evm_contract, url) do
+  actions triggered_by: transaction, on: provision(evm_contract, endpoints) do
+    endpoints = Json.to_string(endpoints)
     next_code = \"""
     #{after_provision_code}
     \"""
