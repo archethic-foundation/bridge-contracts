@@ -3,6 +3,11 @@ require('@openzeppelin/hardhat-upgrades');
 require("hardhat-tracer");
 require("hardhat-contract-sizer");
 
+require("dotenv").config();
+
+const {subtask} = require("hardhat/config");
+const {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} = require("hardhat/builtin-tasks/task-names")
+
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
@@ -95,5 +100,24 @@ module.exports = {
         alphaSort: true,
         disambiguatePaths: false,
         strict: true
+    },
+
+    defender: {
+        apiKey: process.env.DEFENDER_KEY,
+        apiSecret: process.env.DEFENDER_SECRET
     }
 };
+
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS)
+  .setAction(async (_, __, runSuper) => {
+    const paths = await runSuper();
+    const inclusionContract = process.env["ONLY_CONTRACT"]
+
+    return paths.filter(p => {
+      if (inclusionContract) {
+          return p.includes(inclusionContract)
+      }
+      return true
+    });
+  });

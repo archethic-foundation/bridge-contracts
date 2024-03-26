@@ -1,26 +1,40 @@
-const { ethers, upgrades, network } = require("hardhat");
+const { ethers, defender, network } = require("hardhat");
 
 async function main() {
-    const { reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap, tokenAddress } = await poolConfiguration()
-    const safetyModuleFeeRate = 5 // 0.05%
-    const lockTimePeriod = 7200; // 2H
+  const { reserveAddress, safetyModuleAddress, archethicPoolSigner, poolCap, tokenAddress } = await poolConfiguration();
+  const safetyModuleFeeRate = 5; // 0.05%
+  const lockTimePeriod = 7200; // 2H
 
-    const ERCPool = await ethers.getContractFactory("ERCPool");
+  const ERCPool = await ethers.getContractFactory("ERCPool");
 
-    const accounts = await ethers.getSigners()
+  const defaultApprovalProcess = await defender.getDefaultApprovalProcess();
+  if (defaultApprovalProcess.address === undefined) {
+    throw new Error(
+      `Upgrade approval process with id ${defaultApprovalProcess.approvalProcessId} has no assigned address`,
+    );
+  }
 
-    const instance = await upgrades.deployProxy(ERCPool, [
-        reserveAddress,
-        safetyModuleAddress,
-        safetyModuleFeeRate,
-        archethicPoolSigner,
-        poolCap,
-        lockTimePeriod,
-        tokenAddress,
-        accounts[0].address
-    ]);
+  const deployment = await defender.deployProxy(
+    ERCPool,
+    [
+      reserveAddress,
+      safetyModuleAddress,
+      safetyModuleFeeRate,
+      archethicPoolSigner,
+      poolCap,
+      lockTimePeriod,
+      tokenAddress,
+      defaultApprovalProcess.address,
+    ],
+    {
+      initializer: "initialize",
+      redeployImplementation: "always"
+    },
+  );
 
-    console.log(`ERC pool deployed at: ${await instance.getAddress()}`)
+  await deployment.waitForDeployment();
+
+  console.log(`ERC pool deployed at: ${await deployment.getAddress()}`);
 }
 
 async function poolConfiguration() {
@@ -68,8 +82,8 @@ async function poolConfiguration() {
 }
 
 main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1)
-    });
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
