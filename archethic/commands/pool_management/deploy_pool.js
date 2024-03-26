@@ -2,7 +2,6 @@ import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
 import {
   getPoolCode,
-  getStateCode,
   getTokenDefinition,
   getServiceGenesisAddress,
   sendTransactionWithFunding,
@@ -86,36 +85,11 @@ const handler = async function(argv) {
 
   updateKeychain(keychain, archethic)
     .then(() => sendTransactionWithFunding(poolTx, keychain, archethic))
-    .then(() => {
-      if (token != "UCO") {
-        console.log("=======================")
-        console.log("Deploying contract state")
-        return deployStateContract(archethic, keychain, serviceName, storageNonce)
-      } else {
-        process.exit(0)
-      }
-    })
     .then(() => process.exit(0))
     .catch(() => process.exit(1))
 }
 
-async function deployStateContract(archethic, keychain, serviceName, storageNonce) {
-  const stateName = serviceName + "_state"
-  keychain.addService(stateName, "m/650'/" + stateName)
-  const { secret, authorizedPublicKeys } = keychain.ecEncryptServiceSeed(stateName, [storageNonce])
 
-  const code = getStateCode(keychain, serviceName)
-
-  let tx = archethic.transaction.new()
-    .setType("contract")
-    .setCode(code)
-    .setContent("{}")
-    .addOwnership(secret, authorizedPublicKeys)
-
-  tx = keychain.buildTransaction(tx, stateName, 0).originSign(Utils.originPrivateKey)
-
-  return sendTransactionWithFunding(tx, keychain, archethic)
-}
 
 export default {
   command,
