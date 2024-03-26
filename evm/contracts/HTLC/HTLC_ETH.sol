@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3
+// SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.21;
 
 import "./HTLCBase.sol";
@@ -19,7 +19,7 @@ contract HTLC_ETH is HTLCBase {
             _assertReceivedFunds(_amount);
         }
     }
-   
+
     /// @dev Throws if the funds are not received
     /// @dev Emit FundsReceived event once done
     function _assertReceivedFunds(uint256 _amount) virtual internal {
