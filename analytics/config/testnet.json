@@ -1,4 +1,7 @@
 {
+  "cron": "* * * * *",
+  "port": 9100,
+  "dbFolder": "./db",
   "archethic": {
     "endpoint": "https://testnet.archethic.net",
     "pools": {
