@@ -23,12 +23,17 @@ console.log(`Opened!`);
 const app = express();
 const port = config.get("port");
 
-app.get("/metrics", (_req, res) => {
+app.get("/metrics", (req, res) => {
   let text = "";
   for (const metric of METRICS) {
     text += `# HELP ${metric.name}\n# TYPE ${metric.name} gauge\n${metric.name} ${metric.value}\n`;
   }
-  res.send(text);
+
+  if (req.get("accept").includes("html")) {
+    res.send(`<html><body><pre>${text}</pre></body></html>`);
+  } else {
+    res.send(text);
+  }
 });
 
 console.log(`Starting HTTP server on port ${port}...`);
