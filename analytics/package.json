@@ -12,6 +12,7 @@
   "dependencies": {
     "@archethicjs/sdk": "^1.20.2",
     "config": "^3.3.11",
+    "ethers": "^6.11.1",
     "express": "^4.19.2",
     "level": "^8.0.1",
     "node-cron": "^3.0.3"

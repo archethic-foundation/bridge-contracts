@@ -1,25 +1,58 @@
 {
+  "metricRoot": "bridge_testnet_",
   "cron": "* * * * *",
   "port": 9100,
   "dbFolder": "./db",
+  "evm": {
+    "sepolia": {
+      "coin": "ETH",
+      "chainID": 11155111,
+      "providerEndpoint": "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      "tokens": {
+        "UCO": "0xCBBd3374090113732393DAE1433Bc14E5233d5d7"
+      },
+      "pools": {
+        "UCO": "0x50b8B73327613468e5605eD59B980555DAAC354a",
+        "NATIVE": "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650"
+      }
+    },
+    "mumbai": {
+      "coin": "MATIC",
+      "chainID": 80001,
+      "providerEndpoint": "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      "tokens": {
+        "UCO": "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6"
+      },
+      "pools": {
+        "UCO": "0xe55915d112711127339f073e75185e6311dd72c8",
+        "NATIVE": "0x56c86b45fce906af9df535eb27968ae46cbf170e"
+      }
+    },
+    "bsctestnet": {
+      "coin": "tBNB",
+      "chainID": 97,
+      "providerEndpoint": "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+      "tokens": {
+        "UCO": "0x5e6554593E4fe61276AD09094f16A6D5133461A5"
+      },
+      "pools": {
+        "UCO": "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
+        "NATIVE": "0xef695c0c4034304300bd01f6c300a28000f2c163"
+      }
+    }
+  },
   "archethic": {
     "endpoint": "https://testnet.archethic.net",
+    "tokens": {
+      "aeETH": "00003df600e329199bf3ee8fbe2b8223413d70bcdd97e15089e6a74d94de3f1173b4",
+      "aeBNB": "0000288bf6f0e12457b125dc54d2dfa4eb010be3073cf02e10fb79b696180f55b827",
+      "aeMATIC": "00001a4ab7ad0ce2b494c965c66ff2962692a5fe5ecb71b345abb53bad88a83a01f1"
+    },
     "pools": {
-      "UCO": {
-        "address": "000018d60115ece0c7558a46b4693749bf6beab524fddccf9b10b910619e4ee08801"
-      },
-      "aeETH": {
-        "address": "000066706d704329ca8c2a4153991e2ddacc968622ca10217ca14952eb7abb966c30",
-        "tokenAddress": "00003df600e329199bf3ee8fbe2b8223413d70bcdd97e15089e6a74d94de3f1173b4"
-      },
-      "aeBNB": {
-        "address": "00008dd22e7496e86901e9b276a1be6f9512eb09980cc04c7b76495ef37d5666a709",
-        "tokenAddress": "0000288bf6f0e12457b125dc54d2dfa4eb010be3073cf02e10fb79b696180f55b827"
-      },
-      "aeMATIC": {
-        "address": "0000072e418b60c6dabd272bc2728b17b352b8104f068d11365d50134f96a4199609",
-        "tokenAddress": "00001a4ab7ad0ce2b494c965c66ff2962692a5fe5ecb71b345abb53bad88a83a01f1"
-      }
+      "UCO": "000018d60115ece0c7558a46b4693749bf6beab524fddccf9b10b910619e4ee08801",
+      "aeETH": "000066706d704329ca8c2a4153991e2ddacc968622ca10217ca14952eb7abb966c30",
+      "aeBNB": "00008dd22e7496e86901e9b276a1be6f9512eb09980cc04c7b76495ef37d5666a709",
+      "aeMATIC": "0000072e418b60c6dabd272bc2728b17b352b8104f068d11365d50134f96a4199609"
     },
     "protocolFeesAddress": "0000749d250560bf06c079832e0e9a24509b1e440a45c33bd9448b41b6a056fc6201"
   }

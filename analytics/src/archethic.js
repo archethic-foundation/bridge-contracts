@@ -6,18 +6,8 @@ import getHTLCStatuses, { HTLC_STATUS } from "./archethic/get-htlc-statuses.js";
 
 const PROTOCOL_FEES = config.get("archethic.protocolFeesAddress");
 
-const pools = {
-  UCO: config.get("archethic.pools.UCO.address"),
-  aeETH: config.get("archethic.pools.aeETH.address"),
-  aeBNB: config.get("archethic.pools.aeBNB.address"),
-  aeMATIC: config.get("archethic.pools.aeMATIC.address"),
-};
-
-const tokens = {
-  aeETH: config.get("archethic.pools.aeETH.tokenAddress"),
-  aeBNB: config.get("archethic.pools.aeBNB.tokenAddress"),
-  aeMATIC: config.get("archethic.pools.aeMATIC.tokenAddress"),
-};
+const pools = config.get("archethic.pools");
+const tokens = config.get("archethic.tokens");
 
 export async function tick(archethic, db) {
   const promises = [];
@@ -26,7 +16,7 @@ export async function tick(archethic, db) {
   for (const [asset, poolGenesisAddress] of Object.entries(pools)) {
     promises.push(
       getUCOBalance(archethic, poolGenesisAddress).then((value) => {
-        return { name: `archethic_bridge_pools_${asset}_amount_UCO`, value };
+        return { name: `archethic_pools_${asset}_amount_UCO`, value };
       }),
     );
   }
@@ -34,13 +24,13 @@ export async function tick(archethic, db) {
   // protocol fees
   promises.push(
     getUCOBalance(archethic, PROTOCOL_FEES).then((value) => {
-      return { name: `archethic_bridge_fees_UCO`, value };
+      return { name: `archethic_fees_UCO`, value };
     }),
   );
   for (const [asset, tokenAddress] of Object.entries(tokens)) {
     promises.push(
       getTokenBalance(archethic, PROTOCOL_FEES, tokenAddress).then((value) => {
-        return { name: `archethic_bridge_fees_${asset}`, value };
+        return { name: `archethic_fees_${asset}`, value };
       }),
     );
   }
@@ -52,7 +42,7 @@ export async function tick(archethic, db) {
         let metrics = [];
         for (const [key, value] of Object.entries(stats)) {
           metrics.push({
-            name: `archethic_bridge_pools_${asset}_htlcs_${HTLC_STATUS[key]}`,
+            name: `archethic_pools_${asset}_htlcs_${HTLC_STATUS[key]}`,
             value,
           });
         }

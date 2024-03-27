@@ -4,10 +4,13 @@ import Archethic from "@archethicjs/sdk";
 import { Level } from "level";
 import express from "express";
 
-import { tick } from "./src/archethic.js";
+import { tick as tickArchethic } from "./src/archethic.js";
+import { tick as tickEVM } from "./src/evm.js";
 
+const METRIC_ROOT = config.get("metricRoot");
 const ENDPOINT = config.get("archethic.endpoint");
-let METRICS = [];
+let METRICS_ARCHETHIC = [];
+let METRICS_EVM = [];
 
 console.log(`Connecting to endpoint ${ENDPOINT}...`);
 const archethic = new Archethic(ENDPOINT);
@@ -25,8 +28,8 @@ const port = config.get("port");
 
 app.get("/metrics", (req, res) => {
   let text = "";
-  for (const metric of METRICS) {
-    text += `# HELP ${metric.name}\n# TYPE ${metric.name} gauge\n${metric.name} ${metric.value}\n`;
+  for (const metric of [...METRICS_ARCHETHIC, ...METRICS_EVM]) {
+    text += `# HELP ${METRIC_ROOT}${metric.name}\n# TYPE ${METRIC_ROOT}${metric.name} gauge\n${METRIC_ROOT}${metric.name} ${metric.value}\n`;
   }
 
   if (req.get("accept").includes("html")) {
@@ -44,8 +47,19 @@ app.listen(port, () => {
   console.log(`Scheduler set to: ${cronInterval}`);
   cron.schedule(cronInterval, async () => {
     console.log("[tick] start");
-    METRICS = await tick(archethic, db);
-    METRICS.push({ name: "archethic_bridge_tick", value: Date.now() });
+
+    Promise.all([tickArchethic(archethic, db), tickEVM()]).then(
+      ([metricsArchethic, metricsEVM]) => {
+        METRICS_ARCHETHIC = metricsArchethic;
+        METRICS_EVM = metricsEVM;
+
+        METRICS_ARCHETHIC.push({
+          name: "tick",
+          value: Date.now(),
+        });
+      },
+    );
+
     console.log("[tick] end");
   });
 });
