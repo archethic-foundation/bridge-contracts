@@ -14,6 +14,14 @@
       "pools": {
         "UCO": "0x50b8B73327613468e5605eD59B980555DAAC354a",
         "NATIVE": "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650"
+      },
+      "reserves": {
+        "UCO": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
+        "NATIVE": "0x3FDf8f04cBe76c1376F593634096A5299B494678"
+      },
+      "safetyModules": {
+        "UCO": "0xbEF25E2b992494aF270092562e92aAC8394e0982",
+        "NATIVE": "0x57B5Fe2F6A28E108208BA4965d9879FACF629442"
       }
     },
     "mumbai": {
@@ -26,6 +34,14 @@
       "pools": {
         "UCO": "0xe55915d112711127339f073e75185e6311dd72c8",
         "NATIVE": "0x56c86b45fce906af9df535eb27968ae46cbf170e"
+      },
+      "reserves": {
+        "UCO": "0x5aAD864466491E81701103F04775EA7dE6d76fE3",
+        "NATIVE": "0x64d75D315c592cCE1F83c53A201313C82b30FA8d"
+      },
+      "safetyModules": {
+        "UCO": "0xbADc499dA1F766599d19dBa805CB62eFaa439Adc",
+        "NATIVE": "0xc20BcA1a8155c65964e5280D93d379aeB3A4c2e7"
       }
     },
     "bsctestnet": {
@@ -38,6 +54,14 @@
       "pools": {
         "UCO": "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
         "NATIVE": "0xef695c0c4034304300bd01f6c300a28000f2c163"
+      },
+      "reserves": {
+        "UCO": "0x157aB6F84d3a3874d1dEd1b0a63EC834C640FBda",
+        "NATIVE": "0x7F9E1c2Bb1Ab391bA9987070ED8e7db77A9c8818"
+      },
+      "safetyModules": {
+        "UCO": "0x95Cc38814d37E0A9b08f77a02Ff4045CeAd2106c",
+        "NATIVE": "0x6f3dec2738b063D9aFe4436b1ec307D84f9C2EDe"
       }
     }
   },

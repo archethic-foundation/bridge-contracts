@@ -16,7 +16,7 @@ export async function tick(archethic, db) {
   for (const [asset, poolGenesisAddress] of Object.entries(pools)) {
     promises.push(
       getUCOBalance(archethic, poolGenesisAddress).then((value) => {
-        return { name: `archethic_pools_${asset}_amount_UCO`, value };
+        return { name: `archethic_pools_${asset}`, value };
       }),
     );
   }
