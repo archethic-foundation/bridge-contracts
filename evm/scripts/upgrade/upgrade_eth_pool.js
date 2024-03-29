@@ -10,17 +10,6 @@ async function main() {
     }
 
     const signer = new ethers.Wallet(adminPrivateKey, ethers.provider)
-    const pool = await ethers.getContractAt("ERCPool", proxyAddress)
-
-    // Ensure this pool is a ERCPool by calling the token() function
-    try {
-        await pool.token()
-        console.log("This pool is not an ETHPool")
-        process.exit(1)
-    } catch (_err) {
-        null
-    }
-
     const ETHPool = await ethers.getContractFactory("ETHPool", signer);
     await upgrades.upgradeProxy(proxyAddress, ETHPool);
 
