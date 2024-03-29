@@ -1,5 +1,8 @@
 import { Utils } from "@archethicjs/sdk";
 import getPoolCalls from "./get-pool-calls.js";
+import Debug from "debug";
+
+const debug = Debug("archethic:htlc");
 
 export const HTLC_STATUS = {
   0: "NON_PROVISIONED",
@@ -19,10 +22,19 @@ export default async function (archethic, db, poolGenesisAddress) {
   const pagingAddress = await getPagingAddress(db, poolGenesisAddress);
   const res = await getPoolCalls(archethic, poolGenesisAddress, pagingAddress);
 
+  debug(
+    `${poolGenesisAddress}: processing ${res.fundsCalls.length} chargeable HTLCs`,
+  );
+
   const chargeableHTLCs = await getChargeableHTLCs(
     archethic,
     res.fundsCalls,
     poolGenesisAddress,
+  );
+
+  debug(`${poolGenesisAddress}: done`);
+  debug(
+    `${poolGenesisAddress}: processing ${res.secretHashCalls.length} signed HTLCs`,
   );
 
   const signedHTLCs = await getSignedHTLCs(
@@ -32,6 +44,8 @@ export default async function (archethic, db, poolGenesisAddress) {
     res.revealSecretCalls,
     poolGenesisAddress,
   );
+
+  debug(`${poolGenesisAddress}: done`);
 
   await updateHtlcDb(db, poolGenesisAddress, [
     ...chargeableHTLCs,
@@ -47,7 +61,7 @@ async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
   for (const htlcState of htlcStates) {
     promises.push(
       db.put(
-        `htlc:${poolGenesisAddress}:${htlcState.creationAddress}`,
+        `htlc:archethic:${poolGenesisAddress}:${htlcState.creationAddress}`,
         htlcState,
       ),
     );
@@ -66,7 +80,7 @@ async function htlcStats(db, poolGenesisAddress) {
   };
 
   for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(`htlc:${poolGenesisAddress}:`)) {
+    if (key.startsWith(`htlc:archethic:${poolGenesisAddress}:`)) {
       //const htlcAddress = key.split(":").pop();
 
       countByStatus[value.htlcStatus] = countByStatus[value.htlcStatus] + 1;
@@ -215,6 +229,8 @@ async function getHTLCsChain(archethic, addresses) {
 
       htlcsChain[address] = htlcChain;
     });
+
+    debug(`+ ${Object.keys(res).length}`);
 
     addressesProcessed += chunk.length;
   }

@@ -1,13 +1,13 @@
 {
   "metricRoot": "bridge_testnet_",
-  "cron": "* * * * *",
+  "cron": "0/15 * * * *",
   "port": 9100,
   "dbFolder": "./db",
   "evm": {
     "sepolia": {
       "coin": "ETH",
       "chainID": 11155111,
-      "providerEndpoint": "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      "providerEndpoint": "https://sepolia.infura.io/v3/55e1d62684554a0bacf8a58ebd196ee5",
       "tokens": {
         "UCO": "0xCBBd3374090113732393DAE1433Bc14E5233d5d7"
       },
@@ -27,7 +27,7 @@
     "mumbai": {
       "coin": "MATIC",
       "chainID": 80001,
-      "providerEndpoint": "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      "providerEndpoint": "https://polygon-mumbai.infura.io/v3/55e1d62684554a0bacf8a58ebd196ee5",
       "tokens": {
         "UCO": "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6"
       },

@@ -1,3 +1,7 @@
+import Debug from "debug";
+
+const debug = Debug("archethic:calls");
+
 export default async function (archethic, poolGenesisAddress, pagingAddress) {
   let fundsCalls = [];
   let secretHashCalls = [];
@@ -11,6 +15,13 @@ export default async function (archethic, poolGenesisAddress, pagingAddress) {
     // Fetch pool chain (batch of 10 txs), retrieve each transaction's inputs
     // filter call inputs and retrieve call details
     const res = await nextPage(archethic, poolGenesisAddress, pagingAddress);
+
+    debug(
+      `${poolGenesisAddress}: found ${res.fundsCalls.length} chargeable HTLCs`,
+    );
+    debug(
+      `${poolGenesisAddress}: found ${res.secretHashCalls.length} signed HTLCs`,
+    );
 
     fundsCalls.push(...res.fundsCalls);
     secretHashCalls.push(...res.secretHashCalls);
@@ -35,18 +46,6 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
   const { transactionChain: poolTxs } =
     await archethic.network.rawGraphQLQuery(query);
 
-  if (poolTxs.length == 0) {
-    // returning the same pagingAddress wil break the while loop
-    return {
-      fundsCalls: [],
-      secretHashCalls: [],
-      setSecretHashCalls: [],
-      revealSecretCalls: [],
-      failedCalls: [],
-      pagingAddress,
-    };
-  }
-
   const failedCalls = [];
   const setSecretHashCalls = [];
 
@@ -68,6 +67,18 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
 
     return call ? acc + "\n" + callQuery(poolTx.address, call.from) : acc;
   }, "");
+
+  if (!callQueries) {
+    // returning the same pagingAddress wil break the while loop
+    return {
+      fundsCalls: [],
+      secretHashCalls: [],
+      setSecretHashCalls: [],
+      revealSecretCalls: [],
+      failedCalls: [],
+      pagingAddress,
+    };
+  }
 
   query = `query {
     ${callQueries}
