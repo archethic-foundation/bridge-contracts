@@ -13,6 +13,7 @@ const ENDPOINT = config.get("archethic.endpoint");
 let METRICS_ARCHETHIC = [];
 let METRICS_EVM = [];
 let LAST_TICK;
+let RUNNING = false;
 
 debug(`Connecting to endpoint ${ENDPOINT}...`);
 const archethic = new Archethic(ENDPOINT);
@@ -73,6 +74,7 @@ app.listen(port, () => {
   debug(`Started!`);
 
   const tick = async function () {
+    RUNNING = true;
     return Promise.all([
       tickArchethic(archethic, db).then((metricsArchethic) => {
         METRICS_ARCHETHIC = metricsArchethic;
@@ -82,6 +84,7 @@ app.listen(port, () => {
       }),
     ]).then(() => {
       LAST_TICK = Date.now();
+      RUNNING = false;
     });
   };
 
@@ -90,6 +93,8 @@ app.listen(port, () => {
   const cronInterval = config.get("cron");
   debug(`Scheduler set to: ${cronInterval}`);
   cron.schedule(cronInterval, async () => {
+    if (RUNNING) return;
+
     debug("tick start");
     await tick();
     debug("tick end");

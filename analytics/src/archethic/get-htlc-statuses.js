@@ -61,7 +61,7 @@ async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
   for (const htlcState of htlcStates) {
     promises.push(
       db.put(
-        `htlc:archethic:${poolGenesisAddress}:${htlcState.creationAddress}`,
+        `htlc:archethic:${poolGenesisAddress}:${htlcState.type}:${htlcState.creationAddress}`,
         htlcState,
       ),
     );
@@ -70,24 +70,54 @@ async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
 }
 
 async function htlcStats(db, poolGenesisAddress) {
-  let countByStatus = {
-    0: 0,
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 0,
-    5: 0,
+  let countByTypeAndStatus = {
+    signed: {
+      0: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    },
+    chargeable: {
+      0: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    },
+  };
+  let amountByTypeAndStatus = {
+    signed: {
+      0: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    },
+    chargeable: {
+      0: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    },
   };
 
   for await (const [key, value] of db.iterator()) {
     if (key.startsWith(`htlc:archethic:${poolGenesisAddress}:`)) {
-      //const htlcAddress = key.split(":").pop();
+      const parts = key.split(":");
+      const htlcType = parts[parts.length - 2];
 
-      countByStatus[value.htlcStatus] = countByStatus[value.htlcStatus] + 1;
+      countByTypeAndStatus[htlcType][value.htlcStatus] += 1;
+      amountByTypeAndStatus[htlcType][value.htlcStatus] += value.amount;
     }
   }
 
-  return countByStatus;
+  return { countByTypeAndStatus, amountByTypeAndStatus };
 }
 
 async function getPagingAddress(db, poolGenesisAddress) {
@@ -151,6 +181,7 @@ async function getSignedHTLCs(
     );
 
     const htlc = {
+      type: "signed",
       creationTime: call.validationStamp.timestamp,
       amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
       evmChainID: call.data.actionRecipients[0].args[3],
@@ -191,6 +222,7 @@ async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
     );
 
     const htlc = {
+      type: "chargeable",
       creationAddress: call.address,
       creationTime: call.validationStamp.timestamp,
       amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),

@@ -89,25 +89,25 @@ export async function tick(db) {
         poolNativeAddress,
         "CHARGEABLE_NATIVE",
       ).then((stats) =>
-        htlcStatsToMetrics(networkName, "CHARGEABLE_NATIVE", stats),
+        htlcStatsToMetrics(networkName, "chargeable", "NATIVE", stats),
       ),
     );
 
     metrics.push(
       await getHTLCStats(db, provider, poolUCOAddress, "CHARGEABLE_UCO").then(
-        (stats) => htlcStatsToMetrics(networkName, "CHARGEABLE_UCO", stats),
+        (stats) => htlcStatsToMetrics(networkName, "chargeable", "UCO", stats),
       ),
     );
 
     metrics.push(
       await getHTLCStats(db, provider, poolNativeAddress, "SIGNED_NATIVE").then(
-        (stats) => htlcStatsToMetrics(networkName, "SIGNED_NATIVE", stats),
+        (stats) => htlcStatsToMetrics(networkName, "signed", "NATIVE", stats),
       ),
     );
 
     metrics.push(
       await getHTLCStats(db, provider, poolUCOAddress, "SIGNED_UCO").then(
-        (stats) => htlcStatsToMetrics(networkName, "SIGNED_UCO", stats),
+        (stats) => htlcStatsToMetrics(networkName, "signed", "UCO", stats),
       ),
     );
   }
@@ -115,30 +115,30 @@ export async function tick(db) {
   return metrics.flat();
 }
 
-function htlcStatsToMetrics(networkName, htlcType, stats) {
+function htlcStatsToMetrics(networkName, htlcType, asset, stats) {
   return [
     {
-      name: `evm_htlcs_count{status="PENDING",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_count{status="PENDING",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: stats.countPending,
     },
     {
-      name: `evm_htlcs_count{status="WITHDRAWN",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_count{status="WITHDRAWN",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: stats.countWithdrawn,
     },
     {
-      name: `evm_htlcs_count{status="REFUNDED",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_count{status="REFUNDED",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: stats.countRefunded,
     },
     {
-      name: `evm_htlcs_amount{status="PENDING",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_amount{status="PENDING",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountPending),
     },
     {
-      name: `evm_htlcs_amount{status="WITHDRAWN",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_amount{status="WITHDRAWN",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountWithdrawn),
     },
     {
-      name: `evm_htlcs_amount{status="REFUNDED",type="${htlcType}",network="${networkName}"}`,
+      name: `evm_htlcs_amount{status="REFUNDED",type="${htlcType}",asset="${asset}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountRefunded),
     },
   ];
