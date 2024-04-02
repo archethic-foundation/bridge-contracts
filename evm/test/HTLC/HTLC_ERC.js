@@ -170,6 +170,8 @@ describe("ERC HTLC", (accounts) => {
     ])
 
 
+    time.increaseTo(lockTime + 5)
+
     await expect(
       HTLCInstance.refund()
     )
