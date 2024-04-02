@@ -1,5 +1,4 @@
 {
-  "metricRoot": "bridge_testnet_",
   "cron": "0/15 * * * *",
   "port": 9100,
   "dbFolder": "./db",

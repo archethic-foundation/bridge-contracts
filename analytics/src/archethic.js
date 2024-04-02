@@ -16,7 +16,7 @@ export async function tick(archethic, db) {
   for (const [asset, poolGenesisAddress] of Object.entries(pools)) {
     promises.push(
       getUCOBalance(archethic, poolGenesisAddress).then((value) => {
-        return { name: `archethic_pools_balance{asset=${asset}}`, value };
+        return { name: `archethic_pools_balance{asset="${asset}"}`, value };
       }),
     );
   }
@@ -24,13 +24,13 @@ export async function tick(archethic, db) {
   // protocol fees
   promises.push(
     getUCOBalance(archethic, PROTOCOL_FEES).then((value) => {
-      return { name: `archethic_fees_balance{asset=UCO}`, value };
+      return { name: `archethic_fees_balance{asset="UCO"}`, value };
     }),
   );
   for (const [asset, tokenAddress] of Object.entries(tokens)) {
     promises.push(
       getTokenBalance(archethic, PROTOCOL_FEES, tokenAddress).then((value) => {
-        return { name: `archethic_fees_balance{asset=${asset}}`, value };
+        return { name: `archethic_fees_balance{asset="${asset}"}`, value };
       }),
     );
   }
@@ -42,7 +42,7 @@ export async function tick(archethic, db) {
         let metrics = [];
         for (const [key, value] of Object.entries(stats)) {
           metrics.push({
-            name: `archethic_htlcs_count{asset=${asset},type=${HTLC_STATUS[key]}}`,
+            name: `archethic_htlcs_count{asset="${asset}",type="${HTLC_STATUS[key]}"}`,
             value,
           });
         }

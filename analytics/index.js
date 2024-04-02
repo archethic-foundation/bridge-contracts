@@ -9,7 +9,6 @@ import { tick as tickArchethic } from "./src/archethic.js";
 import { tick as tickEVM } from "./src/evm.js";
 
 const debug = Debug("server");
-const METRIC_ROOT = config.get("metricRoot");
 const ENDPOINT = config.get("archethic.endpoint");
 let METRICS_ARCHETHIC = [];
 let METRICS_EVM = [];
@@ -30,8 +29,24 @@ const port = config.get("port");
 
 app.get("/metrics", (req, res) => {
   let text = "";
-  for (const metric of [...METRICS_ARCHETHIC, ...METRICS_EVM]) {
-    text += `# TYPE ${METRIC_ROOT}${metric.name.split("{")[0]} gauge\n${METRIC_ROOT}${metric.name} ${metric.value}\n`;
+  let prevMetricsBaseName = "";
+
+  // metrics with the same name but different labels must appear grouped
+  const sortedMetrics = [...METRICS_ARCHETHIC, ...METRICS_EVM].sort((a, b) => {
+    if (a.name > b.name) return 1;
+    return -1;
+  });
+
+  for (const metric of sortedMetrics) {
+    const metricBaseName = metric.name.split("{")[0];
+
+    // the type must not be set on each metrics
+    if (metricBaseName != prevMetricsBaseName) {
+      text += `# TYPE ${metricBaseName} gauge\n`;
+    }
+
+    text += `${metric.name} ${metric.value}\n`;
+    prevMetricsBaseName = metricBaseName;
   }
 
   if (req.get("accept").includes("html")) {

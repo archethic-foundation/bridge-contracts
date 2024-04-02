@@ -44,37 +44,37 @@ export async function tick(db) {
       await Promise.all([
         provider.getBalance(poolNativeAddress).then((value) => {
           return {
-            name: `evm_pools_balance{asset=NATIVE,network=${networkName}}`,
+            name: `evm_pools_balance{asset="NATIVE",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
         tokenContract.balanceOf(poolUCOAddress).then((value) => {
           return {
-            name: `evm_pools_balance{asset=UCO,network=${networkName}}`,
+            name: `evm_pools_balance{asset="UCO",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
         provider.getBalance(safetyModuleNativeAddress).then((value) => {
           return {
-            name: `evm_safetyModule_balance{asset=NATIVE,network=${networkName}}`,
+            name: `evm_safetymodule_balance{asset="NATIVE",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
         tokenContract.balanceOf(safetyModuleUCOAddress).then((value) => {
           return {
-            name: `evm_safetyModule_balance{asset=UCO,network=${networkName}}`,
+            name: `evm_safetymodule_balance{asset="UCO",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
         provider.getBalance(reserveNativeAddress).then((value) => {
           return {
-            name: `evm_reserve_balance{asset=NATIVE,network=${networkName}}`,
+            name: `evm_reserve_balance{asset="NATIVE",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
         tokenContract.balanceOf(reserveUCOAddress).then((value) => {
           return {
-            name: `evm_reserve_balance{asset=UCO,network=${networkName}}`,
+            name: `evm_reserve_balance{asset="UCO",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
@@ -118,27 +118,27 @@ export async function tick(db) {
 function htlcStatsToMetrics(networkName, htlcType, stats) {
   return [
     {
-      name: `evm_htlcs_count{status=PENDING,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_count{status="PENDING",type="${htlcType}",network="${networkName}"}`,
       value: stats.countPending,
     },
     {
-      name: `evm_htlcs_count{status=WITHDRAWN,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_count{status="WITHDRAWN",type="${htlcType}",network="${networkName}"}`,
       value: stats.countWithdrawn,
     },
     {
-      name: `evm_htlcs_count{status=REFUNDED,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_count{status="REFUNDED",type="${htlcType}",network="${networkName}"}`,
       value: stats.countRefunded,
     },
     {
-      name: `evm_htlcs_amount{status=PENDING,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_amount{status="PENDING",type="${htlcType}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountPending),
     },
     {
-      name: `evm_htlcs_amount{status=WITHDRAWN,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_amount{status="WITHDRAWN",type="${htlcType}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountWithdrawn),
     },
     {
-      name: `evm_htlcs_amount{status=REFUNDED,type=${htlcType},network=${networkName}}`,
+      name: `evm_htlcs_amount{status="REFUNDED",type="${htlcType}",network="${networkName}"}`,
       value: ethers.formatEther(stats.amountRefunded),
     },
   ];
