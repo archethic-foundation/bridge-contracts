@@ -82,7 +82,7 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType) {
   debug(`${htlcType}: processing ${htlcsAddressesToProcess.length} HTLCs`);
   const htlcs = await list(provider, htlcsAddressesToProcess, htlcAbi);
   await persistHTLCs(db, htlcs, poolAddress, htlcType);
-  return stats(await getHTLCs(db, poolAddress));
+  return stats(await getHTLCs(db, poolAddress, htlcType));
 }
 
 async function list(provider, addresses, abi) {
@@ -161,7 +161,7 @@ async function persistHTLCs(db, htlcs, poolAddress, htlcType) {
         newAddressesToDiscard.push(address);
       }
 
-      await db.put(`${htlcNamespaceKey(poolAddress)}:${address}`, {
+      await db.put(`${htlcNamespaceKey(poolAddress, htlcType)}:${address}`, {
         status,
         amount: serializeAmount(amount),
       });
@@ -183,11 +183,11 @@ async function persistHTLCs(db, htlcs, poolAddress, htlcType) {
   return;
 }
 
-async function getHTLCs(db, poolAddress) {
+async function getHTLCs(db, poolAddress, htlcType) {
   let htlcs = [];
 
   for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(htlcNamespaceKey(poolAddress))) {
+    if (key.startsWith(htlcNamespaceKey(poolAddress, htlcType))) {
       const address = key.split(":").pop();
       htlcs.push({
         address,
@@ -203,8 +203,8 @@ function discardedAddressesKey(poolAddress, htlcType) {
   return `htlc:evm:discard:${poolAddress}:${htlcType}`;
 }
 
-function htlcNamespaceKey(poolAddress) {
-  return `htlc:evm:${poolAddress}`;
+function htlcNamespaceKey(poolAddress, htlcType) {
+  return `htlc:evm:${poolAddress}:${htlcType}`;
 }
 
 function serializeAmount(amount) {

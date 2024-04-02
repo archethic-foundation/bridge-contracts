@@ -12,6 +12,7 @@ const debug = Debug("server");
 const ENDPOINT = config.get("archethic.endpoint");
 let METRICS_ARCHETHIC = [];
 let METRICS_EVM = [];
+let LAST_TICK;
 
 debug(`Connecting to endpoint ${ENDPOINT}...`);
 const archethic = new Archethic(ENDPOINT);
@@ -31,8 +32,19 @@ app.get("/metrics", (req, res) => {
   let text = "";
   let prevMetricsBaseName = "";
 
+  const metadata = [
+    {
+      name: "tick",
+      value: LAST_TICK,
+    },
+  ];
+
   // metrics with the same name but different labels must appear grouped
-  const sortedMetrics = [...METRICS_ARCHETHIC, ...METRICS_EVM].sort((a, b) => {
+  const sortedMetrics = [
+    ...METRICS_ARCHETHIC,
+    ...METRICS_EVM,
+    ...metadata,
+  ].sort((a, b) => {
     if (a.name > b.name) return 1;
     return -1;
   });
@@ -61,16 +73,16 @@ app.listen(port, () => {
   debug(`Started!`);
 
   const tick = async function () {
-    return Promise.all([tickArchethic(archethic, db), tickEVM(db)]).then(
-      ([metricsArchethic, metricsEVM]) => {
+    return Promise.all([
+      tickArchethic(archethic, db).then((metricsArchethic) => {
         METRICS_ARCHETHIC = metricsArchethic;
+      }),
+      tickEVM(db).then((metricsEVM) => {
         METRICS_EVM = metricsEVM;
-        METRICS_EVM.push({
-          name: "tick",
-          value: Date.now(),
-        });
-      },
-    );
+      }),
+    ]).then(() => {
+      LAST_TICK = Date.now();
+    });
   };
 
   tick();
