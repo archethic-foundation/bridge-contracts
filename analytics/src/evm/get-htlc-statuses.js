@@ -33,33 +33,21 @@ const SIGNED_ERC = JSON.parse(
   ),
 );
 
-export async function getHTLCStats(db, provider, poolAddress, htlcType) {
+export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
   let poolAbi;
   let htlcAbi;
   let contractFunction;
 
   switch (htlcType) {
-    case "CHARGEABLE_NATIVE":
-      poolAbi = NATIVE_POOL.abi;
-      htlcAbi = CHARGEABLE_NATIVE.abi;
+    case "chargeable":
+      htlcAbi = asset == "NATIVE" ? CHARGEABLE_NATIVE.abi : CHARGEABLE_ERC.abi;
+      poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "mintedSwaps";
       break;
 
-    case "CHARGEABLE_UCO":
-      poolAbi = ERC_POOL.abi;
-      htlcAbi = CHARGEABLE_ERC.abi;
-      contractFunction = "mintedSwaps";
-      break;
-
-    case "SIGNED_NATIVE":
-      poolAbi = NATIVE_POOL.abi;
-      htlcAbi = SIGNED_NATIVE.abi;
-      contractFunction = "provisionedSwaps";
-      break;
-
-    case "SIGNED_UCO":
-      poolAbi = ERC_POOL.abi;
-      htlcAbi = SIGNED_ERC.abi;
+    case "signed":
+      htlcAbi = asset == "NATIVE" ? SIGNED_NATIVE.abi : SIGNED_ERC.abi;
+      poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "provisionedSwaps";
       break;
 
@@ -79,7 +67,9 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType) {
     (address) => !addressesToDiscard.includes(address),
   );
 
-  debug(`${htlcType}: processing ${htlcsAddressesToProcess.length} HTLCs`);
+  debug(
+    `${htlcType}/${asset}: processing ${htlcsAddressesToProcess.length} HTLCs`,
+  );
   const htlcs = await list(provider, htlcsAddressesToProcess, htlcAbi);
   await persistHTLCs(db, htlcs, poolAddress, htlcType);
   return stats(await getHTLCs(db, poolAddress, htlcType));

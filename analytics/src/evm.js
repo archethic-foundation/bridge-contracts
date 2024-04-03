@@ -26,20 +26,49 @@ export async function tick(db) {
       undefined,
       { batchMaxCount: 10, batchStallTime: 1000 },
     );
+
+    // balances tokens (concurrently)
+    for (const [tokenName, tokenContractAddress] of Object.entries(
+      networkConf.tokens,
+    )) {
+      const tokenContract = new ethers.Contract(
+        tokenContractAddress,
+        ERC20.abi,
+        provider,
+      );
+
+      const tokenPoolAddress = networkConf.pools[tokenName];
+      const tokenReserveAddress = networkConf.reserves[tokenName];
+      const tokenSafetyModuleAddress = networkConf.safetyModules[tokenName];
+
+      metrics.push(
+        await Promise.all([
+          tokenContract.balanceOf(tokenPoolAddress).then((value) => {
+            return {
+              name: `evm_pools_balance{asset="${tokenName}",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
+          tokenContract.balanceOf(tokenSafetyModuleAddress).then((value) => {
+            return {
+              name: `evm_safetymodule_balance{asset="${tokenName}",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
+          tokenContract.balanceOf(tokenReserveAddress).then((value) => {
+            return {
+              name: `evm_reserve_balance{asset="${tokenName}",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
+        ]),
+      );
+    }
+
+    // balances native (concurrently)
     const poolNativeAddress = networkConf.pools.NATIVE;
-    const poolUCOAddress = networkConf.pools.UCO;
     const reserveNativeAddress = networkConf.reserves.NATIVE;
-    const reserveUCOAddress = networkConf.reserves.UCO;
     const safetyModuleNativeAddress = networkConf.safetyModules.NATIVE;
-    const safetyModuleUCOAddress = networkConf.safetyModules.UCO;
-
-    const tokenContract = new ethers.Contract(
-      networkConf.tokens.UCO,
-      ERC20.abi,
-      provider,
-    );
-
-    // balances (concurrently)
     metrics.push(
       await Promise.all([
         provider.getBalance(poolNativeAddress).then((value) => {
@@ -48,33 +77,17 @@ export async function tick(db) {
             value: ethers.formatEther(value),
           };
         }),
-        tokenContract.balanceOf(poolUCOAddress).then((value) => {
-          return {
-            name: `evm_pools_balance{asset="UCO",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
+
         provider.getBalance(safetyModuleNativeAddress).then((value) => {
           return {
             name: `evm_safetymodule_balance{asset="NATIVE",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
-        tokenContract.balanceOf(safetyModuleUCOAddress).then((value) => {
-          return {
-            name: `evm_safetymodule_balance{asset="UCO",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
+
         provider.getBalance(reserveNativeAddress).then((value) => {
           return {
             name: `evm_reserve_balance{asset="NATIVE",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
-        tokenContract.balanceOf(reserveUCOAddress).then((value) => {
-          return {
-            name: `evm_reserve_balance{asset="UCO",network="${networkName}"}`,
             value: ethers.formatEther(value),
           };
         }),
@@ -82,34 +95,25 @@ export async function tick(db) {
     );
 
     // HTLCs (sequentially)
-    metrics.push(
-      await getHTLCStats(
-        db,
-        provider,
-        poolNativeAddress,
-        "CHARGEABLE_NATIVE",
-      ).then((stats) =>
-        htlcStatsToMetrics(networkName, "chargeable", "NATIVE", stats),
-      ),
-    );
-
-    metrics.push(
-      await getHTLCStats(db, provider, poolUCOAddress, "CHARGEABLE_UCO").then(
-        (stats) => htlcStatsToMetrics(networkName, "chargeable", "UCO", stats),
-      ),
-    );
-
-    metrics.push(
-      await getHTLCStats(db, provider, poolNativeAddress, "SIGNED_NATIVE").then(
-        (stats) => htlcStatsToMetrics(networkName, "signed", "NATIVE", stats),
-      ),
-    );
-
-    metrics.push(
-      await getHTLCStats(db, provider, poolUCOAddress, "SIGNED_UCO").then(
-        (stats) => htlcStatsToMetrics(networkName, "signed", "UCO", stats),
-      ),
-    );
+    for (const [tokenName, poolAddress] of Object.entries(networkConf.pools)) {
+      metrics.push(
+        await getHTLCStats(
+          db,
+          provider,
+          poolAddress,
+          "chargeable",
+          tokenName,
+        ).then((stats) =>
+          htlcStatsToMetrics(networkName, "chargeable", tokenName, stats),
+        ),
+      );
+      metrics.push(
+        await getHTLCStats(db, provider, poolAddress, "signed", tokenName).then(
+          (stats) =>
+            htlcStatsToMetrics(networkName, "signed", tokenName, stats),
+        ),
+      );
+    }
   }
 
   return metrics.flat();

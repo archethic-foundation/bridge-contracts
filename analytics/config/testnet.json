@@ -28,19 +28,23 @@
       "chainID": 80001,
       "providerEndpoint": "https://polygon-mumbai.infura.io/v3/55e1d62684554a0bacf8a58ebd196ee5",
       "tokens": {
-        "UCO": "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6"
+        "UCO": "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6",
+        "WETH": "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa"
       },
       "pools": {
         "UCO": "0xe55915d112711127339f073e75185e6311dd72c8",
-        "NATIVE": "0x56c86b45fce906af9df535eb27968ae46cbf170e"
+        "NATIVE": "0x56c86b45fce906af9df535eb27968ae46cbf170e",
+        "WETH": "0x018a6673063514AEEB028890C48EE68F62bd7CAD"
       },
       "reserves": {
         "UCO": "0x5aAD864466491E81701103F04775EA7dE6d76fE3",
-        "NATIVE": "0x64d75D315c592cCE1F83c53A201313C82b30FA8d"
+        "NATIVE": "0x64d75D315c592cCE1F83c53A201313C82b30FA8d",
+        "WETH": "0x5aAD864466491E81701103F04775EA7dE6d76fE3"
       },
       "safetyModules": {
         "UCO": "0xbADc499dA1F766599d19dBa805CB62eFaa439Adc",
-        "NATIVE": "0xc20BcA1a8155c65964e5280D93d379aeB3A4c2e7"
+        "NATIVE": "0xc20BcA1a8155c65964e5280D93d379aeB3A4c2e7",
+        "WETH": "0xbADc499dA1F766599d19dBa805CB62eFaa439Adc"
       }
     },
     "bsctestnet": {
