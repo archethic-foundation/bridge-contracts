@@ -113,7 +113,9 @@ async function htlcStats(db, poolGenesisAddress) {
       const htlcType = parts[parts.length - 2];
 
       countByTypeAndStatus[htlcType][value.htlcStatus] += 1;
-      amountByTypeAndStatus[htlcType][value.htlcStatus] += value.amount;
+      amountByTypeAndStatus[htlcType][value.htlcStatus] += Utils.fromBigInt(
+        value.amount,
+      );
     }
   }
 
