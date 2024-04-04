@@ -173,7 +173,7 @@ async function getSignedHTLCs(
 
     const htlcChain = htlcsChain[creationAddress];
 
-    const withdrawAddresses = [BURN_ADDRESS, poolGenesisAddress];
+    const withdrawAddresses = [BURN_ADDRESS, poolGenesisAddress.toUpperCase()];
     const refundAddresses = [userAddress.toUpperCase()];
     const { fee, userAmount, refundAmount, htlcStatus } = getHTLCDatas(
       htlcChain,
@@ -215,7 +215,7 @@ async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
     const userAddress = call.data.actionRecipients[0].args[2];
 
     const withdrawAddresses = [userAddress.toUpperCase()];
-    const refundAddresses = [BURN_ADDRESS, poolGenesisAddress];
+    const refundAddresses = [BURN_ADDRESS, poolGenesisAddress.toUpperCase()];
     const { fee, userAmount, refundAmount, htlcStatus } = getHTLCDatas(
       htlcChain,
       endTime,
@@ -327,12 +327,14 @@ function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
       lastTransaction.data.ledger.token.transfers,
     );
 
-    const feeTransfer = transfers.find(({ to }) => to == PROTOCOL_FEE_ADDRESS);
+    const feeTransfer = transfers.find(
+      ({ to }) => to.toUpperCase() == PROTOCOL_FEE_ADDRESS,
+    );
     const userTransfer = transfers.find(({ to }) =>
-      withdrawAddresses.includes(to),
+      withdrawAddresses.includes(to.toUpperCase()),
     );
     const refundTransfer = transfers.find(({ to }) =>
-      refundsAddresses.includes(to),
+      refundsAddresses.includes(to.toUpperCase()),
     );
 
     if (refundTransfer && !feeTransfer && !userTransfer) {
