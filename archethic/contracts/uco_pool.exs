@@ -100,13 +100,6 @@ end
 condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id), as: [
   type: "transfer",
   code: valid_signed_code?(htlc_genesis_address, amount, user_address),
-  previous_public_key:
-    (
-      # Ensure contract has enough fund to withdraw
-      previous_address = Chain.get_previous_address()
-      balance = Chain.get_uco_balance(previous_address)
-      balance >= amount
-    ),
   content: List.in?([@CHAIN_IDS], chain_id),
   uco_transfers:
     (
