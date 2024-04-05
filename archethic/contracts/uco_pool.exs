@@ -14,8 +14,7 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   ),
   uco_transfers: (
     # Ensure the pool has enough UCO to send the requested fund
-    balance = Chain.get_uco_balance(contract.address)
-    balance >= amount
+    contract.balance.uco >= amount
   ),
   content: List.in?([@CHAIN_IDS], chain_id),
   token_transfers: (
