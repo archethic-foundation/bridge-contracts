@@ -53,7 +53,7 @@ export default {
           decimals: 18,
         },
         aeETH: {
-          proxyAddress: "0x3Fa0d410064FcE2744e4feebB3Be338e1fA3C967",
+          proxyAddress: "0x018a6673063514aeeb028890c48ee68f62bd7cad",
           decimals: 18,
         },
       },
