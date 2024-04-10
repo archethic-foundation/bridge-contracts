@@ -52,8 +52,12 @@ describe("LP Proxy", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -64,9 +68,10 @@ describe("LP Proxy", () => {
         const lockTime = blockTimestamp + 60
 
         await proxy.provisionHTLC(
-            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", 
-            ethers.parseEther("1.0"), 
+            "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            ethers.parseEther("1.0"),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v)
@@ -100,4 +105,3 @@ describe("LP Proxy", () => {
         expect(await proxy.safetyModuleFeeRate()).to.equal(1000)
     })
 })
-

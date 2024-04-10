@@ -39,6 +39,8 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     address[] private _provisionedSwaps;
     address[] private _mintedSwaps;
 
+    mapping(address => Swap[]) _swapsByOwner;
+
     /// @notice Notifies a change about the reserve destination wallet
     event ReserveAddressChanged(address indexed _reservedAddress);
 
@@ -261,7 +263,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @dev The secret's hash cannot be reused
     /// @dev ContractProvisioned event is emitted once done
     /// @dev An error is thrown whether the locktime is invalid, the swap already provisioned or the signature from Archethic's pool is invalid
-    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external {
+    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes memory _archethicHTLCAddress, bytes32 _r, bytes32 _s, uint8 _v) external {
         checkUnlocked();
 
         if (_hash == bytes32(0)) {
@@ -284,8 +286,10 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
             revert AlreadyProvisioned();
         }
 
-        bytes32 messagePayloadHash = keccak256(abi.encodePacked(_hash, bytes32(block.chainid)));
+        bytes32 _archethicHTLCAddressHash = sha256(_archethicHTLCAddress);
+        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid));
         bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayloadHash);
+
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
         if (signer != archethicPoolSigner) {
             revert InvalidSignature();
@@ -299,9 +303,10 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         _refProvisionedSwaps[_hash] = htlcContract;
 
         _provisionedSwaps.push(address(htlcContract));
+        _swapsByOwner[msg.sender].push(Swap(address(htlcContract), _archethicHTLCAddress, SwapType.SIGNED_HTLC));
 
         emit ContractProvisioned(htlcContract, _amount);
-    } 
+    }
 
     /// @inheritdoc IPool
     function mintedSwaps() external view returns (address[] memory) {
@@ -336,6 +341,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         IHTLC htlcContract = _createChargeableHTLC(_hash, _amount, _lockTime);
         _refMintedSwaps[_hash] = htlcContract;
         _mintedSwaps.push(address(htlcContract));
+        _swapsByOwner[msg.sender].push(Swap(address(htlcContract), "", SwapType.CHARGEABLE_HTLC));
         emit ContractMinted(htlcContract, _amount);
     }
 
@@ -370,5 +376,15 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         }
 
         return (reserveAddress, _recipientAmount, 0);
+    }
+
+    /// @inheritdoc IPool
+    function getSwapsByOwner(address owner) external view returns (Swap[] memory swaps) {
+        uint size = _swapsByOwner[owner].length;
+        swaps = new Swap[](size);
+
+        for (uint i = 0; i < size; i++) {
+            swaps[i]= _swapsByOwner[owner][i];
+        }
     }
 }

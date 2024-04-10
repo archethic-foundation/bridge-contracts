@@ -132,8 +132,12 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   secret = Crypto.hmac(transaction.address)
   secret_hash = Crypto.hash(secret, "sha256")
 
-  # Build signature for EVM decryption
-  signature = sign_for_evm(secret_hash, chain_id)
+  # Perform a first hash to combine data and chain_id
+  abi_data = Evm.abi_encode("(bytes32, bytes32,uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id])
+  signature_data = Crypto.hash(abi_data, "keccak256")
+
+  # Build signature for EVM verification
+  signature = sign_for_evm(signature_data)
 
   # Calculate endtime now + 2 hours
   now = Time.now()

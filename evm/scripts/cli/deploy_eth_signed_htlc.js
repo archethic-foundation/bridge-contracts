@@ -7,6 +7,14 @@ const readline = require("readline").createInterface({
     output: process.stdout
 })
 
+async function promptArchethicHTLCAddress() {
+    return new Promise(r => {
+        readline.question("Archethic HTLC address: ", input => {
+            r(input)
+        })
+    })
+}
+
 async function promptSecretHash() {
     return new Promise(r => {
         readline.question("secret hash (with 0x): ", input => {
@@ -64,9 +72,10 @@ async function main() {
     const lockTimeUnix = await promptEndTime()
     const hash = await promptSecretHash()
     const signature = await promptSignature()
+    const archethicHTLCAddress = await promptArchethicHTLCAddress()
 
     const pool = await ethers.getContractAt("ETHPool", poolAddress)
-    const tx = await pool.provisionHTLC(hash, amount, lockTimeUnix, signature.r, signature.s, signature.v, { gasLimit: 10000000 })
+    const tx = await pool.provisionHTLC(hash, amount, lockTimeUnix, `0x${archethicHTLCAddress}`, signature.r, signature.s, signature.v, { gasLimit: 10000000 })
     const htlcContract = await pool.provisionedSwap(hash)
     console.log(`HTLC CONTRACT address: ${htlcContract}`)
     console.log(`HTLC TX address: ${tx.hash}`)

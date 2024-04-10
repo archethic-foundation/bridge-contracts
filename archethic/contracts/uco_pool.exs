@@ -117,7 +117,7 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   secret_hash = Crypto.hash(secret, "sha256")
 
   # Perform a first hash to combine data and chain_id
-  abi_data = Evm.abi_encode("(bytes32,uint)", [secret_hash, chain_id])
+  abi_data = Evm.abi_encode("(bytes32, bytes32,uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id])
   signature_data = Crypto.hash(abi_data, "keccak256")
 
   # Build signature for EVM verification

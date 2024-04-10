@@ -134,8 +134,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -149,6 +153,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -157,6 +162,10 @@ describe("ETH LiquidityPool", () => {
         await expect(tx).to.emit(pool, "ContractProvisioned")
 
         const htlcAddress = await pool.provisionedSwap("0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+        const provisionedSwaps = await pool.getSwapsByOwner(accounts[0].address)
+        expect(provisionedSwaps[0][0]).to.equal(htlcAddress)
+        expect(provisionedSwaps[0][1]).to.equal(`0x${archethicHtlcAddress}`)
+        expect(provisionedSwaps[0][2]).to.equal(1)
 
         await expect(tx)
             .to.changeEtherBalance(htlcAddress, ethers.parseEther("1"))
@@ -183,8 +192,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -195,6 +208,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -213,8 +227,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -225,6 +243,7 @@ describe("ETH LiquidityPool", () => {
             "0x0000000000000000000000000000000000000000000000000000000000000000",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -243,8 +262,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -255,6 +278,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('0'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -270,8 +294,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -282,6 +310,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             0,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -292,6 +321,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             await time.latest() - 10, // Before the latest block
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -302,6 +332,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             await time.latest() + 90000, // More than 1 day from the latest block
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -322,8 +353,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -337,6 +372,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -346,6 +382,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -361,17 +398,8 @@ describe("ETH LiquidityPool", () => {
             value: ethers.parseEther("2.0"),
         });
 
-        const buffer = new ArrayBuffer(32);
-        const view = new DataView(buffer);
-        view.setUint32(0x0, networkConfig.chainId, true);
-        const networkIdUint8Array = new Uint8Array(buffer).reverse();
-
-        const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
-            networkIdUint8Array
-        ])
-
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(randomBytes(32)))
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
 
         const blockTimestamp = await time.latest()
         const lockTime = blockTimestamp + 60
@@ -380,6 +408,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -395,8 +424,12 @@ describe("ETH LiquidityPool", () => {
         view.setUint32(0x0, networkConfig.chainId, true);
         const networkIdUint8Array = new Uint8Array(buffer).reverse();
 
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
         const sigPayload = concatUint8Arrays([
-            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
+            hexToUintArray("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"), // HTLC's hash
             networkIdUint8Array
         ])
 
@@ -410,6 +443,7 @@ describe("ETH LiquidityPool", () => {
             "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
             ethers.parseEther('1'),
             lockTime,
+            `0x${archethicHtlcAddress}`,
             signature.r,
             signature.s,
             signature.v
@@ -444,6 +478,11 @@ describe("ETH LiquidityPool", () => {
         const roundedTimestamp = nowTimestamp - (nowTimestamp % 60)
 
         expect(ethers.toBigInt(lockTime) - ethers.toBigInt(roundedTimestamp) >= 60).to.be.true
+
+        const swaps = await pool.getSwapsByOwner(accounts[0].address)
+        expect(swaps[0][0]).to.equal(htlcAddress)
+        expect(swaps[0][1]).to.equal("0x")
+        expect(swaps[0][2]).to.equal(0)
     })
 
     it("should mint and send funds to the HTLC contract with fee handling low decimals", async () => {
@@ -512,4 +551,3 @@ describe("ETH LiquidityPool", () => {
             .to.be.revertedWithCustomError(pool, "InvalidAmount")
     })
 })
-
