@@ -86,7 +86,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   token_definition =
     Contract.call_function(@FACTORY_ADDRESS, "get_token_resupply_definition", args)
 
-  signature = sign_for_evm(secret_hash, nil)
+  signature = sign_for_evm(secret_hash)
 
   Contract.set_type("token")
   Contract.add_recipient(
@@ -253,8 +253,7 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_
   State.set("requested_secrets", requested_secrets)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
-  # Do not use chain ID in signature for the secret reveal
-  signature = sign_for_evm(secret, nil)
+  signature = sign_for_evm(secret)
 
   Contract.add_recipient(
     address: htlc_genesis_address,
@@ -287,7 +286,11 @@ actions triggered_by: transaction, on: refund(htlc_genesis_address) do
   htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
   secret = Crypto.hmac(htlc_map.hmac_address)
-  signature = sign_for_evm_refund(secret)
+  # Perform a first hash to combine data and "refund"
+  sig_payload = "#{secret}#{String.to_hex("refund")}"
+  signature_data = Crypto.hash(sig_payload, "keccak256")
+
+  signature = sign_for_evm(signature_data)
 
   requested_secrets = Map.delete(requested_secrets, htlc_genesis_address)
   State.set("requested_secrets", requested_secrets)
@@ -512,36 +515,9 @@ fun valid_amount?(call_amount, amount, decimals) do
   decimal_amount == amount
 end
 
-fun sign_for_evm(data, chain_id) do
-  hash = data
-
-  if chain_id != nil do
-    # Perform a first hash to combine data and chain_id
-    abi_data = Evm.abi_encode("(bytes32,uint)", [data, chain_id])
-    hash = Crypto.hash(abi_data, "keccak256")
-  end
-
+fun sign_for_evm(data) do
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
-
-  sig = Crypto.sign_with_recovery(signature_payload)
-
-  if sig.v == 0 do
-    sig = Map.set(sig, "v", 27)
-  else
-    sig = Map.set(sig, "v", 28)
-  end
-
-  sig
-end
-
-fun sign_for_evm_refund(data) do
-  # Perform a first hash to combine data and "refund"
-  sig_payload = "#{data}#{String.to_hex("refund")}"
-  hash = Crypto.hash(sig_payload, "keccak256")
-
-  prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
+  signature_payload = Crypto.hash("#{prefix}#{data}", "keccak256")
 
   sig = Crypto.sign_with_recovery(signature_payload)
 
