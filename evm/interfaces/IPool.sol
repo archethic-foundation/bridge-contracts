@@ -11,7 +11,7 @@ interface IPool {
     /// @param _r Signature's R part
     /// @param _s Signature's S part
     /// @param _v SIgnature's recovery part
-    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes32 _r, bytes32 _s, uint8 _v) external;
+    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes memory _archethicHTLCAddress, bytes32 _r, bytes32 _s, uint8 _v) external;
 
     /// @notice Mint an HTLC contract by specifying the reserve and safety module as recipient of the HTLC and chargeable in fee for the safety module.
     /// @param _hash Secret's hash of the HTLC
@@ -81,4 +81,16 @@ interface IPool {
     /// @notice Return a minted swap by its secret's hash
     /// @return htlc Address of the HTLC's contract
     function mintedSwap(bytes32 _hash) external returns (IHTLC);
+
+    enum SwapType { CHARGEABLE_HTLC, SIGNED_HTLC }
+
+    struct Swap {
+        address evmAddress;
+        bytes archethicAddress;
+        SwapType swapType;
+    }
+
+    /// @notice Return the list of swaps by owner's address
+    /// @return swaps List of swaps, including EVM & Archethic's htlc address & Swap's type: Chargeable (From EVM) or Signed (To Evm)
+    function getSwapsByOwner(address owner) external view returns (Swap[] memory swaps);
 }
