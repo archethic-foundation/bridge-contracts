@@ -161,8 +161,9 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       Contract.set_code ""
     end
 
-    export fun get_provision_signature() do
+    export fun get_provision_data() do
         [
+          evm_contract: #{evm_contract},
           signature: [
             r: 0x\#{signature.r},
             s: 0x\#{signature.s},
