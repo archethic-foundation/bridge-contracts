@@ -127,7 +127,6 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
 actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   requested_secrets = State.get("requested_secrets", Map.new())
-  requested_secrets = delete_unused_secrets(requested_secrets)
 
   secret = Crypto.hmac(transaction.address)
   secret_hash = Crypto.hash(secret, "sha256")
@@ -370,18 +369,6 @@ fun delete_old_charged_contracts(charged_contracts) do
   end
 
   charged_contracts
-end
-
-fun delete_unused_secrets(requested_secrets) do
-  for address in Map.keys(requested_secrets) do
-    htlc_map = Map.get(requested_secrets, address)
-
-    if htlc_map.end_time <= Time.now() do
-      requested_secrets = Map.delete(requested_secrets, address)
-    end
-  end
-
-  requested_secrets
 end
 
 fun valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
