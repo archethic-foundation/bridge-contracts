@@ -107,6 +107,9 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+        if (!_beforeLockTime(block.timestamp)) {
+            revert TooLate();
+        }
         bytes32 sigHash = ECDSA.toEthSignedMessageHash(hash);
         address signer = ECDSA.recover(sigHash, _v, _r, _s);
 

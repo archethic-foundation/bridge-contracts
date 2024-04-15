@@ -65,18 +65,19 @@ describe("Chargeable ERC HTLC", () => {
         archPoolSigner.address,
         ethers.parseEther("0.95"),
         60,
-        tokenAddress
+        tokenAddress,
+        accounts[0]
     )
     const poolAddress = await pool.getAddress()
 
     const satefyModuleAddress = accounts[3].address
     const reserveAddress = accounts[4].address
-    
+
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
       .update(secret)
       .digest("hex")
-      
+
     const amount = ethers.parseEther("0.995")
     const fee = ethers.parseEther("0.005")
 
@@ -126,6 +127,61 @@ describe("Chargeable ERC HTLC", () => {
         -ethers.parseEther("1.0"),
       ],
     );
+  });
+
+  it("withdraw should not be feasable after locktime", async () => {
+    const { address: tokenAddress } = await loadFixture(deployTokenFixture);
+    const accounts = await ethers.getSigners();
+    const safetyModuleAddress = accounts[3].address;
+    const reserveAddress = accounts[4].address;
+    const archPoolSigner = ethers.Wallet.createRandom();
+
+    const pool = await ethers.deployContract("ERCPool")
+    await pool.initialize(
+        accounts[4].address,
+        accounts[3].address,
+        5,
+        archPoolSigner.address,
+        ethers.parseEther("0.95"),
+        60,
+        tokenAddress,
+        accounts[0]
+    )
+    const poolAddress = await pool.getAddress()
+
+    const secret = randomBytes(32);
+    const secretHash = createHash("sha256").update(secret).digest("hex");
+
+    const amount = ethers.parseEther("0.995");
+    const fee = ethers.parseEther("0.005");
+
+    const blockTimestamp = await time.latest();
+    const lockTime = blockTimestamp + 60;
+
+    const HTLCInstance = await ethers.deployContract("ChargeableHTLC_ERC", [
+      tokenAddress,
+      amount,
+      `0x${secretHash}`,
+      lockTime,
+      reserveAddress,
+      safetyModuleAddress,
+      fee,
+      poolAddress,
+      archPoolSigner.address
+    ])
+
+    const signature = ethers.Signature.from(
+      await archPoolSigner.signMessage(hexToUintArray(secretHash)),
+    );
+
+    await time.increaseTo(lockTime + 5);
+
+    await expect(HTLCInstance.connect(accounts[2]).withdraw(
+      `0x${secret.toString("hex")}`,
+      signature.r,
+      signature.s,
+      signature.v,
+    )).to.be.revertedWithCustomError(HTLCInstance, "TooLate")
   });
 
   it("refund should send back tokens to the owner", async () => {
