@@ -1,6 +1,12 @@
 import { Utils } from "@archethicjs/sdk";
 import getPoolCalls from "./get-pool-calls.js";
 import Debug from "debug";
+import {
+  updateHtlcDb,
+  htlcStats,
+  getPagingAddress,
+  setPagingAddress,
+} from "../registry/archethic-htlcs.js";
 
 const debug = Debug("archethic:htlc");
 
@@ -54,84 +60,6 @@ export default async function (archethic, db, poolGenesisAddress) {
   await setPagingAddress(db, poolGenesisAddress, res.pagingAddress);
 
   return htlcStats(db, poolGenesisAddress);
-}
-
-async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
-  var promises = [];
-  for (const htlcState of htlcStates) {
-    promises.push(
-      db.put(
-        `htlc:archethic:${poolGenesisAddress}:${htlcState.type}:${htlcState.creationAddress}`,
-        htlcState,
-      ),
-    );
-  }
-  return Promise.all(promises);
-}
-
-async function htlcStats(db, poolGenesisAddress) {
-  let countByTypeAndStatus = {
-    signed: {
-      0: 0,
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    },
-    chargeable: {
-      0: 0,
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    },
-  };
-  let amountByTypeAndStatus = {
-    signed: {
-      0: 0,
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    },
-    chargeable: {
-      0: 0,
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    },
-  };
-
-  for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(`htlc:archethic:${poolGenesisAddress}:`)) {
-      const parts = key.split(":");
-      const htlcType = parts[parts.length - 2];
-
-      countByTypeAndStatus[htlcType][value.htlcStatus] += 1;
-      amountByTypeAndStatus[htlcType][value.htlcStatus] += Utils.fromBigInt(
-        value.amount,
-      );
-    }
-  }
-
-  return { countByTypeAndStatus, amountByTypeAndStatus };
-}
-
-async function getPagingAddress(db, poolGenesisAddress) {
-  let address;
-  try {
-    address = await db.get(`pagingAddress:${poolGenesisAddress}`);
-  } catch (_) {}
-  return address;
-}
-
-async function setPagingAddress(db, poolGenesisAddress, pagingAddress) {
-  return db.put(`pagingAddress:${poolGenesisAddress}`, pagingAddress);
 }
 
 async function getSignedHTLCs(

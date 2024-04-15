@@ -1,6 +1,11 @@
 import fs from "fs";
 import { ethers } from "ethers";
 import Debug from "debug";
+import {
+  getAddressesToDiscard,
+  getHTLCs,
+  persistHTLCs,
+} from "../registry/evm-htlcs.js";
 
 const debug = Debug("evm:htlc");
 
@@ -59,6 +64,7 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
     db,
     poolAddress,
     htlcType,
+    asset,
   );
   const poolContract = new ethers.Contract(poolAddress, poolAbi, provider);
   const htlcsAddresses = await poolContract[contractFunction]();
@@ -71,8 +77,8 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
     `${htlcType}/${asset}: processing ${htlcsAddressesToProcess.length} HTLCs`,
   );
   const htlcs = await list(provider, htlcsAddressesToProcess, htlcAbi);
-  await persistHTLCs(db, htlcs, poolAddress, htlcType);
-  return stats(await getHTLCs(db, poolAddress, htlcType));
+  await persistHTLCs(db, htlcs, poolAddress, htlcType, asset);
+  return stats(await getHTLCs(db, poolAddress, htlcType, asset));
 }
 
 async function list(provider, addresses, abi) {
@@ -82,12 +88,20 @@ async function list(provider, addresses, abi) {
     const chunkSwaps = await Promise.all(
       chunkAddresses.map(async (address) => {
         const htlcContract = new ethers.Contract(address, abi, provider);
-        const [statusEnum, amount] = await Promise.all([
+        const [statusEnum, amount, lockTime, userAddress] = await Promise.all([
           htlcContract.status(),
           htlcContract.amount(),
+          htlcContract.lockTime(),
+          htlcContract.from(),
         ]);
 
-        return { address, status: statusFromEnum(statusEnum), amount };
+        return {
+          address,
+          status: statusFromEnum(statusEnum),
+          amount,
+          lockTime,
+          userAddress,
+        };
       }),
     );
 
@@ -132,76 +146,6 @@ function stats(htlcs) {
     countWithdrawn,
     countRefunded,
   };
-}
-
-async function getAddressesToDiscard(db, poolAddress, htlcType) {
-  let addresses = [];
-  try {
-    addresses = await db.get(discardedAddressesKey(poolAddress, htlcType));
-  } catch (_) {}
-  return addresses;
-}
-
-async function persistHTLCs(db, htlcs, poolAddress, htlcType) {
-  let newAddressesToDiscard = [];
-
-  await Promise.all(
-    htlcs.map(async ({ address, status, amount }) => {
-      if (status != "PENDING") {
-        newAddressesToDiscard.push(address);
-      }
-
-      await db.put(`${htlcNamespaceKey(poolAddress, htlcType)}:${address}`, {
-        status,
-        amount: serializeAmount(amount),
-      });
-    }),
-  );
-
-  // FIXME: NOT ATOMIC
-  const prevAddressesToDiscard = await getAddressesToDiscard(
-    db,
-    poolAddress,
-    htlcType,
-  );
-  const toDiscard = [
-    ...new Set([...prevAddressesToDiscard, ...newAddressesToDiscard]),
-  ];
-  await db.put(discardedAddressesKey(poolAddress, htlcType), toDiscard);
-  // FIXME: NOT ATOMIC
-
-  return;
-}
-
-async function getHTLCs(db, poolAddress, htlcType) {
-  let htlcs = [];
-
-  for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(htlcNamespaceKey(poolAddress, htlcType))) {
-      const address = key.split(":").pop();
-      htlcs.push({
-        address,
-        status: value.status,
-        amount: deserializeAmount(value.amount),
-      });
-    }
-  }
-  return htlcs;
-}
-
-function discardedAddressesKey(poolAddress, htlcType) {
-  return `htlc:evm:discard:${poolAddress}:${htlcType}`;
-}
-
-function htlcNamespaceKey(poolAddress, htlcType) {
-  return `htlc:evm:${poolAddress}:${htlcType}`;
-}
-
-function serializeAmount(amount) {
-  return amount + "";
-}
-function deserializeAmount(amount) {
-  return BigInt(amount);
 }
 
 function statusFromEnum(s) {

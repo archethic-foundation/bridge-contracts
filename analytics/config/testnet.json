@@ -51,6 +51,7 @@
       "coin": "tBNB",
       "chainID": 97,
       "providerEndpoint": "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+      "explorer": "https://testnet.bscscan.com/",
       "tokens": {
         "UCO": "0x5e6554593E4fe61276AD09094f16A6D5133461A5"
       },
