@@ -10,50 +10,48 @@ for (const evmNetwork of evmNetworks) {
   }
 }
 
-export async function getHTLCs(db, poolAddress, htlcType, asset) {
+export async function getHTLCs(db, htlcType, asset, poolAddress) {
   let htlcs = [];
+  if (!poolAddress) {
+    for await (const [key, value] of db.iterator()) {
+      const regex =
+        htlcType == "chargeable"
+          ? /htlc:evm:chargeable:(.*):(0x[a-fA-F0-9]*):(0x[a-fA-F0-9]*)/
+          : /htlc:evm:signed:(.*):(0x[a-fA-F0-9]*):(0x[a-fA-F0-9]*)/;
+      const r = key.match(regex);
+      if (r && r.length == 4) {
+        const asset = r[1];
+        const poolAddress = r[2];
+        const htlcAddress = r[3];
 
-  for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(htlcNamespaceKey(poolAddress, htlcType, asset))) {
-      const address = key.split(":").pop();
-      htlcs.push({
-        address,
-        asset,
-        status: value.status,
-        lockTime: deserializeBigInt(value.lockTime),
-        amount: deserializeBigInt(value.amount),
-        userAddress: value.userAddress,
-      });
+        htlcs.push({
+          asset,
+          chain: CHAIN_BY_POOL_ADDRESS[poolAddress],
+          explorer: config.get(
+            `evm.${CHAIN_BY_POOL_ADDRESS[poolAddress]}.explorer`,
+          ),
+          poolAddress: poolAddress,
+          address: htlcAddress,
+          userAddress: value.userAddress,
+          lockTime: value.lockTime,
+          status: value.status,
+          amount: value.amount / 10 ** 18,
+        });
+      }
     }
-  }
-  return htlcs;
-}
-
-export async function getChargeableHTLCs(db) {
-  let htlcs = [];
-
-  for await (const [key, value] of db.iterator()) {
-    const r = key.match(
-      /htlc:evm:chargeable:(.*):(0x[a-fA-F0-9]*):(0x[a-fA-F0-9]*)/,
-    );
-    if (r && r.length == 4) {
-      const asset = r[1];
-      const poolAddress = r[2];
-      const htlcAddress = r[3];
-
-      htlcs.push({
-        asset,
-        chain: CHAIN_BY_POOL_ADDRESS[poolAddress],
-        explorer: config.get(
-          `evm.${CHAIN_BY_POOL_ADDRESS[poolAddress]}.explorer`,
-        ),
-        poolAddress: poolAddress,
-        address: htlcAddress,
-        userAddress: value.userAddress,
-        lockTime: value.lockTime,
-        status: value.status,
-        amount: value.amount / 10 ** 18,
-      });
+  } else {
+    for await (const [key, value] of db.iterator()) {
+      if (key.startsWith(htlcNamespaceKey(poolAddress, htlcType, asset))) {
+        const address = key.split(":").pop();
+        htlcs.push({
+          address,
+          asset,
+          status: value.status,
+          lockTime: deserializeBigInt(value.lockTime),
+          amount: deserializeBigInt(value.amount),
+          userAddress: value.userAddress,
+        });
+      }
     }
   }
   return htlcs;

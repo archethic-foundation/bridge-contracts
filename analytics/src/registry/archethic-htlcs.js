@@ -78,12 +78,14 @@ export async function htlcStats(db, poolGenesisAddress) {
   return { countByTypeAndStatus, amountByTypeAndStatus };
 }
 
-export async function getChargeableHTLCs(db) {
+export async function getHTLCs(db, type) {
   let htlcs = [];
   for await (const [key, value] of db.iterator()) {
-    const r = key.match(
-      /htlc:archethic:([a-fA-F0-9]*):chargeable:([a-fA-F0-9]*)/,
-    );
+    const regex =
+      type == "chargeable"
+        ? /htlc:archethic:([a-fA-F0-9]*):chargeable:([a-fA-F0-9]*)/
+        : /htlc:archethic:([a-fA-F0-9]*):signed:([a-fA-F0-9]*)/;
+    const r = key.match(regex);
 
     if (r && r.length == 3) {
       const poolAddress = r[1];

@@ -78,7 +78,7 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
   );
   const htlcs = await list(provider, htlcsAddressesToProcess, htlcAbi);
   await persistHTLCs(db, htlcs, poolAddress, htlcType, asset);
-  return stats(await getHTLCs(db, poolAddress, htlcType, asset));
+  return stats(await getHTLCs(db, htlcType, asset, poolAddress));
 }
 
 async function list(provider, addresses, abi) {

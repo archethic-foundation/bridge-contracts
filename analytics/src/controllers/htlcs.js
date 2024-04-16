@@ -1,5 +1,5 @@
-import { getChargeableHTLCs as getEVMChargeableHTLCs } from "../registry/evm-htlcs.js";
-import { getChargeableHTLCs as getArchethicChargeableHTLCs } from "../registry/archethic-htlcs.js";
+import { getHTLCs as getEVMHTLCs } from "../registry/evm-htlcs.js";
+import { getHTLCs as getArchethicHtlcs } from "../registry/archethic-htlcs.js";
 import { HTLC_STATUS } from "../archethic/get-htlc-statuses.js";
 import config from "config";
 
@@ -7,10 +7,19 @@ const archethicEndpoint = config.get("archethic.endpoint");
 
 export default function (db) {
   return async (req, res) => {
-    const evmHtlcs = await getEVMChargeableHTLCs(db);
-    const archethicHtlcs = await getArchethicChargeableHTLCs(db);
+    const chargeableHTLCs = merge(
+      await getArchethicHtlcs(db, "chargeable"),
+      await getEVMHTLCs(db, "chargeable"),
+      "chargeable",
+    );
 
-    const htlcs = merge(archethicHtlcs, evmHtlcs);
+    const signedHTLCs = merge(
+      await getArchethicHtlcs(db, "signed"),
+      await getEVMHTLCs(db, "signed"),
+      "signed",
+    );
+
+    const htlcs = [...chargeableHTLCs, ...signedHTLCs];
 
     const formatDate = (date) => {
       return (
@@ -34,7 +43,7 @@ export default function (db) {
 
     const formatEvmAddr = (addr) => addr.substr(0, 6) + "..." + addr.substr(-6);
 
-    res.render("chargeable", {
+    res.render("htlcs", {
       HTLC_STATUS,
       htlcs,
       formatDate,
@@ -45,8 +54,12 @@ export default function (db) {
   };
 }
 
-function merge(archethicHtlcs, evmHtlcs) {
+function merge(archethicHtlcs, evmHtlcs, type) {
+  // dump mumbai
+  archethicHtlcs = archethicHtlcs.filter((htlc) => htlc.evmChainID != 80001);
+
   for (const archethicHtlc of archethicHtlcs) {
+    archethicHtlc.type = type;
     if (archethicHtlc.evmContract) {
       const match = evmHtlcs.find(
         (evmHtlc) =>
@@ -55,6 +68,14 @@ function merge(archethicHtlcs, evmHtlcs) {
       );
       if (match != null) {
         archethicHtlc.evmHtlc = match;
+      }
+    } else {
+      // Try to match based on the locktime (2s tolerance)
+      const matches = evmHtlcs.filter(
+        (evmHtlc) => Math.abs(evmHtlc.lockTime - archethicHtlc.endTime) < 2,
+      );
+      if (matches.length == 1) {
+        archethicHtlc.evmHtlc = matches[0];
       }
     }
   }
