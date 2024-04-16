@@ -42,8 +42,9 @@ async function main() {
     contractAddress,
   );
 
-  await htlc.withdraw(secret, signature.r, signature.s, signature.v);
-  console.log("Withdraw successful");
+  return htlc.withdraw(secret, signature.r, signature.s, signature.v)
+    .then(() => console.log("Withdraw successful"))
+    .catch(er => console.log(er.message))
 }
 
 main()

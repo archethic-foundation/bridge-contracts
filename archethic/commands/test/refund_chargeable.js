@@ -10,11 +10,6 @@ const builder = {
     demandOption: true,
     type: "string",
   },
-  evm_contract: {
-    describe: "The HTLC EVM contract address",
-    demandOption: true,
-    type: "string",
-  },
   env: {
     describe: "The environment config to use (default to local)",
     demandOption: false,
@@ -22,12 +17,11 @@ const builder = {
   },
 };
 
-const handler = async function (argv) {
+const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local";
   const env = config.environments[envName];
 
   const htlcAddress = argv["htlc_address"];
-  const evm_contract = argv["evm_contract"];
 
   const archethic = new Archethic(env.endpoint);
   await archethic.connect();
@@ -44,7 +38,7 @@ const handler = async function (argv) {
   const tx = archethic.transaction
     .new()
     .setType("transfer")
-    .addRecipient(htlcAddress, "refund", [evm_contract])
+    .addRecipient(htlcAddress, "refund", [])
     .build(env.userSeed, index)
     .originSign(Utils.originPrivateKey);
 
