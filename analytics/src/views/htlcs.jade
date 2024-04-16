@@ -23,19 +23,18 @@ html(lang="en")
                 th(scope="col") chain
                 th(scope="col") contract
                 th(scope="col") user
-                th(scope="col") status
-                th(scope="col") created
-                th(scope="col") until
+                th(scope="col") lock time
                 th(scope="col") amount
+                th(scope="col") status
 
                 th(scope="col" class="table-warning") dir.
 
-                th(scope="col" class="table-primary") contract
-                th(scope="col" class="table-primary") user
                 th(scope="col" class="table-primary") status
-                th(scope="col" class="table-primary") created
-                th(scope="col" class="table-primary") until
                 th(scope="col" class="table-primary") amount
+                th(scope="col" class="table-primary") fee
+                th(scope="col" class="table-primary") lock time
+                th(scope="col" class="table-primary") user
+                th(scope="col" class="table-primary") contract
 
         tbody
             each htlc in htlcs
@@ -43,17 +42,15 @@ html(lang="en")
                     if htlc.evmHtlc
                         td #{htlc.evmHtlc.chain}
                         td
-                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.address}`) #{formatEvmAddr(htlc.evmHtlc.address)}
+                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.address}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.address)}
                         td
-                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.userAddress}`) #{formatEvmAddr(htlc.evmHtlc.userAddress)}
-                        td #{htlc.evmHtlc.status}
-                        td
+                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.userAddress}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.userAddress)}
                         td #{formatDate(new Date(htlc.evmHtlc.lockTime * 1000))}
                         td #{htlc.evmHtlc.amount}
+                        td #{htlc.evmHtlc.status}
                     else
                         td
                         td FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
-                        td
                         td
                         td
                         td
@@ -65,11 +62,16 @@ html(lang="en")
                         else
                             p <-#{htlc.asset}-
 
-                    td(class="table-primary")
-                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}`) #{formatArchethicAddr(htlc.address)}
-                    td(class="table-primary")
-                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}`) #{formatArchethicAddr(htlc.userAddress)}
                     td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
-                    td(class="table-primary") #{formatDate(new Date(htlc.creationTime * 1000))}
+                    td(class="table-primary")
+                        if htlc.htlcStatus == 4
+                            span #{(htlc.refundAmount) / 100000000}
+                        else
+                            span #{(htlc.userAmount+htlc.fee) / 100000000}
+
+                    td(class="table-primary") #{htlc.fee / 100000000}
                     td(class="table-primary") #{formatDate(new Date(htlc.endTime * 1000))}
-                    td(class="table-primary") #{(htlc.userAmount + htlc.refundAmount) / 100000000}
+                    td(class="table-primary")
+                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
+                    td(class="table-primary")
+                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
