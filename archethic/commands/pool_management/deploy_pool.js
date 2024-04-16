@@ -76,7 +76,8 @@ const handler = async function(argv) {
     .addOwnership(secret, authorizedPublicKeys)
 
   if (token != "UCO") {
-    poolTx.setType("token").setContent(getTokenDefinition(token))
+    const decimals = config.pools[token] && config.pools[token].decimals || 8
+    poolTx.setType("token").setContent(getTokenDefinition(token, decimals))
   } else {
     poolTx.setType("contract").setContent("{}")
   }

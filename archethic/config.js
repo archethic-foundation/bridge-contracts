@@ -23,6 +23,10 @@ export default {
           proxyAddress: "0x39c9dbd60b0eaf256ebc509d2b837d508dd4f2da",
           decimals: 18,
         },
+        aeUSDC: {
+          proxyAddress: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
+          decimals: 6
+        }
       },
     },
     sepolia_ethereum: {
@@ -39,7 +43,7 @@ export default {
         },
         aeUSDC: {
           proxyAddress: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
-          decimals: 18
+          decimals: 6
         }
       },
     },
@@ -104,8 +108,10 @@ export default {
     },
     aeUSDC: {
       availableEvmNetworks: {
+        local: ["local"],
         testnet: ["sepolia_ethereum"]
       },
+      decimals: 6
     }
   },
 };

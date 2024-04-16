@@ -116,12 +116,13 @@ export async function sendTransactionWithFunding(tx, keychain, archethic, fundSe
   })
 }
 
-export function getTokenDefinition(token) {
+export function getTokenDefinition(token, decimals = 8) {
   return JSON.stringify({
     aeip: [2, 8, 18, 19],
     supply: 1,
     type: "fungible",
     symbol: token,
+    decimals: decimals,
     name: token,
     allow_mint: true,
     properties: {},
