@@ -61,9 +61,9 @@ html(lang="en")
 
                     td(class="table-warning")
                         if htlc.type == "chargeable"
-                            p -->
+                            p -#{htlc.asset}->
                         else
-                            p <--
+                            p <-#{htlc.asset}-
 
                     td(class="table-primary")
                         a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}`) #{formatArchethicAddr(htlc.address)}

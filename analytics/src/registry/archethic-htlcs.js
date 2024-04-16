@@ -1,4 +1,7 @@
 import { Utils } from "@archethicjs/sdk";
+import config from "config";
+
+const POOLS = config.get("archethic.pools");
 
 export async function getPagingAddress(db, poolGenesisAddress) {
   let address;
@@ -95,8 +98,15 @@ export async function getHTLCs(db, type) {
         ...value,
         poolAddress,
         address: htlcAddress,
+        asset: determineAsset(poolAddress),
       });
     }
   }
   return htlcs;
+}
+
+function determineAsset(poolGenesisAddress) {
+  for (const [asset, address] of Object.entries(POOLS)) {
+    if (address.toUpperCase() == poolGenesisAddress.toUpperCase()) return asset;
+  }
 }
