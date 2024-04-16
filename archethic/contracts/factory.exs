@@ -87,13 +87,6 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   after_provision_code = """
     @version 1
 
-    # Automate the refunding after the given timestamp
-    actions triggered_by: datetime, at: #{end_time} do
-      Contract.set_type "transfer"
-      #{return_transfer_code}
-      Contract.set_code ""
-    end
-
     condition triggered_by: transaction, on: refund(), as: [
       content: (
         valid? = false
@@ -281,11 +274,6 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   after_secret_code = """
     @version 1
-    # Automate the refunding after the given timestamp
-    actions triggered_by: datetime, at: \#{end_time} do
-      htlc_genesis_address = Chain.get_genesis_address(contract.address)
-      Contract.add_recipient(address: 0x#{pool_address}, action: "refund", args: [htlc_genesis_address])
-    end
 
     condition triggered_by: transaction, on: refund(secret, secret_signature), as: [
       previous_public_key: (
