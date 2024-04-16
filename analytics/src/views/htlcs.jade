@@ -8,7 +8,7 @@ html(lang="en")
     script
         | $(document).ready(function() {
         |   $("table").fancyTable({
-        |     sortColumn:5,
+        |     sortColumn:0,
         |     sortOrder:"desc",
         |     pagination:true,
         |     perPage:100,
@@ -17,66 +17,69 @@ html(lang="en")
         | });
 
   body(style="font-family: monospace; font-size: 0.75rem;")
-    table(class="table")
+    table(class="table table-hover")
         thead
             tr
-                th(scope="col") chain
+                th(scope="col") lock
+
                 th(scope="col") contract
                 th(scope="col") user
-                th(scope="col") lock time
                 th(scope="col") amount
                 th(scope="col") status
 
                 th(scope="col" class="table-warning") dir.
 
-                th(scope="col" class="table-primary") status
-                th(scope="col" class="table-primary") amount
-                th(scope="col" class="table-primary") fee
-                th(scope="col" class="table-primary") lock time
-                th(scope="col" class="table-primary") user
-                th(scope="col" class="table-primary") contract
+                th(scope="col" ) status
+                th(scope="col" ) amount
+                th(scope="col" ) fee
+                th(scope="col" ) user
+                th(scope="col" ) contract
 
         tbody
             each htlc in htlcs
                 tr
+                    td
+                        if htlc.endTime
+                            span #{formatDate(new Date(htlc.endTime * 1000))}
+                        else if (htlc.evmHtlc && htlc.evmHtlc.lockTime)
+                            span #{formatDate(new Date(htlc.evmHtlc.lockTime * 1000))}
+
                     if htlc.evmHtlc
-                        td #{htlc.evmHtlc.chain}
                         td
                             a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.address}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.address)}
                         td
                             a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.userAddress}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.userAddress)}
-                        td #{formatDate(new Date(htlc.evmHtlc.lockTime * 1000))}
+
                         td #{htlc.evmHtlc.amount}
                         td #{htlc.evmHtlc.status}
                     else
-                        td(colspan="6") FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
+                        td FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
+                        td
+                        td
+                        td
 
+                    td(class="table-warning")
+                        if (htlc.type && htlc.type == "chargeable") || (htlc.evmHtlc && htlc.evmHtlc.type == "chargeable")
+                            p -#{htlc.asset}->
+                        else
+                            p <-#{htlc.asset}-
 
                     if htlc.type
-                        td(class="table-warning")
-                            if htlc.type == "chargeable"
-                                p -#{htlc.asset}->
-                            else
-                                p <-#{htlc.asset}-
-
-                        td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
-                        td(class="table-primary")
+                        td #{HTLC_STATUS[htlc.htlcStatus]}
+                        td
                             if htlc.htlcStatus == 4
                                 span #{(htlc.refundAmount) / 100000000}
                             else
                                 span #{(htlc.userAmount+htlc.fee) / 100000000}
 
-                        td(class="table-primary") #{htlc.fee / 100000000}
-                        td(class="table-primary") #{formatDate(new Date(htlc.endTime * 1000))}
-                        td(class="table-primary")
+                        td #{htlc.fee / 100000000}
+                        td
                             a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
-                        td(class="table-primary")
+                        td
                             a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
                     else
-                        td(class="table-warning")
-                            if htlc.evmHtlc.type == "chargeable"
-                                p -#{htlc.asset}->
-                            else
-                                p <-#{htlc.asset}-
-
-                        td(class="table-primary" colspan="6") FAIL TO FIND ARCHETHIC HTLC
+                        td FAIL TO FIND ARCHETHIC HTLC
+                        td
+                        td
+                        td
+                        td
