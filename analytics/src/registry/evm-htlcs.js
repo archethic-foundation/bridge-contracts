@@ -30,6 +30,7 @@ export async function getHTLCs(db, htlcType, asset, poolAddress) {
           explorer: config.get(
             `evm.${CHAIN_BY_POOL_ADDRESS[poolAddress]}.explorer`,
           ),
+          type: htlcType,
           poolAddress: poolAddress,
           address: htlcAddress,
           userAddress: value.userAddress,

@@ -58,6 +58,9 @@ function merge(archethicHtlcs, evmHtlcs, type) {
   // dump mumbai
   archethicHtlcs = archethicHtlcs.filter((htlc) => htlc.evmChainID != 80001);
 
+  let evmHtlcsToDiscard = [];
+
+  // match HTLCs (best effort)
   for (const archethicHtlc of archethicHtlcs) {
     archethicHtlc.type = type;
     if (archethicHtlc.evmContract) {
@@ -68,6 +71,7 @@ function merge(archethicHtlcs, evmHtlcs, type) {
       );
       if (match != null) {
         archethicHtlc.evmHtlc = match;
+        evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
       }
     } else {
       // Try to match based on the locktime (2s tolerance)
@@ -76,8 +80,16 @@ function merge(archethicHtlcs, evmHtlcs, type) {
       );
       if (matches.length == 1) {
         archethicHtlc.evmHtlc = matches[0];
+        evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
       }
     }
+  }
+
+  // evm HTLCs with no match in archethic
+  for (const evmHtlc of evmHtlcs) {
+    if (evmHtlcsToDiscard.includes(evmHtlc.address)) continue;
+
+    archethicHtlcs.push({ evmHtlc: evmHtlc });
   }
   return archethicHtlcs;
 }

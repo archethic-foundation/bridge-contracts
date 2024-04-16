@@ -49,29 +49,34 @@ html(lang="en")
                         td #{htlc.evmHtlc.amount}
                         td #{htlc.evmHtlc.status}
                     else
-                        td
-                        td FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
-                        td
-                        td
-                        td
-                        td
+                        td(colspan="6") FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
 
-                    td(class="table-warning")
-                        if htlc.type == "chargeable"
-                            p -#{htlc.asset}->
-                        else
-                            p <-#{htlc.asset}-
 
-                    td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
-                    td(class="table-primary")
-                        if htlc.htlcStatus == 4
-                            span #{(htlc.refundAmount) / 100000000}
-                        else
-                            span #{(htlc.userAmount+htlc.fee) / 100000000}
+                    if htlc.type
+                        td(class="table-warning")
+                            if htlc.type == "chargeable"
+                                p -#{htlc.asset}->
+                            else
+                                p <-#{htlc.asset}-
 
-                    td(class="table-primary") #{htlc.fee / 100000000}
-                    td(class="table-primary") #{formatDate(new Date(htlc.endTime * 1000))}
-                    td(class="table-primary")
-                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
-                    td(class="table-primary")
-                        a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
+                        td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
+                        td(class="table-primary")
+                            if htlc.htlcStatus == 4
+                                span #{(htlc.refundAmount) / 100000000}
+                            else
+                                span #{(htlc.userAmount+htlc.fee) / 100000000}
+
+                        td(class="table-primary") #{htlc.fee / 100000000}
+                        td(class="table-primary") #{formatDate(new Date(htlc.endTime * 1000))}
+                        td(class="table-primary")
+                            a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
+                        td(class="table-primary")
+                            a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
+                    else
+                        td(class="table-warning")
+                            if htlc.evmHtlc.type == "chargeable"
+                                p -#{htlc.asset}->
+                            else
+                                p <-#{htlc.asset}-
+
+                        td(class="table-primary" colspan="6") FAIL TO FIND ARCHETHIC HTLC
