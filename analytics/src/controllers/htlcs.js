@@ -3,7 +3,8 @@ import { getHTLCs as getArchethicHtlcs } from "../registry/archethic-htlcs.js";
 import { HTLC_STATUS } from "../archethic/get-htlc-statuses.js";
 import config from "config";
 
-const archethicEndpoint = config.get("archethic.endpoint");
+const ARCHETHIC_ENDPOINT = config.get("archethic.endpoint");
+const EVM_NETWORKS = config.get("evm");
 
 export default function (db) {
   return async (req, res) => {
@@ -42,14 +43,20 @@ export default function (db) {
       addr.substr(4, 6) + "..." + addr.substr(-6);
 
     const formatEvmAddr = (addr) => addr.substr(0, 6) + "..." + addr.substr(-6);
+    const formatChainId = (chainID) => {
+      for (const [networkName, value] of Object.entries(EVM_NETWORKS)) {
+        if (value.chainID == chainID) return networkName;
+      }
+    };
 
     res.render("htlcs", {
       HTLC_STATUS,
       htlcs,
+      formatChainId,
       formatDate,
       formatArchethicAddr,
       formatEvmAddr,
-      archethicEndpoint,
+      ARCHETHIC_ENDPOINT,
     });
   };
 }

@@ -26,14 +26,15 @@ html(lang="en")
                 th(scope="col") user
                 th(scope="col") amount
                 th(scope="col") status
+                th(scope="col") chain
 
                 th(scope="col" class="table-warning") dir.
 
-                th(scope="col" ) status
-                th(scope="col" ) amount
-                th(scope="col" ) fee
-                th(scope="col" ) user
-                th(scope="col" ) contract
+                th(scope="col" class="table-primary") status
+                th(scope="col" class="table-primary") amount
+                th(scope="col" class="table-primary") fee
+                th(scope="col" class="table-primary") user
+                th(scope="col" class="table-primary") contract
 
         tbody
             each htlc in htlcs
@@ -52,11 +53,13 @@ html(lang="en")
 
                         td #{htlc.evmHtlc.amount}
                         td #{htlc.evmHtlc.status}
+                        td #{htlc.evmHtlc.chain}
                     else
-                        td FAIL TO FIND EVM HTLC: Chain: #{htlc.evmChainID} Addr: #{htlc.evmContract}
+                        td FAIL TO FIND EVM HTLC: #{htlc.evmContract}
                         td
                         td
                         td
+                        td #{formatChainId(htlc.evmChainID)}
 
                     td(class="table-warning")
                         if (htlc.type && htlc.type == "chargeable") || (htlc.evmHtlc && htlc.evmHtlc.type == "chargeable")
@@ -65,21 +68,21 @@ html(lang="en")
                             p <-#{htlc.asset}-
 
                     if htlc.type
-                        td #{HTLC_STATUS[htlc.htlcStatus]}
-                        td
+                        td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
+                        td(class="table-primary")
                             if htlc.htlcStatus == 4
                                 span #{(htlc.refundAmount) / 100000000}
                             else
                                 span #{(htlc.userAmount+htlc.fee) / 100000000}
 
-                        td #{htlc.fee / 100000000}
-                        td
+                        td(class="table-primary") #{htlc.fee / 100000000}
+                        td(class="table-primary")
                             a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
-                        td
+                        td(class="table-primary")
                             a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
                     else
-                        td FAIL TO FIND ARCHETHIC HTLC
-                        td
-                        td
-                        td
-                        td
+                        td(class="table-primary") FAIL TO FIND ARCHETHIC HTLC
+                        td(class="table-primary")
+                        td(class="table-primary")
+                        td(class="table-primary")
+                        td(class="table-primary")
