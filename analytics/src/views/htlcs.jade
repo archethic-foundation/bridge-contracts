@@ -77,9 +77,9 @@ html(lang="en")
 
                         td(class="table-primary") #{htlc.fee / 100000000}
                         td(class="table-primary")
-                            a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
+                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
                         td(class="table-primary")
-                            a(href=`${archethicEndpoint}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
+                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
                     else
                         td(class="table-primary") FAIL TO FIND ARCHETHIC HTLC
                         td(class="table-primary")
