@@ -37,7 +37,7 @@ async function promptSignature() {
 async function promptAmount() {
     return new Promise(r => {
         readline.question("Amount: ", input => {
-            r(ethers.parseEther(input))
+            r(input)
         })
     })
 }
@@ -56,12 +56,17 @@ async function promptPoolAddress() {
 
 async function main() {
     const poolAddr = await promptPoolAddress()
-    const amount = await promptAmount()
+    let amount = await promptAmount()
     const lockTimeUnix = await promptEndTime()
     const hash = await promptSecretHash()
     const signature = await promptSignature()
 
     const pool = await ethers.getContractAt("ERCPool", poolAddr)
+    const tokenAddress = await pool.token()
+    const token = await ethers.getContractAt("ERC20", tokenAddress)
+    const decimals = await token.decimals()
+
+    amount = ethers.parseUnits(amount, decimals)
 
     const tx = await pool.provisionHTLC(hash, amount, lockTimeUnix, signature.r, signature.s, signature.v)
     const htlcContract = await pool.provisionedSwap(hash)

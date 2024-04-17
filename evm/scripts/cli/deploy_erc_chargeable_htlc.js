@@ -8,7 +8,7 @@ const readline = require("readline").createInterface({
 async function promptAmount() {
   return new Promise(r => {
     readline.question("Amount: ", input => {
-      r(ethers.parseEther(input))
+      r(input)
     })
   })
 }
@@ -42,7 +42,7 @@ async function promptTokenName() {
 
 async function main() {
   const tokenName = await promptTokenName()
-  const amount = await promptAmount()
+  let amount = await promptAmount()
   const tokenAddr = await promptTokenAddress()
   const poolAddr = await promptPoolAddress()
   const secret = crypto.randomBytes(32)
@@ -50,6 +50,9 @@ async function main() {
 
   const pool = await ethers.getContractAt("ERCPool", poolAddr)
   const token = await ethers.getContractAt(tokenName, tokenAddr)
+
+  const decimals = await token.decimals()
+  amount = ethers.parseUnits(amount, decimals)
 
   const tx = await pool.mintHTLC(hash, amount)
   const contractAddress = await pool.mintedSwap(hash)
@@ -63,7 +66,7 @@ async function main() {
   console.log("secret:", "0x" + secret.toString("hex"))
   console.log("hash:", hash)
   console.log("end time:", await htlc.lockTime())
-  console.log("amount:", ethers.formatEther(await htlc.amount()))
+  console.log("amount:", ethers.formatUnits(await htlc.amount(), decimals))
 }
 
 main()

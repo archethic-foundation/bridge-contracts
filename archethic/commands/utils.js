@@ -188,7 +188,11 @@ function replaceCommonTemplate(poolCode, keychain, token, envName) {
 
   // Replace endpoint conditions
   const conditions = get_evm_data_conditions(token, availableEvmNetworks)
-  return poolCode.replaceAll("@EVM_DATA_CONDITIONS", conditions)
+  poolCode = poolCode.replaceAll("@EVM_DATA_CONDITIONS", conditions)
+
+  // Replace decimals
+  const decimals = config.pools[token].decimals || 8
+  return poolCode.replaceAll("@DECIMALS", decimals)
 }
 
 function get_evm_data_conditions(token, availableEvmNetworks) {

@@ -66,6 +66,7 @@ const handler = async function(argv) {
   const chainId = argv["chainID"] ? argv["chainID"] : 31337
 
   const tokenAddress = getTokenAddress(keychain, token)
+  const decimals = config.pools[token].decimals || 8
 
   const serviceName = getPoolServiceName(token)
   const poolGenesisAddress = getServiceGenesisAddress(keychain, serviceName)
@@ -80,7 +81,7 @@ const handler = async function(argv) {
   if (tokenAddress == "UCO") {
     tx.addUCOTransfer(htlcGenesisAddress, Utils.toBigInt(amount))
   } else {
-    tx.addTokenTransfer(htlcGenesisAddress, Utils.toBigInt(amount), tokenAddress)
+    tx.addTokenTransfer(htlcGenesisAddress, Utils.toBigInt(amount, decimals), tokenAddress)
   }
 
   tx.build(env.userSeed, index)
