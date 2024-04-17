@@ -12,24 +12,6 @@ export fun get_protocol_fee_address() do
   @PROTOCOL_FEE_ADDRESS
 end
 
-export fun get_token_resupply_definition(token_address, amount, htlc_address) do
-  token_address = String.to_hex(token_address)
-  htlc_address = String.to_hex(htlc_address)
-
-  big_int_amount = Math.trunc(amount * 100_000_000)
-
-  Json.to_string(
-    [
-      aeip: [8, 18, 19],
-      supply: big_int_amount,
-      token_reference: token_address,
-      recipients: [
-        [to: htlc_address, amount: big_int_amount]
-      ]
-    ]
-  )
-end
-
 ###############################
 # External chain => Archethic #
 ###############################
@@ -47,40 +29,30 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     # We don't burn UCO, we return them in pool contract
     return_transfer_code = """
     # Send back UCO to bridge pool
-      Contract.add_uco_transfer to: 0x#{pool_address}, amount: #{amount}
+      Contract.add_uco_transfer to: 0x#{pool_address}, amount: \#{amount}
     """
   else
     burn_address = Chain.get_burn_address()
     return_transfer_code = """
     # Burn the non withdrawed tokens
-      Contract.add_token_transfer to: 0x#{burn_address}, amount: #{amount}, token_address: 0x#{token}
+      Contract.add_token_transfer to: 0x#{burn_address}, amount: \#{amount}, token_address: 0x#{token}
     """
-  end
-
-  fee_amount = amount * 0.003
-  user_amount = amount - fee_amount
-
-  fee_transfer_code = ""
-  if fee_amount == 0 do
-    fee_transfer_code = "# Transfer fee is less than the minimum decimals"
-  else
-    if token == "UCO" do
-      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
-    else
-      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
-    end
   end
 
   valid_transfer_code = ""
   if token == "UCO" do
     valid_transfer_code = """
-    Contract.add_uco_transfer to: 0x#{user_address}, amount: #{user_amount}
-      #{fee_transfer_code}
+    Contract.add_uco_transfer to: 0x#{user_address}, amount: \#{user_amount}
+      if \#{fee_amount} > 0 do
+        Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: \#{fee_amount}
+      end
     """
   else
     valid_transfer_code = """
-    Contract.add_token_transfer to: 0x#{user_address}, amount: #{user_amount}, token_address: 0x#{token}
-      #{fee_transfer_code}
+    Contract.add_token_transfer to: 0x#{user_address}, amount: \#{user_amount}, token_address: 0x#{token}
+      if \#{fee_amount} > 0 do
+        Contract.add_token_transfer to: 0x#{user_address}, amount: \#{fee_amount}, token_address: 0x#{token}
+      end
     """
   end
 
@@ -175,7 +147,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   """
   @version 1
 
-  condition triggered_by: transaction, on: provision(_evm_contract, _url, _signature), as: [
+  condition triggered_by: transaction, on: provision(_evm_contract, _url, _signature, _decimals), as: [
 		previous_public_key: (
 	    # Transaction is not yet validated so we need to use previous address
 		  # to get the genesis address
@@ -184,7 +156,11 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 	  )
   ]
 
-  actions triggered_by: transaction, on: provision(evm_contract, url, signature) do
+  actions triggered_by: transaction, on: provision(evm_contract, url, signature, decimals) do
+    amount = #{amount} / Math.pow(10, 8 - decimals)
+    fee_amount = amount * 0.003
+    user_amount = amount - fee_amount
+
     next_code = \"""
     #{after_provision_code}
     \"""
@@ -207,37 +183,29 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   return_transfer_code = ""
   if token == "UCO" do
-    return_transfer_code = "Contract.add_uco_transfer to: 0x#{user_address}, amount: #{amount}"
+    return_transfer_code = "Contract.add_uco_transfer to: 0x#{user_address}, amount: \#{amount}"
   else
-    return_transfer_code = "Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}"
-  end
-
-  fee_amount = amount * 0.003
-  user_amount = amount - fee_amount
-
-  fee_transfer_code = ""
-  if fee_amount == 0 do
-    fee_transfer_code = "# Transfer fee is less than the minimum decimals"
-  else
-    if token == "UCO" do
-      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
-    else
-      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
-    end
+    return_transfer_code = """
+    Contract.add_token_transfer to: 0x#{user_address}, amount: \#{amount}, token_address: 0x#{token}
+    """
   end
 
   valid_transfer_code = ""
   if token == "UCO" do
     # We don't burn UCO, we return them in pool contract
     valid_transfer_code = """
-        Contract.add_uco_transfer to: 0x#{pool_address}, amount: #{user_amount}
-        #{fee_transfer_code}
+        Contract.add_uco_transfer to: 0x#{pool_address}, amount: \#{user_amount}
+        if \#{fee_amount} > 0 do
+          Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: \#{fee_amount}
+        end
     """
   else
     burn_address = Chain.get_burn_address()
     valid_transfer_code = """
-        Contract.add_token_transfer to: 0x#{burn_address}, amount: #{user_amount}, token_address: 0x#{token}
-        #{fee_transfer_code}
+        Contract.add_token_transfer to: 0x#{burn_address}, amount: \#{user_amount}, token_address: 0x#{token}
+        if \#{fee_amount} > 0 do
+          Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: \#{fee_amount}, token_address: 0x#{token}
+        end
     """
   end
 
@@ -321,7 +289,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
     export fun get_htlc_data() do
       [
-        amount: #{user_amount},
+        amount: \#{user_amount},
         end_time: \#{end_time},
         secret_hash: 0x\#{secret_hash},
         secret_hash_signature: [
@@ -336,7 +304,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   """
   @version 1
 
-  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
+  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time, _decimals), as: [
     previous_public_key: (
 		  # Transaction is not yet validated so we need to use previous address
 		  # to get the genesis address
@@ -345,7 +313,11 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 		)
   ]
 
-  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time) do
+  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time, decimals) do
+    amount = #{amount} / Math.pow(10, 8 - decimals)
+    fee_amount = amount * 0.003
+    user_amount = amount - fee_amount
+
     next_code = \"""
   #{after_secret_code}
     \"""

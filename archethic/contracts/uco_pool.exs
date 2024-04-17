@@ -88,7 +88,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint, signature]
+    args: [evm_contract, chain_data.endpoint, signature, @DECIMALS]
   )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -108,7 +108,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
     )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, _amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   requested_secrets = State.get("requested_secrets", Map.new())
   requested_secrets = delete_unused_secrets(requested_secrets)
@@ -137,7 +137,7 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   Contract.add_recipient(
     address: htlc_genesis_address,
     action: "set_secret_hash",
-    args: [secret_hash, signature, end_time]
+    args: [secret_hash, signature, end_time, @DECIMALS]
   )
 end
 

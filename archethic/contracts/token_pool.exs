@@ -83,8 +83,18 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
     transaction.address
   ]
 
-  token_definition =
-    Contract.call_function(@FACTORY_ADDRESS, "get_token_resupply_definition", args)
+  big_int_amount = Math.trunc(amount * Math.pow(10, @DECIMALS))
+
+  token_definition = Json.to_string(
+    [
+      aeip: [8, 18, 19],
+      supply: big_int_amount,
+      token_reference: @TOKEN_ADDRESS,
+      recipients: [
+        [to: transaction.address, amount: big_int_amount]
+      ]
+    ]
+  )
 
   signature = sign_for_evm(secret_hash, nil)
 
@@ -92,7 +102,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint, signature]
+    args: [evm_contract, chain_data.endpoint, signature, @DECIMALS]
   )
   Contract.set_content(token_definition)
 end
@@ -112,6 +122,8 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
       htlc_genesis_address = String.to_hex(htlc_genesis_address)
       transfers = Map.get(transaction.token_transfers, htlc_genesis_address, [])
 
+      amount = amount / Math.pow(10, 8 - @DECIMALS)
+
       for transfer in transfers do
         if transfer.token_address == @TOKEN_ADDRESS &&
              transfer.token_id == 0 &&
@@ -124,7 +136,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
     )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, _amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
   requested_secrets = State.get("requested_secrets", Map.new())
   requested_secrets = delete_unused_secrets(requested_secrets)
@@ -153,7 +165,7 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   Contract.add_recipient(
     address: htlc_genesis_address,
     action: "set_secret_hash",
-    args: [secret_hash, signature, end_time]
+    args: [secret_hash, signature, end_time, @DECIMALS]
   )
 end
 
