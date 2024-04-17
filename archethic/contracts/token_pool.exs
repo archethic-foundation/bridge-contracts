@@ -113,6 +113,11 @@ end
 
 condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id), as: [
   type: "transfer",
+  address: (
+    requested_secrets = State.get("requested_secrets", Map.new())
+    htlc_map = Map.get(requested_secrets, String.to_hex(htlc_genesis_address))
+    htlc_map == nil
+  ),
   code: valid_signed_code?(htlc_genesis_address, amount, user_address),
   content: List.in?([@CHAIN_IDS], chain_id),
   token_transfers:
