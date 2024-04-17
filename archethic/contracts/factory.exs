@@ -185,6 +185,10 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 
     Contract.set_code next_code
   end
+
+  export fun get_pool() do
+    0x#{pool_address}
+  end
   """
 end
 
@@ -308,6 +312,10 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
       Contract.set_code next_code
     end
 
+    export fun get_pool() do
+      0x#{pool_address}
+    end
+
     export fun get_htlc_data() do
       [
         amount: #{user_amount},
@@ -340,6 +348,10 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     \"""
 
     Contract.set_code next_code
+  end
+
+  export fun get_pool() do
+    0x#{pool_address}
   end
   """
 end
