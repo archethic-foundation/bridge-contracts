@@ -11,6 +11,8 @@ import "../../interfaces/IHTLC.sol";
 /// @author Archethic Foundation
 contract ETHPool is PoolBase {
 
+    mapping(address => Swap[]) _swapsByOwner;
+
     /// @notice Nofifies Ether receiving
     event FundsReceived(uint256 indexed _amount);
 
@@ -72,5 +74,18 @@ contract ETHPool is PoolBase {
         if(_amount % (10 ** mod) != 0) {
             revert InvalidAmount();
         }
+    }
+
+    function getSwapsByOwner(address owner) external view override returns (Swap[] memory swaps) {
+        uint size = _swapsByOwner[owner].length;
+        swaps = new Swap[](size);
+
+        for (uint i = 0; i < size; i++) {
+            swaps[i]= _swapsByOwner[owner][i];
+        }
+    }
+
+    function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) override internal {
+        _swapsByOwner[_owner].push(Swap(_htlcContract, _archethicHTLCAddress, _swapType));
     }
 }

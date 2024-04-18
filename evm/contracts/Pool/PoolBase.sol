@@ -39,8 +39,6 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     address[] private _provisionedSwaps;
     address[] private _mintedSwaps;
 
-    mapping(address => Swap[]) _swapsByOwner;
-
     /// @notice Notifies a change about the reserve destination wallet
     event ReserveAddressChanged(address indexed _reservedAddress);
 
@@ -142,7 +140,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         lockTimePeriod = _lockTimePeriod;
     }
 
-    /// @dev Check whether the pool is locked. 
+    /// @dev Check whether the pool is locked.
     /// @dev This is used instead of modifier to be more gas efficient
     function checkUnlocked() internal view {
         require(!locked, "Locked");
@@ -225,7 +223,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         lockTimePeriod = _lockTimePeriod;
         emit LockTimePeriodChanged(_lockTimePeriod);
     }
-    
+
     /// @notice Returns the swap fee to be send to the safety module
     /// @dev The fee is multiplied by 100000 to convert back from 2 decimals using wei in the amount
     /// @dev The fee is truncated after 8 decimals to match Archethic decimals policy
@@ -233,7 +231,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
     /// @param _decimals Number of decimals for the token
     function swapFee(uint256 _amount, uint8 _decimals) internal view returns (uint256) {
         uint256 _safetyModuleFeeRate = safetyModuleFeeRate;
-        
+
         if (_safetyModuleFeeRate == 0) {
             return 0;
         }
@@ -303,8 +301,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         _refProvisionedSwaps[_hash] = htlcContract;
 
         _provisionedSwaps.push(address(htlcContract));
-        _swapsByOwner[msg.sender].push(Swap(address(htlcContract), _archethicHTLCAddress, SwapType.SIGNED_HTLC));
-
+        setSwapByOwner(msg.sender, address(htlcContract), _archethicHTLCAddress, SwapType.SIGNED_HTLC);
         emit ContractProvisioned(htlcContract, _amount);
     }
 
@@ -341,7 +338,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         IHTLC htlcContract = _createChargeableHTLC(_hash, _amount, _lockTime);
         _refMintedSwaps[_hash] = htlcContract;
         _mintedSwaps.push(address(htlcContract));
-        _swapsByOwner[msg.sender].push(Swap(address(htlcContract), "", SwapType.CHARGEABLE_HTLC));
+        setSwapByOwner(msg.sender, address(htlcContract), "", SwapType.CHARGEABLE_HTLC);
         emit ContractMinted(htlcContract, _amount);
     }
 
@@ -378,13 +375,7 @@ abstract contract PoolBase is IPool, Initializable, Ownable2StepUpgradeable {
         return (reserveAddress, _recipientAmount, 0);
     }
 
-    /// @inheritdoc IPool
-    function getSwapsByOwner(address owner) external view returns (Swap[] memory swaps) {
-        uint size = _swapsByOwner[owner].length;
-        swaps = new Swap[](size);
+    function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) internal virtual{}
 
-        for (uint i = 0; i < size; i++) {
-            swaps[i]= _swapsByOwner[owner][i];
-        }
-    }
+    function getSwapsByOwner(address owner) external virtual view returns (Swap[] memory swaps) {}
 }

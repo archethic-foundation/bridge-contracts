@@ -17,6 +17,8 @@ contract ERCPool is PoolBase {
     /// @notice Pool's asset ERC20
     ERC20 public token;
 
+    mapping(address => Swap[]) _swapsByOwner;
+
     /// @notice Notifies a change about the pool's ERC20 token
     event TokenChanged(address indexed _token);
 
@@ -84,5 +86,18 @@ contract ERCPool is PoolBase {
                 revert InvalidAmount();
             }
         }
+    }
+
+    function getSwapsByOwner(address owner) external view override returns (Swap[] memory swaps) {
+        uint size = _swapsByOwner[owner].length;
+        swaps = new Swap[](size);
+
+        for (uint i = 0; i < size; i++) {
+            swaps[i]= _swapsByOwner[owner][i];
+        }
+    }
+
+    function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) override internal {
+        _swapsByOwner[_owner].push(Swap(_htlcContract, _archethicHTLCAddress, _swapType));
     }
 }
