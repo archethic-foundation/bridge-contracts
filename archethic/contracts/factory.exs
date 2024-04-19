@@ -136,8 +136,8 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 
       export fun info() do
         [
-          evm_contract: "\#{evm_contract}\",
-          evm_pool: "\#{evm_pool}\",
+          evm_contract: \#{evm_contract},
+          evm_pool: \#{evm_pool},
           ae_pool: 0x#{pool_address},
           status: 2 # REFUNDED
         ]
@@ -208,6 +208,13 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       ]
     end
     \"""
+  end
+
+  export fun info() do
+    [
+      ae_pool: 0x#{pool_address},
+      status: 0 # PENDING
+    ]
   end
   """
 end
@@ -377,7 +384,8 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
   export fun info() do
     [
-      ae_pool: 0x#{pool_address}
+      ae_pool: 0x#{pool_address},
+      stauts: 0 # PENDING
     ]
   end
   """
