@@ -191,13 +191,11 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       \\\"""
     end
 
-    export fun get_provision_data() do
+    export fun get_provision_signature() do
       [
-        signature: [
-          r: 0x\#{signature.r},
-          s: 0x\#{signature.s},
-          v: \#{signature.v}
-        ]
+        r: 0x\#{signature.r},
+        s: 0x\#{signature.s},
+        v: \#{signature.v}
       ]
     end
 
