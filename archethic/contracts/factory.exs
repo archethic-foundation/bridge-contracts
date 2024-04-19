@@ -84,7 +84,20 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     """
   end
 
-  after_provision_code = """
+  """
+  @version 1
+
+  condition triggered_by: transaction, on: provision(_evm_contract, _url, _signature, _evm_pool), as: [
+		previous_public_key: (
+	    # Transaction is not yet validated so we need to use previous address
+		  # to get the genesis address
+		  previous_address = Chain.get_previous_address()
+		  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+	  )
+  ]
+
+  actions triggered_by: transaction, on: provision(evm_contract, url, signature, evm_pool) do
+    Contract.set_code \"""
     @version 1
 
     condition triggered_by: transaction, on: refund(), as: [
@@ -117,7 +130,19 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     actions triggered_by: transaction, on: refund() do
       Contract.set_type "transfer"
       #{return_transfer_code}
-      Contract.set_code ""
+
+      Contract.set_code \\\"""
+      @version 1
+
+      export fun info() do
+        [
+          evm_contract: "\#{evm_contract}\",
+          evm_pool: "\#{evm_pool}\",
+          ae_pool: 0x#{pool_address},
+          status: 2 # REFUNDED
+        ]
+      end
+      \\\"""
     end
 
     condition triggered_by: transaction, on: reveal_secret(secret), as: [
@@ -151,43 +176,40 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     actions triggered_by: transaction, on: reveal_secret(secret) do
       Contract.set_type "transfer"
       #{valid_transfer_code}
-      Contract.set_code ""
+
+      Contract.set_code \\\"""
+      @version 1
+
+      export fun info() do
+        [
+          evm_contract: \#{evm_contract},
+          evm_pool: \#{evm_pool},
+          ae_pool: 0x#{pool_address},
+          status: 1 # WITHDRAWN
+        ]
+      end
+      \\\"""
     end
 
     export fun get_provision_data() do
-        [
-          evm_contract: "\#{evm_contract}",
-          signature: [
-            r: 0x\#{signature.r},
-            s: 0x\#{signature.s},
-            v: \#{signature.v}
-          ]
+      [
+        signature: [
+          r: 0x\#{signature.r},
+          s: 0x\#{signature.s},
+          v: \#{signature.v}
         ]
-      end
-  """
+      ]
+    end
 
-  """
-  @version 1
-
-  condition triggered_by: transaction, on: provision(_evm_contract, _url, _signature), as: [
-		previous_public_key: (
-	    # Transaction is not yet validated so we need to use previous address
-		  # to get the genesis address
-		  previous_address = Chain.get_previous_address()
-		  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-	  )
-  ]
-
-  actions triggered_by: transaction, on: provision(evm_contract, url, signature) do
-    next_code = \"""
-    #{after_provision_code}
+    export fun info() do
+      [
+        evm_contract: \#{evm_contract},
+        evm_pool: \#{evm_pool},
+        ae_pool: 0x#{pool_address},
+        status: 0 # PENDING
+      ]
+    end
     \"""
-
-    Contract.set_code next_code
-  end
-
-  export fun get_pool() do
-    0x#{pool_address}
   end
   """
 end
@@ -239,44 +261,20 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     """
   end
 
-  code_after_refund = """
+  """
   @version 1
 
-  export fun get_secret() do
-    [
-      secret: 0x\\\#{secret},
-      secret_signature: [
-        r: 0x\\\#{secret_signature.r},
-        s: 0x\\\#{secret_signature.s},
-        v: \\\#{secret_signature.v}
-      ]
-    ]
-  end
-"""
+  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time, _evm_pool), as: [
+    previous_public_key: (
+      # Transaction is not yet validated so we need to use previous address
+      # to get the genesis address
+      previous_address = Chain.get_previous_address()
+      Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+    )
+  ]
 
-  refund_code = """
-    Contract.set_type "transfer"
-    # Send back the token to the user address
-    #{return_transfer_code}
-    Contract.set_code "#{code_after_refund}"
-  """
-
-  code_after_withdraw = """
-      @version 1
-
-      export fun get_secret() do
-        [
-          secret: 0x\\\#{secret},
-          secret_signature: [
-            r: 0x\\\#{secret_signature.r},
-            s: 0x\\\#{secret_signature.s},
-            v: \\\#{secret_signature.v}
-          ]
-        ]
-      end
-  """
-
-  after_secret_code = """
+  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time, evm_pool) do
+    Contract.set_code \"""
     @version 1
 
     condition triggered_by: transaction, on: refund(secret, secret_signature), as: [
@@ -288,10 +286,35 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     ]
 
     actions triggered_by: transaction, on: refund(secret, secret_signature) do
-    #{refund_code}
+      Contract.set_type "transfer"
+      # Send back the token to the user address
+      #{return_transfer_code}
+
+      Contract.set_code \\\"""
+      @version 1
+
+      export fun info() do
+        [
+          evm_pool: \#{evm_pool},
+          ae_pool: 0x#{pool_address},
+          status: 2 # REFUNDED
+        ]
+      end
+
+      export fun get_secret() do
+        [
+          secret: 0x\\\#{secret},
+          secret_signature: [
+            r: 0x\\\#{secret_signature.r},
+            s: 0x\\\#{secret_signature.s},
+            v: \\\#{secret_signature.v}
+          ]
+        ]
+      end
+      \\\"""
     end
 
-    condition triggered_by: transaction, on: reveal_secret(secret, secret_signature), as: [
+    condition triggered_by: transaction, on: reveal_secret(secret, secret_signature, _evm_contract), as: [
       previous_public_key: (
 		    # Transaction is not yet validated so we need to use previous address
 		    # to get the genesis address
@@ -302,18 +325,41 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
       content: Crypto.hash(String.to_hex(secret)) == 0x\#{secret_hash}
     ]
 
-    actions triggered_by: transaction, on: reveal_secret(secret, secret_signature) do
-      next_code = """
-  #{code_after_withdraw}
-      \\\"""
-
+    actions triggered_by: transaction, on: reveal_secret(secret, secret_signature, evm_contract) do
       Contract.set_type "transfer"
-  #{valid_transfer_code}
-      Contract.set_code next_code
+      #{valid_transfer_code}
+
+      Contract.set_code \\\"""
+      @version 1
+
+      export fun info() do
+        [
+          evm_contract: \\\#{evm_contract},
+          evm_pool: \#{evm_pool},
+          ae_pool: 0x#{pool_address},
+          status: 1 # WITHDRAWN
+        ]
+      end
+
+      export fun get_secret() do
+        [
+          secret: 0x\\\#{secret},
+          secret_signature: [
+            r: 0x\\\#{secret_signature.r},
+            s: 0x\\\#{secret_signature.s},
+            v: \\\#{secret_signature.v}
+          ]
+        ]
+      end
+      \\\"""
     end
 
-    export fun get_pool() do
-      0x#{pool_address}
+    export fun info() do
+      [
+        evm_pool: \#{evm_pool},
+        ae_pool: 0x#{pool_address},
+        status: 0 # PENDING
+      ]
     end
 
     export fun get_htlc_data() do
@@ -328,30 +374,13 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
         ]
       ]
     end
-  """
-
-  """
-  @version 1
-
-  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
-    previous_public_key: (
-		  # Transaction is not yet validated so we need to use previous address
-		  # to get the genesis address
-		  previous_address = Chain.get_previous_address()
-			Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-		)
-  ]
-
-  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time) do
-    next_code = \"""
-  #{after_secret_code}
     \"""
-
-    Contract.set_code next_code
   end
 
-  export fun get_pool() do
-    0x#{pool_address}
+  export fun info() do
+    [
+      ae_pool: 0x#{pool_address}
+    ]
   end
   """
 end

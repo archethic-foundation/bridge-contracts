@@ -84,11 +84,13 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
 
   signature = sign_for_evm(secret_hash)
 
+  proxy_address = Map.get(chain_data, "proxy_address")
+
   Contract.set_type("transfer")
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint, signature]
+    args: [evm_contract, chain_data.endpoint, signature, proxy_address]
   )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -137,10 +139,13 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   requested_secrets = Map.set(requested_secrets, htlc_genesis_address, htlc_map)
   State.set("requested_secrets", requested_secrets)
 
+  chain_data = get_chain_data(chain_id)
+  proxy_address = Map.get(chain_data, "proxy_address")
+
   Contract.add_recipient(
     address: htlc_genesis_address,
     action: "set_secret_hash",
-    args: [secret_hash, signature, end_time]
+    args: [secret_hash, signature, end_time, proxy_address]
   )
 end
 
@@ -230,7 +235,7 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
   )
 ]
 
-actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, _evm_contract) do
+actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, evm_contract_address) do
   requested_secrets = State.get("requested_secrets", Map.new())
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
@@ -245,7 +250,7 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_
   Contract.add_recipient(
     address: htlc_genesis_address,
     action: "reveal_secret",
-    args: [secret, signature]
+    args: [secret, signature, evm_contract_address]
   )
 end
 
