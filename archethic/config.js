@@ -15,7 +15,7 @@ export default {
   },
   evmNetworks: {
     local: {
-      endpoint: "http://127.0.0.1:8545",
+      endpoints: ["http://127.0.0.1:8545", "http://127.0.0.1:8546"],
       chainId: 31337,
       tokens: {
         UCO: {
@@ -29,7 +29,10 @@ export default {
       },
     },
     sepolia_ethereum: {
-      endpoint: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      endpoints: [
+        "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+        "https://eth-sepolia.g.alchemy.com/v2/L4TxVWLSkKKzP2njMgq_smU6Fc_lpZ0S",
+      ],
       chainId: 11155111,
       tokens: {
         UCO: {
@@ -47,8 +50,10 @@ export default {
       },
     },
     mumbai_polygon: {
-      endpoint:
+      endpoints: [
         "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+        "https://polygon-mumbai.g.alchemy.com/v2/YrTBjcxLttewqhFia5IhwwHqesNkLmBC",
+      ],
       chainId: 80001,
       tokens: {
         UCO: {
@@ -66,7 +71,10 @@ export default {
       },
     },
     bnb_chain_testnet: {
-      endpoint: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+      endpoints: [
+        "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+        "https://bsc-testnet.bnbchain.org",
+      ],
       chainId: 97,
       tokens: {
         UCO: {
