@@ -96,11 +96,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-<<<<<<< HEAD
-    args: [evm_contract, chain_data.endpoint, signature, proxy_address]
-=======
-    args: [evm_contract, chain_data.endpoints, signature]
->>>>>>> f2459bd (Query multiple EVM APIs instead of a single one)
+    args: [evm_contract, chain_data.endpoints, signature, proxy_address]
   )
   Contract.set_content(token_definition)
 end
