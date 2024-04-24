@@ -92,11 +92,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-<<<<<<< HEAD
-    args: [evm_contract, chain_data.endpoint, signature, proxy_address]
-=======
-    args: [evm_contract, chain_data.endpoints, signature]
->>>>>>> f2459bd (Query multiple EVM APIs instead of a single one)
+    args: [evm_contract, chain_data.endpoints, signature, proxy_address]
   )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -506,30 +502,7 @@ end
 
 fun sign_for_evm(data) do
   prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-<<<<<<< HEAD
   signature_payload = Crypto.hash("#{prefix}#{data}", "keccak256")
-=======
-  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
-
-  sig = Crypto.sign_with_recovery(signature_payload)
-
-  if sig.v == 0 do
-    sig = Map.set(sig, "v", 27)
-  else
-    sig = Map.set(sig, "v", 28)
-  end
-
-  sig
-end
-
-fun sign_for_evm_refund(data) do
-  # Perform a first hash to combine data and "refund"
-  sig_payload = "#{data}#{String.to_hex("refund")}"
-  hash = Crypto.hash(sig_payload, "keccak256")
-
-  prefix = String.to_hex("\x19Ethereum Signed Message:\n32")
-  signature_payload = Crypto.hash("#{prefix}#{hash}", "keccak256")
->>>>>>> f2459bd (Query multiple EVM APIs instead of a single one)
 
   sig = Crypto.sign_with_recovery(signature_payload)
 
