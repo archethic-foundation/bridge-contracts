@@ -111,15 +111,16 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
         headers = ["Content-Type": "application/json"]
         body = Json.to_string(request)
 
-        res = Http.request("\#{url}", "POST", headers, body)
-        if res.status == 200 && Json.is_valid?(res.body) do
-          response = Json.parse(res.body)
-          result = Map.get(response, "result")
-
-          if result != nil do
-            decoded_abi = Evm.abi_decode("(uint)", result)
-            # Refund status is 2
-            valid? = List.at(decoded_abi, 0) == 2
+        evm_responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
+        for res in evm_responses do
+          if !valid? && res.status == 200 && Json.is_valid?(res.body) do
+            response = Json.parse(res.body)
+            result = Map.get(response, "result")
+            if result != nil do
+              decoded_abi = Evm.abi_decode("(uint)", result)
+              # Refund status is 2
+              valid? = List.at(decoded_abi, 0) == 2
+            end
           end
         end
 
@@ -157,15 +158,17 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
         headers = ["Content-Type": "application/json"]
         body = Json.to_string(request)
 
-        res = Http.request("\#{url}", "POST", headers, body)
-        if res.status == 200 && Json.is_valid?(res.body) do
-          response = Json.parse(res.body)
-          result = Map.get(response, "result")
+        responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
+        for res in responses do
+          if !valid? && res.status == 200 && Json.is_valid?(res.body) do
+            response = Json.parse(res.body)
+            result = Map.get(response, "result")
 
-          if result != nil do
-            decoded_abi = Evm.abi_decode("(uint)", result)
-            # Withdrawn status is 1
-            valid? = List.at(decoded_abi, 0) == 1
+            if result != nil do
+              decoded_abi = Evm.abi_decode("(uint)", result)
+              # Withdrawn status is 1
+              valid? = List.at(decoded_abi, 0) == 1
+            end
           end
         end
 
@@ -190,9 +193,18 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       end
       \\\"""
     end
+    
+    fun query_evm_apis(endpoints, method, headers, body) do
+      requests = []
+      for endpoint in endpoints do
+        requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+      end
+      Http.request_many(requests, false)
+    end
 
     export fun get_provision_signature() do
       [
+<<<<<<< HEAD
         r: 0x\#{signature.r},
         s: 0x\#{signature.s},
         v: \#{signature.v}
@@ -207,6 +219,33 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
         status: 0 # PENDING
       ]
     end
+=======
+        signature: [
+          r: 0x\#{signature.r},
+          s: 0x\#{signature.s},
+          v: \#{signature.v}
+        ]
+      ]
+    end
+  """
+
+  """
+  @version 1
+
+  condition triggered_by: transaction, on: provision(_evm_contract, _endpoints, _signature), as: [
+    previous_public_key: (
+      # Transaction is not yet validated so we need to use previous address
+      # to get the genesis address
+      previous_address = Chain.get_previous_address()
+      Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+    )
+  ]
+
+  actions triggered_by: transaction, on: provision(evm_contract, endpoints, signature) do
+    endpoints = Json.to_string(endpoints)
+    next_code = \"""
+    #{after_provision_code}
+>>>>>>> f2459bd (Query multiple EVM APIs instead of a single one)
     \"""
   end
 
@@ -321,11 +360,11 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
 
     condition triggered_by: transaction, on: reveal_secret(secret, secret_signature, _evm_contract), as: [
       previous_public_key: (
-		    # Transaction is not yet validated so we need to use previous address
-		    # to get the genesis address
-		    previous_address = Chain.get_previous_address()
-			  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-		  ),
+        # Transaction is not yet validated so we need to use previous address
+        # to get the genesis address
+        previous_address = Chain.get_previous_address()
+        Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+      ),
       timestamp: transaction.timestamp < \#{end_time},
       content: Crypto.hash(String.to_hex(secret)) == 0x\#{secret_hash}
     ]
@@ -379,6 +418,26 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
         ]
       ]
     end
+<<<<<<< HEAD
+=======
+  """
+
+  """
+  @version 1
+
+  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time), as: [
+    previous_public_key: (
+      # Transaction is not yet validated so we need to use previous address
+      # to get the genesis address
+      previous_address = Chain.get_previous_address()
+      Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+    )
+  ]
+
+  actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time) do
+    next_code = \"""
+  #{after_secret_code}
+>>>>>>> f2459bd (Query multiple EVM APIs instead of a single one)
     \"""
   end
 

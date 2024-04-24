@@ -193,12 +193,12 @@ function replaceCommonTemplate(poolCode, keychain, token, envName) {
 function get_evm_data_conditions(token, availableEvmNetworks) {
   return availableEvmNetworks
     .map(network => {
-      const { endpoint, chainId } = config.evmNetworks[network]
+      const { endpoints, chainId } = config.evmNetworks[network]
       const { proxyAddress, decimals } = config.evmNetworks[network].tokens[token]
 
       return `
   if chain_id == ${chainId} do
-    data = Map.set(data, "endpoint", "${endpoint}")
+    data = Map.set(data, "endpoints", ${JSON.stringify(endpoints)})
     data = Map.set(data, "proxy_address", "${proxyAddress.toLowerCase()}")
     data = Map.set(data, "decimals", ${decimals})
   end
