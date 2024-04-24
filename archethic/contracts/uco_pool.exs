@@ -43,29 +43,31 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
     chain_data = get_chain_data(chain_id)
     headers = ["Content-Type": "application/json"]
 
-    res = Http.request(chain_data.endpoint, "POST", headers, body)
-    if res.status == 200 && Json.is_valid?(res.body) do
-      responses = Json.parse(res.body)
+    evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
+    for res in evm_responses do
+      if !valid? && res.status == 200 && Json.is_valid?(res.body) do
+        responses = Json.parse(res.body)
 
-      tx_receipt = get_response(responses, 1)
-      call_status = get_response(responses, 2)
-      call_enough_funds = get_response(responses, 3)
-      call_hash = get_response(responses, 4)
-      call_end_time = get_response(responses, 5)
-      call_amount = get_response(responses, 6)
+        tx_receipt = get_response(responses, 1)
+        call_status = get_response(responses, 2)
+        call_enough_funds = get_response(responses, 3)
+        call_hash = get_response(responses, 4)
+        call_end_time = get_response(responses, 5)
+        call_amount = get_response(responses, 6)
 
-      if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-        # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
-        event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
-        valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
-        # Pending is status 0
-        valid_status? = valid_status?(call_status, 0)
-        enough_funds? = enough_funds?(call_enough_funds)
-        valid_hash? = valid_hash?(call_hash, secret_hash)
-        valid_end_time? = valid_end_time?(call_end_time, end_time)
-        valid_amount? = valid_amount?(call_amount, amount, chain_data.decimals)
+        if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+          # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
+          event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+          valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
+          # Pending is status 0
+          valid_status? = valid_status?(call_status, 0)
+          enough_funds? = enough_funds?(call_enough_funds)
+          valid_hash? = valid_hash?(call_hash, secret_hash)
+          valid_end_time? = valid_end_time?(call_end_time, end_time)
+          valid_amount? = valid_amount?(call_amount, amount, chain_data.decimals)
 
-        valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+          valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+        end
       end
     end
 
@@ -90,7 +92,7 @@ actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret
   Contract.add_recipient(
     address: transaction.address,
     action: "provision",
-    args: [evm_contract, chain_data.endpoint, signature, proxy_address]
+    args: [evm_contract, chain_data.endpoints, signature, proxy_address]
   )
   Contract.add_uco_transfer(to: transaction.address, amount: amount)
 end
@@ -198,35 +200,37 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
       chain_data = get_chain_data(htlc_map.chain_id)
       headers = ["Content-Type": "application/json"]
 
-      res = Http.request(chain_data.endpoint, "POST", headers, body)
-      if res.status == 200 && Json.is_valid?(res.body) do
-        responses = Json.parse(res.body)
+      evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
+      for res in evm_responses do
+        if !valid? && res.status == 200 && Json.is_valid?(res.body) do
+          responses = Json.parse(res.body)
 
-        tx_receipt = get_response(responses, 1)
-        call_status = get_response(responses, 2)
-        call_enough_funds = get_response(responses, 3)
-        call_hash = get_response(responses, 4)
-        call_end_time = get_response(responses, 5)
-        call_amount = get_response(responses, 6)
+          tx_receipt = get_response(responses, 1)
+          call_status = get_response(responses, 2)
+          call_enough_funds = get_response(responses, 3)
+          call_hash = get_response(responses, 4)
+          call_end_time = get_response(responses, 5)
+          call_amount = get_response(responses, 6)
 
-        if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-          # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
-          event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
+          if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+            # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
+            event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
 
-          secret = Crypto.hmac(htlc_map.hmac_address)
-          secret_hash = Crypto.hash(secret, "sha256")
+            secret = Crypto.hmac(htlc_map.hmac_address)
+            secret_hash = Crypto.hash(secret, "sha256")
 
-          htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
+            htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
 
-          valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
-          # Pending is status 0
-          valid_status? = valid_status?(call_status, 0)
-          enough_funds? = enough_funds?(call_enough_funds)
-          valid_hash? = valid_hash?(call_hash, secret_hash)
-          valid_end_time? = valid_end_time?(call_end_time, htlc_map.end_time)
-          valid_amount? = valid_amount?(call_amount, htlc_data.amount, chain_data.decimals)
+            valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
+            # Pending is status 0
+            valid_status? = valid_status?(call_status, 0)
+            enough_funds? = enough_funds?(call_enough_funds)
+            valid_hash? = valid_hash?(call_hash, secret_hash)
+            valid_end_time? = valid_end_time?(call_end_time, htlc_map.end_time)
+            valid_amount? = valid_amount?(call_amount, htlc_data.amount, chain_data.decimals)
 
-          valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+            valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+          end
         end
       end
     end
@@ -509,4 +513,14 @@ fun sign_for_evm(data) do
   end
 
   sig
+end
+
+fun query_evm_apis(endpoints, method, headers, body) do
+  requests = []
+
+  for endpoint in endpoints do
+    requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+  end
+
+  Http.request_many(requests, false)
 end
