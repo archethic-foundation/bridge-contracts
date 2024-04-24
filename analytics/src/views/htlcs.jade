@@ -1,0 +1,88 @@
+doctype html
+html(lang="en")
+  head
+    title HTLCs
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css")
+    script(src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js")
+    script(src="https://cdn.jsdelivr.net/npm/jquery.fancytable/dist/fancyTable.min.js")
+    script
+        | $(document).ready(function() {
+        |   $("table").fancyTable({
+        |     sortColumn:0,
+        |     sortOrder:"desc",
+        |     pagination:true,
+        |     perPage:100,
+        |     globalSearch:true
+        |   });
+        | });
+
+  body(style="font-family: monospace; font-size: 0.75rem;")
+    table(class="table table-hover")
+        thead
+            tr
+                th(scope="col") lock
+
+                th(scope="col") contract
+                th(scope="col") user
+                th(scope="col") amount
+                th(scope="col") status
+                th(scope="col") chain
+
+                th(scope="col" class="table-warning") dir.
+
+                th(scope="col" class="table-primary") status
+                th(scope="col" class="table-primary") amount
+                th(scope="col" class="table-primary") fee
+                th(scope="col" class="table-primary") user
+                th(scope="col" class="table-primary") contract
+
+        tbody
+            each htlc in htlcs
+                tr
+                    td
+                        if htlc.endTime
+                            span #{formatDate(new Date(htlc.endTime * 1000))}
+                        else if (htlc.evmHtlc && htlc.evmHtlc.lockTime)
+                            span #{formatDate(new Date(htlc.evmHtlc.lockTime * 1000))}
+
+                    if htlc.evmHtlc
+                        td
+                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.address}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.address)}
+                        td
+                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.userAddress}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.userAddress)}
+
+                        td #{htlc.evmHtlc.amount}
+                        td #{htlc.evmHtlc.status}
+                        td #{htlc.evmHtlc.chain}
+                    else
+                        td FAIL TO FIND EVM HTLC: #{htlc.evmContract}
+                        td
+                        td
+                        td
+                        td #{formatChainId(htlc.evmChainID)}
+
+                    td(class="table-warning")
+                        if (htlc.type && htlc.type == "chargeable") || (htlc.evmHtlc && htlc.evmHtlc.type == "chargeable")
+                            p -#{htlc.asset}->
+                        else
+                            p <-#{htlc.asset}-
+
+                    if htlc.type
+                        td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
+                        td(class="table-primary")
+                            if htlc.htlcStatus == 4
+                                span #{(htlc.refundAmount) / 100000000}
+                            else
+                                span #{(htlc.userAmount+htlc.fee) / 100000000}
+
+                        td(class="table-primary") #{htlc.fee / 100000000}
+                        td(class="table-primary")
+                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
+                        td(class="table-primary")
+                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
+                    else
+                        td(class="table-primary") FAIL TO FIND ARCHETHIC HTLC
+                        td(class="table-primary")
+                        td(class="table-primary")
+                        td(class="table-primary")
+                        td(class="table-primary")
