@@ -65,34 +65,36 @@ export async function tick(db) {
       );
     }
 
-    // balances native (concurrently)
-    const poolNativeAddress = networkConf.pools.NATIVE;
-    const reserveNativeAddress = networkConf.reserves.NATIVE;
-    const safetyModuleNativeAddress = networkConf.safetyModules.NATIVE;
-    metrics.push(
-      await Promise.all([
-        provider.getBalance(poolNativeAddress).then((value) => {
-          return {
-            name: `evm_pools_balance{asset="NATIVE",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
+    if (networkConf.pools.NATIVE) {
+      // balances native (concurrently)
+      const poolNativeAddress = networkConf.pools.NATIVE;
+      const reserveNativeAddress = networkConf.reserves.NATIVE;
+      const safetyModuleNativeAddress = networkConf.safetyModules.NATIVE;
+      metrics.push(
+        await Promise.all([
+          provider.getBalance(poolNativeAddress).then((value) => {
+            return {
+              name: `evm_pools_balance{asset="NATIVE",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
 
-        provider.getBalance(safetyModuleNativeAddress).then((value) => {
-          return {
-            name: `evm_safetymodule_balance{asset="NATIVE",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
+          provider.getBalance(safetyModuleNativeAddress).then((value) => {
+            return {
+              name: `evm_safetymodule_balance{asset="NATIVE",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
 
-        provider.getBalance(reserveNativeAddress).then((value) => {
-          return {
-            name: `evm_reserve_balance{asset="NATIVE",network="${networkName}"}`,
-            value: ethers.formatEther(value),
-          };
-        }),
-      ]),
-    );
+          provider.getBalance(reserveNativeAddress).then((value) => {
+            return {
+              name: `evm_reserve_balance{asset="NATIVE",network="${networkName}"}`,
+              value: ethers.formatEther(value),
+            };
+          }),
+        ]),
+      );
+    }
 
     // HTLCs (sequentially)
     for (const [tokenName, poolAddress] of Object.entries(networkConf.pools)) {
