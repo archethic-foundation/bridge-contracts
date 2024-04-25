@@ -83,7 +83,9 @@ async function getSignedHTLCs(
 
     const genesisAddress = call.data.actionRecipients[0].args[0].toUpperCase();
     const setSecretHashCall = setSecretHashCalls.find(
-      (setCall) => setCall.data.actionRecipients[0].address == genesisAddress,
+      (setCall) =>
+        setCall.data.actionRecipients[0].address.toUpperCase() ==
+        genesisAddress,
     );
     const revealSecretCall = revealSecretCalls.find(
       (revealCall) =>
