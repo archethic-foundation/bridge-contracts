@@ -1,6 +1,7 @@
 import { Utils } from "@archethicjs/sdk";
 import getPoolCalls from "./get-pool-calls.js";
 import Debug from "debug";
+import config from "config";
 import {
   updateHtlcDb,
   htlcStats,
@@ -19,8 +20,9 @@ export const HTLC_STATUS = {
   5: "ERRORED",
 };
 
-const PROTOCOL_FEE_ADDRESS =
-  "0000749D250560BF06C079832E0E9A24509B1E440A45C33BD9448B41B6A056FC6201";
+const PROTOCOL_FEE_ADDRESS = config
+  .get("archethic.protocolFeesAddress")
+  .toUpperCase();
 const BURN_ADDRESS =
   "00000000000000000000000000000000000000000000000000000000000000000000";
 
