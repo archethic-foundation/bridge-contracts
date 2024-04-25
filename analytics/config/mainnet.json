@@ -1,0 +1,68 @@
+{
+  "cron": "*/15 * * * *",
+  "port": 9102,
+  "dbFolder": "./db-mainnet",
+  "evm": {
+    // "ethereum": {
+    //   "coin": "ETH",
+    //   "chainID": 1,
+    //   "providerEndpoint": "https://mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+    //   "explorer": "https://etherscan.io/",
+    //   "tokens": {},
+    //   "pools": {},
+    //   "reserves": {},
+    //   "safetyModules": {}
+    // },
+    "polygon": {
+      "coin": "MATIC",
+      "chainID": 137,
+      "providerEndpoint": "https://polygon-mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "explorer": "https://polygonscan.com/",
+      "tokens": {
+        "UCO": "0x3C720206bFaCB2d16fA3ac0ed87D2048Dbc401Fc",
+        "WETH": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
+      },
+      "pools": {
+        "UCO": "0xd5cA9F76495b853a5054814A10b6365ee8ed745B",
+        "WETH": "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca"
+      },
+      "reserves": {
+        "UCO": "0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD",
+        "WETH": "0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD"
+      },
+      "safetyModules": {
+        "UCO": "0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b",
+        "WETH": "0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b"
+      }
+    },
+    "bsc": {
+      "coin": "BNB",
+      "chainID": 56,
+      "providerEndpoint": "https://bsc-dataseed.bnbchain.org",
+      "explorer": "https://bscscan.com/",
+      "tokens": {
+        "UCO": "0xb001f1E7c8bda414aC7Cf7Ecba5469fE8d24B6de"
+      },
+      "pools": {
+        "UCO": "0xE01F0ee653648192812B2D23CBfe7E147727B672"
+      },
+      "reserves": {
+        "UCO": "0x20a2bf7Ea2A6c86aF78b41ca83E35C929D19aA61"
+      },
+      "safetyModules": {
+        "UCO": "0x05ADf7de77d86fDebE406D5171e781D918E50207"
+      }
+    }
+  },
+  "archethic": {
+    "endpoint": "https://mainnet.archethic.net",
+    "tokens": {
+      "aeETH": "0000457eaca7fbaa96db4a8d506a0b69684f546166fbf3c55391b1461907efa58eaf"
+    },
+    "pools": {
+      "UCO": "00002075e9fb5329c7f5149802eb75f925d79b5fec5bfcf09dc81993cb9c39feaf5d",
+      "aeETH": "0000ec74226e85766fe5ade9ffea53d453f569799142f9ff248dcf532cebff4b3d32"
+    },
+    "protocolFeesAddress": "00007db8dc8dc7808c2e1f681b593a08ff8aa708447ae3a410b347ab15c562ec2126"
+  }
+}

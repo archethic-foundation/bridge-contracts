@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "testnet": "NODE_ENV=testnet DEBUG=* node index.js",
+    "mainnet": "NODE_ENV=mainnet DEBUG=* node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

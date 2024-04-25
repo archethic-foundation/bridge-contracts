@@ -1,7 +1,7 @@
 {
   "cron": "*/15 * * * *",
-  "port": 9100,
-  "dbFolder": "./db",
+  "port": 9101,
+  "dbFolder": "./db-testnet",
   "evm": {
     "sepolia": {
       "coin": "ETH",
