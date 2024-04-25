@@ -93,7 +93,7 @@ app.listen(port, () => {
     });
   };
 
-  tick();
+  //tick();
 
   const cronInterval = config.get("cron");
   debug(`Scheduler set to: ${cronInterval}`);
