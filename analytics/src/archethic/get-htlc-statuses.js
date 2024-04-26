@@ -89,11 +89,18 @@ async function getSignedHTLCs(
         setCall.data.actionRecipients[0].address.toUpperCase() ==
         genesisAddress,
     );
-    const revealSecretCall = revealSecretCalls.find(
-      (revealCall) =>
+    const revealSecretCall = revealSecretCalls.find((revealCall) => {
+      // there is 2 kinds of reveal secret transaction
+      const chargeableMatch =
         revealCall.data.actionRecipients[0].args[0].toUpperCase() ==
-        genesisAddress,
-    );
+        genesisAddress;
+
+      const signedMatch =
+        revealCall.data.actionRecipients[0].address.toUpperCase() ==
+        genesisAddress;
+
+      return chargeableMatch || signedMatch;
+    });
 
     const endTime = setSecretHashCall
       ? setSecretHashCall.data.actionRecipients[0].args[2]
@@ -254,7 +261,7 @@ function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
   } else if (htlcChain.length == 1 && endTime > now) {
     htlcStatus = 2;
   } else if (htlcChain.length >= 2) {
-    const lastTransaction = htlcChain[1];
+    const lastTransaction = htlcChain[htlcChain.length - 1];
     const transfers = lastTransaction.data.ledger.uco.transfers.concat(
       lastTransaction.data.ledger.token.transfers,
     );

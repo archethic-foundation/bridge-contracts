@@ -48,6 +48,7 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
 
   const failedCalls = [];
   const setSecretHashCalls = [];
+  const signedRevealSecretCalls = [];
 
   const callQueries = poolTxs.reduce((acc, poolTx) => {
     const calls = filterAndSortInputCalls(poolTx.inputs);
@@ -63,6 +64,9 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
     const recipients = poolTx.data.actionRecipients;
     if (recipients.length > 0 && recipients[0].action == "set_secret_hash") {
       setSecretHashCalls.push(poolTx);
+    }
+    if (recipients.length > 0 && recipients[0].action == "reveal_secret") {
+      signedRevealSecretCalls.push(poolTx);
     }
 
     return call ? acc + "\n" + callQuery(poolTx.address, call.from) : acc;
@@ -86,8 +90,11 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
 
   const callTxs = await archethic.network.rawGraphQLQuery(query);
 
-  const { fundsCalls, secretHashCalls, revealSecretCalls } =
-    splitCallTxs(callTxs);
+  const {
+    fundsCalls,
+    secretHashCalls,
+    revealSecretCalls: chargeableRevealSecretCalls,
+  } = splitCallTxs(callTxs);
 
   const [{ address: nextPagingAddress }] = poolTxs.slice(-1);
 
@@ -95,7 +102,10 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
     fundsCalls,
     secretHashCalls,
     setSecretHashCalls,
-    revealSecretCalls,
+    revealSecretCalls: [
+      ...chargeableRevealSecretCalls,
+      ...signedRevealSecretCalls,
+    ],
     failedCalls,
     pagingAddress: nextPagingAddress,
   };
