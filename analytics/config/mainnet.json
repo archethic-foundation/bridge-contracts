@@ -3,16 +3,24 @@
   "port": 9102,
   "dbFolder": "./db-mainnet",
   "evm": {
-    // "ethereum": {
-    //   "coin": "ETH",
-    //   "chainID": 1,
-    //   "providerEndpoint": "https://mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
-    //   "explorer": "https://etherscan.io/",
-    //   "tokens": {},
-    //   "pools": {},
-    //   "reserves": {},
-    //   "safetyModules": {}
-    // },
+    "ethereum": {
+      "coin": "ETH",
+      "chainID": 1,
+      "providerEndpoint": "https://mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "explorer": "https://etherscan.io/",
+      "tokens": {
+        "UCO": "0x8a3d77e9d6968b780564936d15B09805827C21fa"
+      },
+      "pools": {
+        "UCO": "0x346Dba8b51485FfBd4b07B0BCb84F48117751AD9"
+      },
+      "reserves": {
+        "UCO": "0x59074485D293523168459C02DA0fbbd2a47A8973"
+      },
+      "safetyModules": {
+        "UCO": "0x7F872fBf5b4a71D5CfCC35175bF93EAcAB0e50b1"
+      }
+    },
     "polygon": {
       "coin": "MATIC",
       "chainID": 137,
