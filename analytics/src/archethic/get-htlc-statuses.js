@@ -96,8 +96,9 @@ async function getSignedHTLCs(
         genesisAddress;
 
       const signedMatch =
-        revealCall.data.actionRecipients[0].address.toUpperCase() ==
-        genesisAddress;
+        (revealCall.data.actionRecipients[0].address
+          ? revealCall.data.actionRecipients[0].address.toUpperCase()
+          : null) == genesisAddress;
 
       return chargeableMatch || signedMatch;
     });
@@ -149,7 +150,6 @@ async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
 
   fundsCalls.forEach((call) => {
     const htlcChain = htlcsChain[call.address];
-
     const endTime = call.data.actionRecipients[0].args[0];
     const userAddress = call.data.actionRecipients[0].args[2];
 
