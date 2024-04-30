@@ -15,6 +15,14 @@ export async function setPagingAddress(db, poolGenesisAddress, pagingAddress) {
   return db.put(`pagingAddress:${poolGenesisAddress}`, pagingAddress);
 }
 
+export async function resetPagingAddress(db) {
+  return Promise.all([
+    Object.values(POOLS).map((poolGenesisAddress) =>
+      db.del(`pagingAddress:${poolGenesisAddress}`),
+    ),
+  ]);
+}
+
 export async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
   var promises = [];
   for (const htlcState of htlcStates) {
