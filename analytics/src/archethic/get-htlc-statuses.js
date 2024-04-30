@@ -12,12 +12,9 @@ import {
 const debug = Debug("archethic:htlc");
 
 export const HTLC_STATUS = {
-  0: "NON_PROVISIONED",
-  1: "WAIT_REFUND",
-  2: "WAIT_WITHDRAW",
+  1: "PENDING",
   3: "WITHDRAWN",
   4: "REFUNDED",
-  5: "ERRORED",
 };
 
 const PROTOCOL_FEE_ADDRESS = config
@@ -249,18 +246,14 @@ function getHtlcChainQuery(address) {
 
 function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
   const now = Date.now() / 1000;
-  let htlcStatus = 0,
+  let htlcStatus = 1,
     fee = 0,
     userAmount = 0,
     refundAmount = 0;
 
   const minAmountForFee = Utils.toBigInt(1e-8 / 0.003);
 
-  if (htlcChain.length == 1 && endTime <= now) {
-    htlcStatus = 1;
-  } else if (htlcChain.length == 1 && endTime > now) {
-    htlcStatus = 2;
-  } else if (htlcChain.length >= 2) {
+  if (htlcChain.length >= 2) {
     const lastTransaction = htlcChain[htlcChain.length - 1];
     const transfers = lastTransaction.data.ledger.uco.transfers.concat(
       lastTransaction.data.ledger.token.transfers,
@@ -276,11 +269,9 @@ function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
       refundsAddresses.includes(to.toUpperCase()),
     );
 
-    if (refundTransfer && !feeTransfer && !userTransfer) {
+    if (refundTransfer) {
       refundAmount = refundTransfer.amount;
       htlcStatus = 4;
-    } else if (refundTransfer && (feeTransfer || userTransfer)) {
-      htlcStatus = 5;
     } else if (userTransfer && feeTransfer) {
       fee = feeTransfer.amount;
       userAmount = userTransfer.amount;
@@ -288,8 +279,6 @@ function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
     } else if (userTransfer && userTransfer.amount < minAmountForFee) {
       userAmount = userTransfer.amount;
       htlcStatus = 3;
-    } else {
-      htlcStatus = 5;
     }
   }
 
