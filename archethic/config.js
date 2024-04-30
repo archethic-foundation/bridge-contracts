@@ -92,6 +92,12 @@ export default {
     ethereum: {
       endpoint: "https://mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       chainId: 1,
+      tokens: {
+        UCO: {
+          proxyAddress: "0x346Dba8b51485FfBd4b07B0BCb84F48117751AD9",
+          decimals: 18,
+        },
+      }
     },
     polygon_pos: {
       endpoint: "https://polygon-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
@@ -113,7 +119,7 @@ export default {
       availableEvmNetworks: {
         local: ["local"],
         testnet: ["sepolia_ethereum", "mumbai_polygon", "bnb_chain_testnet"],
-        mainnet: ["bnb_chain", "polygon_pos"],
+        mainnet: ["bnb_chain", "polygon_pos", "ethereum"],
       },
     },
     aeETH: {

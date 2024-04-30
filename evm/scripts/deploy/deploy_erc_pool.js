@@ -2,7 +2,7 @@ const hre = { ethers, upgrades, network } = require("hardhat");
 
 async function main() {
   const tokenSymbol = process.env["TOKEN"]
-  if (tokenSymbol === undefined) {
+  if (network.name != "localhost" && tokenSymbol === undefined) {
     throw "TOKEN is not defined"
   }
 
