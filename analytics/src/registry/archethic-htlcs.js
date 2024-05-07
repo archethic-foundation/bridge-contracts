@@ -39,38 +39,26 @@ export async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
 export async function htlcStats(db, poolGenesisAddress) {
   let countByTypeAndStatus = {
     signed: {
-      0: 0,
       1: 0,
-      2: 0,
       3: 0,
       4: 0,
-      5: 0,
     },
     chargeable: {
-      0: 0,
       1: 0,
-      2: 0,
       3: 0,
       4: 0,
-      5: 0,
     },
   };
   let amountByTypeAndStatus = {
     signed: {
-      0: 0,
       1: 0,
-      2: 0,
       3: 0,
       4: 0,
-      5: 0,
     },
     chargeable: {
-      0: 0,
       1: 0,
-      2: 0,
       3: 0,
       4: 0,
-      5: 0,
     },
   };
 
