@@ -1,27 +1,21 @@
 import { Utils } from "@archethicjs/sdk";
 import getPoolCalls from "./get-pool-calls.js";
 import Debug from "debug";
-import config from "config";
 import {
   updateHtlcDb,
   htlcStats,
   getPagingAddress,
   setPagingAddress,
+  getPendingHTLCs,
 } from "../registry/archethic-htlcs.js";
 
 const debug = Debug("archethic:htlc");
 
 export const HTLC_STATUS = {
-  1: "PENDING",
-  3: "WITHDRAWN",
-  4: "REFUNDED",
+  0: "PENDING",
+  1: "WITHDRAWN",
+  2: "REFUNDED",
 };
-
-const PROTOCOL_FEE_ADDRESS = config
-  .get("archethic.protocolFeesAddress")
-  .toUpperCase();
-const BURN_ADDRESS =
-  "00000000000000000000000000000000000000000000000000000000000000000000";
 
 export default async function (archethic, db, poolGenesisAddress) {
   const pagingAddress = await getPagingAddress(db, poolGenesisAddress);
@@ -31,11 +25,7 @@ export default async function (archethic, db, poolGenesisAddress) {
     `${poolGenesisAddress}: processing ${res.fundsCalls.length} chargeable HTLCs`,
   );
 
-  const chargeableHTLCs = await getChargeableHTLCs(
-    archethic,
-    res.fundsCalls,
-    poolGenesisAddress,
-  );
+  const chargeableHTLCs = await getChargeableHTLCs(archethic, res.fundsCalls);
 
   debug(`${poolGenesisAddress}: done`);
   debug(
@@ -47,12 +37,21 @@ export default async function (archethic, db, poolGenesisAddress) {
     res.secretHashCalls,
     res.setSecretHashCalls,
     res.revealSecretCalls,
-    poolGenesisAddress,
   );
 
   debug(`${poolGenesisAddress}: done`);
 
+  const pendingHTLCs = await getPendingHTLCs(db, poolGenesisAddress);
+  debug(
+    `${poolGenesisAddress}: processing ${pendingHTLCs.length} pending HTLCs`,
+  );
+
+  const updatedPendingHTLCs = await updatePendingHTLCs(archethic, pendingHTLCs);
+
+  debug(`${poolGenesisAddress}: done`);
+
   await updateHtlcDb(db, poolGenesisAddress, [
+    ...updatedPendingHTLCs,
     ...chargeableHTLCs,
     ...signedHTLCs,
   ]);
@@ -66,7 +65,6 @@ async function getSignedHTLCs(
   secretHashCalls,
   setSecretHashCalls,
   revealSecretCalls,
-  poolGenesisAddress,
 ) {
   // htlcGenesisAddress, amount, userAddress, chainId
   const signedHTLCs = [];
@@ -108,15 +106,8 @@ async function getSignedHTLCs(
       : undefined;
     const userAddress = call.data.actionRecipients[0].args[2];
 
-    const htlcChain = htlcsChain[creationAddress];
-
-    const withdrawAddresses = [BURN_ADDRESS, poolGenesisAddress.toUpperCase()];
-    const refundAddresses = [userAddress.toUpperCase()];
-    const { fee, userAmount, refundAmount, htlcStatus } = getHTLCDatas(
-      htlcChain,
-      endTime,
-      withdrawAddresses,
-      refundAddresses,
+    const { fee, userAmount, refundAmount, status } = getHTLCDatas(
+      htlcsChain[creationAddress],
     );
 
     const htlc = {
@@ -131,7 +122,7 @@ async function getSignedHTLCs(
       fee,
       userAmount,
       refundAmount,
-      htlcStatus,
+      status,
     };
 
     signedHTLCs.push(htlc);
@@ -139,7 +130,8 @@ async function getSignedHTLCs(
 
   return signedHTLCs.sort((a, b) => (a.creationTime > b.creationTime ? 1 : -1));
 }
-async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
+
+async function getChargeableHTLCs(archethic, fundsCalls) {
   const chargedHTLCs = [];
 
   const addresses = fundsCalls.map((call) => call.address);
@@ -149,15 +141,7 @@ async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
     const htlcChain = htlcsChain[call.address];
     const endTime = call.data.actionRecipients[0].args[0];
     const userAddress = call.data.actionRecipients[0].args[2];
-
-    const withdrawAddresses = [userAddress.toUpperCase()];
-    const refundAddresses = [BURN_ADDRESS, poolGenesisAddress.toUpperCase()];
-    const { fee, userAmount, refundAmount, htlcStatus } = getHTLCDatas(
-      htlcChain,
-      endTime,
-      withdrawAddresses,
-      refundAddresses,
-    );
+    const { fee, userAmount, refundAmount, status } = getHTLCDatas(htlcChain);
 
     const htlc = {
       type: "chargeable",
@@ -171,7 +155,7 @@ async function getChargeableHTLCs(archethic, fundsCalls, poolGenesisAddress) {
       fee,
       userAmount,
       refundAmount,
-      htlcStatus,
+      status,
     };
 
     chargedHTLCs.push(htlc);
@@ -225,6 +209,7 @@ function getHtlcChainQuery(address) {
   ) {
 		address
     data {
+      code
       ledger {
         token{
           transfers {
@@ -244,43 +229,65 @@ function getHtlcChainQuery(address) {
   }`;
 }
 
-function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
-  const now = Date.now() / 1000;
-  let htlcStatus = 1,
-    fee = 0,
+// I'm doing this instead of callFunction to do one less I/O
+// and to keep the workflow synchronous
+function infoFromTransaction(transaction) {
+  // regex catch root level info code
+  let matches = transaction.data.code.match(
+    /^export fun info\(\) do[\s\S]*end/gm,
+  );
+  if (!matches) throw new Error("Could not extract the info from the code");
+
+  // regex catch the status from the info code
+  matches = matches[0].match(/status: (\d) #/);
+  if (!matches) throw new Error("Could not extract the status from the info");
+
+  return { status: Number(matches[1]) };
+}
+
+function getHTLCDatas(htlcChain) {
+  const lastTransaction = htlcChain[htlcChain.length - 1];
+  let fee = 0,
     userAmount = 0,
     refundAmount = 0;
 
-  const minAmountForFee = Utils.toBigInt(1e-8 / 0.003);
+  const { status } = infoFromTransaction(lastTransaction);
 
-  if (htlcChain.length >= 2) {
-    const lastTransaction = htlcChain[htlcChain.length - 1];
-    const transfers = lastTransaction.data.ledger.uco.transfers.concat(
-      lastTransaction.data.ledger.token.transfers,
-    );
+  const transfers = lastTransaction.data.ledger.uco.transfers.concat(
+    lastTransaction.data.ledger.token.transfers,
+  );
 
-    const feeTransfer = transfers.find(
-      ({ to }) => to.toUpperCase() == PROTOCOL_FEE_ADDRESS,
-    );
-    const userTransfer = transfers.find(({ to }) =>
-      withdrawAddresses.includes(to.toUpperCase()),
-    );
-    const refundTransfer = transfers.find(({ to }) =>
-      refundsAddresses.includes(to.toUpperCase()),
-    );
+  // status = refund
+  if (transfers.length == 1 && status == 2) refundAmount = transfers[0].amount;
 
-    if (refundTransfer) {
-      refundAmount = refundTransfer.amount;
-      htlcStatus = 4;
-    } else if (userTransfer && feeTransfer) {
-      fee = feeTransfer.amount;
-      userAmount = userTransfer.amount;
-      htlcStatus = 3;
-    } else if (userTransfer && userTransfer.amount < minAmountForFee) {
-      userAmount = userTransfer.amount;
-      htlcStatus = 3;
+  // status = withdrawn without fees
+  if (transfers.length == 1 && status == 1) userAmount = transfers[0].amount;
+
+  // status = withdrawn with fees
+  if (transfers.length == 2 && status == 1) {
+    fee = transfers[0].amount;
+    userAmount = transfers[1].amount;
+  }
+
+  return { fee, userAmount, refundAmount, status };
+}
+
+async function updatePendingHTLCs(archethic, pendingHTLCs) {
+  const addresses = pendingHTLCs.map((htlc) => htlc.creationAddress);
+  const htlcsChains = await getHTLCsChain(archethic, addresses);
+  let updatedHTLCs = [];
+  for (const [address, htlcChain] of Object.entries(htlcsChains)) {
+    const { fee, userAmount, refundAmount, status } = getHTLCDatas(htlcChain);
+
+    if (status != 0) {
+      const htlc = pendingHTLCs.find((htlc) => htlc.creationAddress == address);
+      htlc.fee = fee;
+      htlc.userAmount = userAmount;
+      htlc.refundAmount = refundAmount;
+      htlc.status = status;
+      updatedHTLCs.push(htlc);
     }
   }
 
-  return { fee, userAmount, refundAmount, htlcStatus };
+  return updatedHTLCs;
 }

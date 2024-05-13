@@ -55,7 +55,7 @@ html(lang="en")
                         td #{htlc.evmHtlc.status}
                         td #{htlc.evmHtlc.chain}
                     else
-                        td FAIL TO FIND EVM HTLC: #{htlc.evmContract}
+                        td
                         td
                         td
                         td
@@ -68,9 +68,9 @@ html(lang="en")
                             p <-#{htlc.asset}-
 
                     if htlc.type
-                        td(class="table-primary") #{HTLC_STATUS[htlc.htlcStatus]}
+                        td(class="table-primary") #{HTLC_STATUS[htlc.status]}
                         td(class="table-primary")
-                            if htlc.htlcStatus == 4
+                            if htlc.status == 4
                                 span #{(htlc.refundAmount) / 100000000}
                             else
                                 span #{(htlc.userAmount+htlc.fee) / 100000000}
@@ -81,7 +81,7 @@ html(lang="en")
                         td(class="table-primary")
                             a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
                     else
-                        td(class="table-primary") FAIL TO FIND ARCHETHIC HTLC
+                        td(class="table-primary")
                         td(class="table-primary")
                         td(class="table-primary")
                         td(class="table-primary")

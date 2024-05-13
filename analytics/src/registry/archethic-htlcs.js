@@ -39,26 +39,26 @@ export async function updateHtlcDb(db, poolGenesisAddress, htlcStates) {
 export async function htlcStats(db, poolGenesisAddress) {
   let countByTypeAndStatus = {
     signed: {
+      0: 0,
       1: 0,
-      3: 0,
-      4: 0,
+      2: 0,
     },
     chargeable: {
+      0: 0,
       1: 0,
-      3: 0,
-      4: 0,
+      2: 0,
     },
   };
   let amountByTypeAndStatus = {
     signed: {
+      0: 0,
       1: 0,
-      3: 0,
-      4: 0,
+      2: 0,
     },
     chargeable: {
+      0: 0,
       1: 0,
-      3: 0,
-      4: 0,
+      2: 0,
     },
   };
 
@@ -67,8 +67,8 @@ export async function htlcStats(db, poolGenesisAddress) {
       const parts = key.split(":");
       const htlcType = parts[parts.length - 2];
 
-      countByTypeAndStatus[htlcType][value.htlcStatus] += 1;
-      amountByTypeAndStatus[htlcType][value.htlcStatus] += Utils.fromBigInt(
+      countByTypeAndStatus[htlcType][value.status] += 1;
+      amountByTypeAndStatus[htlcType][value.status] += Utils.fromBigInt(
         value.amount,
       );
     }
@@ -101,6 +101,20 @@ export async function getHTLCs(db, type) {
   return htlcs;
 }
 
+export async function getPendingHTLCs(db, poolGenesisAddress) {
+  const now = Date.now();
+  let pendings = [];
+  for await (const [key, value] of db.iterator()) {
+    if (
+      key.startsWith(`htlc:archethic:${poolGenesisAddress}:`) &&
+      value.status == 0 &&
+      value.endTime < now
+    ) {
+      pendings.push(value);
+    }
+  }
+  return pendings;
+}
 function determineAsset(poolGenesisAddress) {
   for (const [asset, address] of Object.entries(POOLS)) {
     if (address.toUpperCase() == poolGenesisAddress.toUpperCase()) return asset;
