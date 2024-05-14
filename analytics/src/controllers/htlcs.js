@@ -81,13 +81,27 @@ function merge(archethicHtlcs, evmHtlcs, type) {
         evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
       }
     } else {
-      // Try to match based on the locktime (2s tolerance)
-      const matches = evmHtlcs.filter(
-        (evmHtlc) => Math.abs(evmHtlc.lockTime - archethicHtlc.endTime) < 2,
-      );
-      if (matches.length == 1) {
-        archethicHtlc.evmHtlc = matches[0];
-        evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
+      // try to match based on the secrethash
+      if (archethicHtlc.secretHash) {
+        const match = evmHtlcs.find((evmHtlc) => {
+          // secrethash is not set on chargeable
+          if (evmHtlc.secretHash) {
+            console.log(
+              evmHtlc.secretHash.toLowerCase(),
+              archethicHtlc.secretHash.toLowerCase(),
+            );
+            return (
+              evmHtlc.secretHash.toLowerCase() ==
+              archethicHtlc.secretHash.toLowerCase()
+            );
+          } else {
+            return false;
+          }
+        });
+        if (match != null) {
+          archethicHtlc.evmHtlc = match;
+          evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
+        }
       }
     }
   }

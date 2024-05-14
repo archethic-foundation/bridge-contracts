@@ -101,6 +101,9 @@ async function getSignedHTLCs(
     const endTime = setSecretHashCall
       ? setSecretHashCall.data.actionRecipients[0].args[2]
       : undefined;
+    const secretHash = setSecretHashCall
+      ? "0x" + setSecretHashCall.data.actionRecipients[0].args[0]
+      : undefined;
     const evmContract = revealSecretCall
       ? revealSecretCall.data.actionRecipients[0].args[2]
       : undefined;
@@ -115,6 +118,7 @@ async function getSignedHTLCs(
       creationTime: call.validationStamp.timestamp,
       amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
       evmChainID: call.data.actionRecipients[0].args[3],
+      secretHash,
       creationAddress,
       evmContract,
       endTime,

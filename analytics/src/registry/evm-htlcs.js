@@ -36,21 +36,18 @@ export async function getHTLCs(db, htlcType, asset, poolAddress) {
           userAddress: value.userAddress,
           lockTime: value.lockTime,
           status: value.status,
+          secretHash: value.secretHash,
           amount: value.amount / 10 ** 18,
         });
       }
     }
   } else {
+    // this is used only to do the stats so we just need status & amount
     for await (const [key, value] of db.iterator()) {
       if (key.startsWith(htlcNamespaceKey(poolAddress, htlcType, asset))) {
-        const address = key.split(":").pop();
         htlcs.push({
-          address,
-          asset,
           status: value.status,
-          lockTime: deserializeBigInt(value.lockTime),
           amount: deserializeBigInt(value.amount),
-          userAddress: value.userAddress,
         });
       }
     }
@@ -62,21 +59,31 @@ export async function persistHTLCs(db, htlcs, poolAddress, htlcType, asset) {
   let newAddressesToDiscard = [];
 
   await Promise.all(
-    htlcs.map(async ({ address, status, amount, lockTime, userAddress }) => {
-      if (status != "PENDING") {
-        newAddressesToDiscard.push(address);
-      }
+    htlcs.map(
+      async ({
+        address,
+        status,
+        amount,
+        lockTime,
+        userAddress,
+        secretHash,
+      }) => {
+        if (status != "PENDING") {
+          newAddressesToDiscard.push(address);
+        }
 
-      await db.put(
-        `${htlcNamespaceKey(poolAddress, htlcType, asset)}:${address}`,
-        {
-          status,
-          lockTime: serializeBigInt(lockTime),
-          amount: serializeBigInt(amount),
-          userAddress,
-        },
-      );
-    }),
+        await db.put(
+          `${htlcNamespaceKey(poolAddress, htlcType, asset)}:${address}`,
+          {
+            status,
+            lockTime: serializeBigInt(lockTime),
+            amount: serializeBigInt(amount),
+            userAddress,
+            secretHash,
+          },
+        );
+      },
+    ),
   );
 
   // FIXME: NOT ATOMIC

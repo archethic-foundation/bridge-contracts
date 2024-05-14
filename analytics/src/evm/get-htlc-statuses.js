@@ -88,14 +88,17 @@ async function list(provider, addresses, abi) {
     const chunkSwaps = await Promise.all(
       chunkAddresses.map(async (address) => {
         const htlcContract = new ethers.Contract(address, abi, provider);
-        const [statusEnum, amount, lockTime, userAddress] = await Promise.all([
-          htlcContract.status(),
-          htlcContract.amount(),
-          htlcContract.lockTime(),
-          htlcContract.from(),
-        ]);
+        const [statusEnum, amount, lockTime, userAddress, secretHash] =
+          await Promise.all([
+            htlcContract.status(),
+            htlcContract.amount(),
+            htlcContract.lockTime(),
+            htlcContract.from(),
+            htlcContract.hash(),
+          ]);
 
         return {
+          secretHash,
           address,
           status: statusFromEnum(statusEnum),
           amount,
