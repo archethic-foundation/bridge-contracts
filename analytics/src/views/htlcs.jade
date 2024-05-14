@@ -63,9 +63,9 @@ html(lang="en")
 
                     td(class="table-warning")
                         if (htlc.type && htlc.type == "chargeable") || (htlc.evmHtlc && htlc.evmHtlc.type == "chargeable")
-                            p -#{htlc.asset}->
+                            p -#{htlc.asset || htlc.evmHtlc.asset }->
                         else
-                            p <-#{htlc.asset}-
+                            p <-#{htlc.asset || htlc.evmHtlc.asset}-
 
                     if htlc.type
                         td(class="table-primary") #{HTLC_STATUS[htlc.status]}
