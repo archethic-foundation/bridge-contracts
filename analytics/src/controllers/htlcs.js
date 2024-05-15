@@ -86,10 +86,6 @@ function merge(archethicHtlcs, evmHtlcs, type) {
         const match = evmHtlcs.find((evmHtlc) => {
           // secrethash is not set on chargeable
           if (evmHtlc.secretHash) {
-            console.log(
-              evmHtlc.secretHash.toLowerCase(),
-              archethicHtlc.secretHash.toLowerCase(),
-            );
             return (
               evmHtlc.secretHash.toLowerCase() ==
               archethicHtlc.secretHash.toLowerCase()

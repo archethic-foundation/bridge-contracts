@@ -42,18 +42,21 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
   let poolAbi;
   let htlcAbi;
   let contractFunction;
+  let userAddressVariable;
 
   switch (htlcType) {
     case "chargeable":
       htlcAbi = asset == "NATIVE" ? CHARGEABLE_NATIVE.abi : CHARGEABLE_ERC.abi;
       poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "mintedSwaps";
+      userAddressVariable = "from";
       break;
 
     case "signed":
       htlcAbi = asset == "NATIVE" ? SIGNED_NATIVE.abi : SIGNED_ERC.abi;
       poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "provisionedSwaps";
+      userAddressVariable = "recipient";
       break;
 
     default:
@@ -76,12 +79,17 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
   debug(
     `${htlcType}/${asset}: processing ${htlcsAddressesToProcess.length} HTLCs`,
   );
-  const htlcs = await list(provider, htlcsAddressesToProcess, htlcAbi);
+  const htlcs = await list(
+    provider,
+    htlcsAddressesToProcess,
+    htlcAbi,
+    userAddressVariable,
+  );
   await persistHTLCs(db, htlcs, poolAddress, htlcType, asset);
   return stats(await getHTLCs(db, htlcType, asset, poolAddress));
 }
 
-async function list(provider, addresses, abi) {
+async function list(provider, addresses, abi, userAddressVariable) {
   let swaps = [];
   for (let i = 0; i < addresses.length; i += CHUNK_SIZE) {
     const chunkAddresses = addresses.slice(i, i + CHUNK_SIZE);
@@ -93,7 +101,7 @@ async function list(provider, addresses, abi) {
             htlcContract.status(),
             htlcContract.amount(),
             htlcContract.lockTime(),
-            htlcContract.from(),
+            htlcContract[userAddressVariable](),
             htlcContract.hash(),
           ]);
 
