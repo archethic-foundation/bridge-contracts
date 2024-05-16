@@ -97,6 +97,24 @@ function merge(archethicHtlcs, evmHtlcs, type) {
         if (match != null) {
           archethicHtlc.evmHtlc = match;
           evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
+        } else {
+          // Try to match based on the locktime (2s tolerance)
+          const matches = evmHtlcs.filter(
+            (evmHtlc) => Math.abs(evmHtlc.lockTime - archethicHtlc.endTime) < 2,
+          );
+          if (matches.length == 1) {
+            archethicHtlc.evmHtlc = matches[0];
+            evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
+          }
+        }
+      } else {
+        // Try to match based on the locktime (2s tolerance)
+        const matches = evmHtlcs.filter(
+          (evmHtlc) => Math.abs(evmHtlc.lockTime - archethicHtlc.endTime) < 2,
+        );
+        if (matches.length == 1) {
+          archethicHtlc.evmHtlc = matches[0];
+          evmHtlcsToDiscard.push(archethicHtlc.evmHtlc.address);
         }
       }
     }
