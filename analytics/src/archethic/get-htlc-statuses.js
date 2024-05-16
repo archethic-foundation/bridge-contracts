@@ -120,11 +120,6 @@ async function getChargeableHTLCs(
     "chargeable",
   );
 
-  console.log(
-    "pendingchargeable",
-    pendingChargeableHTLCs.map((c) => c.creationAddress),
-  );
-
   const chargeableHTLCs = [...pendingChargeableHTLCs, ...newChargeableHTLCs];
   debug(
     `${poolGenesisAddress}/chargeable: processing ${chargeableHTLCs.length} HTLCs`,

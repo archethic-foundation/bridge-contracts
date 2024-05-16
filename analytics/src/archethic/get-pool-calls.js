@@ -51,15 +51,9 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
   const signedRevealSecretCalls = [];
 
   const callQueries = poolTxs.reduce((acc, poolTx) => {
-    const calls = filterAndSortInputCalls(poolTx.inputs);
-    let call;
-
-    if (calls.length > 1) {
-      [call] = calls.splice(-1);
-      failedCalls.push(...calls);
-    } else {
-      call = calls[0];
-    }
+    const call = poolTx.validationStamp.ledgerOperations.consumedInputs.find(
+      (input) => input.type == "call",
+    );
 
     const recipients = poolTx.data.actionRecipients;
     if (recipients.length > 0 && recipients[0].action == "set_secret_hash") {
@@ -69,6 +63,7 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
       signedRevealSecretCalls.push(poolTx);
     }
 
+    // some transactions are of type token so there is no call consumed
     return call ? acc + "\n" + callQuery(poolTx.address, call.from) : acc;
   }, "");
 
@@ -109,12 +104,6 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
     failedCalls,
     pagingAddress: nextPagingAddress,
   };
-}
-
-function filterAndSortInputCalls(inputs) {
-  return inputs
-    .filter((input) => input.type == "call")
-    .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1));
 }
 
 function splitCallTxs(callTxs) {
@@ -173,12 +162,17 @@ function poolChainQuery(poolGenesisAddress, pagingAddress) {
         pagingAddress: "${pagingAddress}"
       ) {
 		    address
-        inputs {
-          type, from, timestamp
-        }
         data {
           actionRecipients {
             address, action, args
+          }
+        }
+        validationStamp {
+          ledgerOperations{
+            consumedInputs {
+              type
+              from
+            }
           }
         }
       }
@@ -189,12 +183,17 @@ function poolChainQuery(poolGenesisAddress, pagingAddress) {
         address: "${poolGenesisAddress}"
       ) {
 		    address
-        inputs {
-          type, from, timestamp
-        }
         data {
           actionRecipients {
             address, action, args
+          }
+        }
+        validationStamp {
+          ledgerOperations{
+            consumedInputs {
+              type
+              from
+            }
           }
         }
       }

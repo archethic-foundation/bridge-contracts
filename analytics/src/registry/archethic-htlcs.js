@@ -106,10 +106,9 @@ export async function getPendingHTLCs(db, poolGenesisAddress, type) {
     ? `htlc:archethic:${poolGenesisAddress}:${type}`
     : `htlc:archethic:${poolGenesisAddress}`;
 
-  const now = Date.now();
   let pendings = [];
   for await (const [key, value] of db.iterator()) {
-    if (key.startsWith(prefix) && value.status == 0 && value.endTime < now) {
+    if (key.startsWith(prefix) && value.status == 0) {
       pendings.push(value);
     }
   }
