@@ -101,20 +101,21 @@ export async function getHTLCs(db, type) {
   return htlcs;
 }
 
-export async function getPendingHTLCs(db, poolGenesisAddress) {
+export async function getPendingHTLCs(db, poolGenesisAddress, type) {
+  const prefix = type
+    ? `htlc:archethic:${poolGenesisAddress}:${type}`
+    : `htlc:archethic:${poolGenesisAddress}`;
+
   const now = Date.now();
   let pendings = [];
   for await (const [key, value] of db.iterator()) {
-    if (
-      key.startsWith(`htlc:archethic:${poolGenesisAddress}:`) &&
-      value.status == 0 &&
-      value.endTime < now
-    ) {
+    if (key.startsWith(prefix) && value.status == 0 && value.endTime < now) {
       pendings.push(value);
     }
   }
   return pendings;
 }
+
 function determineAsset(poolGenesisAddress) {
   for (const [asset, address] of Object.entries(POOLS)) {
     if (address.toUpperCase() == poolGenesisAddress.toUpperCase()) return asset;

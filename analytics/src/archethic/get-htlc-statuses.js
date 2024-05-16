@@ -21,37 +21,23 @@ export default async function (archethic, db, poolGenesisAddress) {
   const pagingAddress = await getPagingAddress(db, poolGenesisAddress);
   const res = await getPoolCalls(archethic, poolGenesisAddress, pagingAddress);
 
-  debug(
-    `${poolGenesisAddress}: processing ${res.fundsCalls.length} chargeable HTLCs`,
-  );
-
-  const chargeableHTLCs = await getChargeableHTLCs(archethic, res.fundsCalls);
-
-  debug(`${poolGenesisAddress}: done`);
-  debug(
-    `${poolGenesisAddress}: processing ${res.secretHashCalls.length} signed HTLCs`,
+  const chargeableHTLCs = await getChargeableHTLCs(
+    archethic,
+    db,
+    poolGenesisAddress,
+    res.fundsCalls,
   );
 
   const signedHTLCs = await getSignedHTLCs(
     archethic,
+    db,
+    poolGenesisAddress,
     res.secretHashCalls,
     res.setSecretHashCalls,
     res.revealSecretCalls,
   );
 
-  debug(`${poolGenesisAddress}: done`);
-
-  const pendingHTLCs = await getPendingHTLCs(db, poolGenesisAddress);
-  debug(
-    `${poolGenesisAddress}: processing ${pendingHTLCs.length} pending HTLCs`,
-  );
-
-  const updatedPendingHTLCs = await updatePendingHTLCs(archethic, pendingHTLCs);
-
-  debug(`${poolGenesisAddress}: done`);
-
   await updateHtlcDb(db, poolGenesisAddress, [
-    ...updatedPendingHTLCs,
     ...chargeableHTLCs,
     ...signedHTLCs,
   ]);
@@ -62,112 +48,98 @@ export default async function (archethic, db, poolGenesisAddress) {
 
 async function getSignedHTLCs(
   archethic,
+  db,
+  poolGenesisAddress,
   secretHashCalls,
   setSecretHashCalls,
   revealSecretCalls,
 ) {
-  // htlcGenesisAddress, amount, userAddress, chainId
-  const signedHTLCs = [];
-
-  const addresses = secretHashCalls.map(
-    (call) => call.validationStamp.ledgerOperations.transactionMovements[0].to,
-  );
-  const htlcsChain = await getHTLCsChain(archethic, addresses);
-
-  secretHashCalls.forEach((call) => {
-    const creationAddress =
-      call.validationStamp.ledgerOperations.transactionMovements[0].to;
-
-    const genesisAddress = call.data.actionRecipients[0].args[0].toUpperCase();
-    const setSecretHashCall = setSecretHashCalls.find(
-      (setCall) =>
-        setCall.data.actionRecipients[0].address.toUpperCase() ==
-        genesisAddress,
-    );
-    const revealSecretCall = revealSecretCalls.find((revealCall) => {
-      // there is 2 kinds of reveal secret transaction
-      const chargeableMatch =
-        revealCall.data.actionRecipients[0].args[0].toUpperCase() ==
-        genesisAddress;
-
-      const signedMatch =
-        (revealCall.data.actionRecipients[0].address
-          ? revealCall.data.actionRecipients[0].address.toUpperCase()
-          : null) == genesisAddress;
-
-      return chargeableMatch || signedMatch;
-    });
-
-    const endTime = setSecretHashCall
-      ? setSecretHashCall.data.actionRecipients[0].args[2]
-      : undefined;
-    const secretHash = setSecretHashCall
-      ? "0x" + setSecretHashCall.data.actionRecipients[0].args[0]
-      : undefined;
-    const evmContract = revealSecretCall
-      ? revealSecretCall.data.actionRecipients[0].args[2]
-      : undefined;
-    const userAddress = call.data.actionRecipients[0].args[2];
-
-    const { fee, userAmount, refundAmount, status } = getHTLCDatas(
-      htlcsChain[creationAddress],
-    );
-
-    const htlc = {
+  const newSignedHTLCs = secretHashCalls.map((call) => {
+    return {
       type: "signed",
       creationTime: call.validationStamp.timestamp,
       amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
       evmChainID: call.data.actionRecipients[0].args[3],
-      secretHash,
-      creationAddress,
-      evmContract,
-      endTime,
-      userAddress,
-      fee,
-      userAmount,
-      refundAmount,
-      status,
+      userAddress: call.data.actionRecipients[0].args[2],
+      creationAddress:
+        call.validationStamp.ledgerOperations.transactionMovements[0].to.toUpperCase(),
+      genesisAddress: call.data.actionRecipients[0].args[0].toUpperCase(),
+      status: 0,
     };
-
-    signedHTLCs.push(htlc);
   });
 
-  return signedHTLCs.sort((a, b) => (a.creationTime > b.creationTime ? 1 : -1));
+  const pendingSignedHTLCs = await getPendingHTLCs(
+    db,
+    poolGenesisAddress,
+    "signed",
+  );
+
+  const signedHTLCs = [...pendingSignedHTLCs, ...newSignedHTLCs];
+  debug(`${poolGenesisAddress}/signed: processing ${signedHTLCs.length} HTLCs`);
+  const htlcsChain = await getHTLCsChain(
+    archethic,
+    signedHTLCs.map((htlc) => htlc.creationAddress),
+  );
+
+  debug(`${poolGenesisAddress}/signed: done`);
+  return signedHTLCs
+    .map((htlc) => {
+      return process_signed(
+        htlc,
+        htlcsChain,
+        setSecretHashCalls,
+        revealSecretCalls,
+      );
+    })
+    .sort((a, b) => (a.creationTime > b.creationTime ? 1 : -1));
 }
 
-async function getChargeableHTLCs(archethic, fundsCalls) {
-  const chargedHTLCs = [];
-
-  const addresses = fundsCalls.map((call) => call.address);
-  const htlcsChain = await getHTLCsChain(archethic, addresses);
-
-  fundsCalls.forEach((call) => {
-    const htlcChain = htlcsChain[call.address];
-    const endTime = call.data.actionRecipients[0].args[0];
-    const userAddress = call.data.actionRecipients[0].args[2];
-    const { fee, userAmount, refundAmount, status } = getHTLCDatas(htlcChain);
-
-    const htlc = {
+async function getChargeableHTLCs(
+  archethic,
+  db,
+  poolGenesisAddress,
+  fundsCalls,
+) {
+  const newChargeableHTLCs = fundsCalls.map((call) => {
+    return {
       type: "chargeable",
       creationAddress: call.address,
       creationTime: call.validationStamp.timestamp,
+      endTime: call.data.actionRecipients[0].args[0],
       amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
+      userAddress: call.data.actionRecipients[0].args[2],
       evmContract: call.data.actionRecipients[0].args[5],
       evmChainID: call.data.actionRecipients[0].args[6],
-      endTime,
-      userAddress,
-      fee,
-      userAmount,
-      refundAmount,
-      status,
+      status: 0,
     };
-
-    chargedHTLCs.push(htlc);
   });
 
-  return chargedHTLCs.sort((a, b) =>
-    a.creationTime > b.creationTime ? 1 : -1,
+  const pendingChargeableHTLCs = await getPendingHTLCs(
+    db,
+    poolGenesisAddress,
+    "chargeable",
   );
+
+  console.log(
+    "pendingchargeable",
+    pendingChargeableHTLCs.map((c) => c.creationAddress),
+  );
+
+  const chargeableHTLCs = [...pendingChargeableHTLCs, ...newChargeableHTLCs];
+  debug(
+    `${poolGenesisAddress}/chargeable: processing ${chargeableHTLCs.length} HTLCs`,
+  );
+  const htlcsChain = await getHTLCsChain(
+    archethic,
+    chargeableHTLCs.map((htlc) => htlc.creationAddress),
+  );
+
+  debug(`${poolGenesisAddress}/chargeable: done`);
+  return chargeableHTLCs
+    .map((htlc) => {
+      return process_charged(htlc, htlcsChain);
+    })
+    .sort((a, b) => (a.creationTime > b.creationTime ? 1 : -1));
 }
 
 async function getHTLCsChain(archethic, addresses) {
@@ -244,7 +216,10 @@ function infoFromTransaction(transaction) {
 
   // regex catch the status from the info code
   matches = matches[0].match(/status: (\d) #/);
-  if (!matches) throw new Error("Could not extract the status from the info");
+  if (!matches)
+    throw new Error(
+      "Could not extract the status from the info: " + matches[0],
+    );
 
   return { status: Number(matches[1]) };
 }
@@ -276,22 +251,66 @@ function getHTLCDatas(htlcChain) {
   return { fee, userAmount, refundAmount, status };
 }
 
-async function updatePendingHTLCs(archethic, pendingHTLCs) {
-  const addresses = pendingHTLCs.map((htlc) => htlc.creationAddress);
-  const htlcsChains = await getHTLCsChain(archethic, addresses);
-  let updatedHTLCs = [];
-  for (const [address, htlcChain] of Object.entries(htlcsChains)) {
-    const { fee, userAmount, refundAmount, status } = getHTLCDatas(htlcChain);
+function process_signed(
+  htlc,
+  htlcsChain,
+  setSecretHashCalls,
+  revealSecretCalls,
+) {
+  const setSecretHashCall = setSecretHashCalls.find(
+    (call) =>
+      call.data.actionRecipients[0].address.toUpperCase() ==
+      htlc.genesisAddress.toUpperCase(),
+  );
+  const revealSecretCall = revealSecretCalls.find((revealCall) => {
+    // there is 2 kinds of reveal secret transaction
+    const chargeableMatch =
+      revealCall.data.actionRecipients[0].args[0].toUpperCase() ==
+      htlc.genesisAddress.toUpperCase();
 
-    if (status != 0) {
-      const htlc = pendingHTLCs.find((htlc) => htlc.creationAddress == address);
-      htlc.fee = fee;
-      htlc.userAmount = userAmount;
-      htlc.refundAmount = refundAmount;
-      htlc.status = status;
-      updatedHTLCs.push(htlc);
-    }
-  }
+    const signedMatch = revealCall.data.actionRecipients[0].address
+      ? revealCall.data.actionRecipients[0].address.toUpperCase() ==
+        htlc.genesisAddress.toUpperCase()
+      : false;
 
-  return updatedHTLCs;
+    return chargeableMatch || signedMatch;
+  });
+
+  const endTime = setSecretHashCall
+    ? setSecretHashCall.data.actionRecipients[0].args[2]
+    : undefined;
+  const secretHash = setSecretHashCall
+    ? "0x" + setSecretHashCall.data.actionRecipients[0].args[0]
+    : undefined;
+  const evmContract = revealSecretCall
+    ? revealSecretCall.data.actionRecipients[0].args[2]
+    : undefined;
+
+  const { fee, userAmount, refundAmount, status } = getHTLCDatas(
+    htlcsChain[htlc.creationAddress],
+  );
+
+  return {
+    ...htlc,
+    secretHash,
+    evmContract,
+    endTime,
+    fee,
+    userAmount,
+    refundAmount,
+    status,
+  };
+}
+
+function process_charged(htlc, htlcsChain) {
+  const { fee, userAmount, refundAmount, status } = getHTLCDatas(
+    htlcsChain[htlc.creationAddress],
+  );
+  return {
+    ...htlc,
+    fee,
+    userAmount,
+    refundAmount,
+    status,
+  };
 }
