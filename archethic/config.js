@@ -45,8 +45,8 @@ export default {
         },
         aeUSDC: {
           proxyAddress: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
-          decimals: 18
-        }
+          decimals: 18,
+        },
       },
     },
     mumbai_polygon: {
@@ -88,7 +88,10 @@ export default {
       },
     },
     bnb_chain: {
-      endpoint: "https://bsc-dataseed.binance.org",
+      endpoints: [
+        "https://bsc-dataseed.binance.org",
+        "https://bsc-dataseed2.bnbchain.org",
+      ],
       chainId: 56,
       tokens: {
         UCO: {
@@ -98,17 +101,23 @@ export default {
       },
     },
     ethereum: {
-      endpoint: "https://mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      endpoints: [
+        "https://mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+        "https://eth-mainnet.g.alchemy.com/v2/JAc2BgnstbViUKxOuj1d-5q44RVxofYO",
+      ],
       chainId: 1,
       tokens: {
         UCO: {
           proxyAddress: "0x346Dba8b51485FfBd4b07B0BCb84F48117751AD9",
           decimals: 18,
         },
-      }
+      },
     },
     polygon_pos: {
-      endpoint: "https://polygon-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      endpoints: [
+        "https://polygon-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+        "https://polygon-mainnet.g.alchemy.com/v2/M6fI2T_O_njP5xbaPUz6ef2HkGHe6czE",
+      ],
       chainId: 137,
       tokens: {
         UCO: {
@@ -134,7 +143,7 @@ export default {
       availableEvmNetworks: {
         local: ["local"],
         testnet: ["sepolia_ethereum", "mumbai_polygon"],
-        mainnet: ["polygon_pos"]
+        mainnet: ["polygon_pos"],
       },
     },
     aeBNB: {
@@ -151,8 +160,8 @@ export default {
     },
     aeUSDC: {
       availableEvmNetworks: {
-        testnet: ["sepolia_ethereum"]
+        testnet: ["sepolia_ethereum"],
       },
-    }
+    },
   },
 };
