@@ -26,6 +26,25 @@ export async function tick(archethic, db) {
     );
   }
 
+  // pools
+  for (const [asset, poolGenesisAddress] of Object.entries(pools)) {
+    if (asset == "UCO") {
+      promises.push(
+        getUCOBalance(archethic, poolGenesisAddress).then((value) => {
+          return { name: `archethic_pools_balance{asset="${asset}"}`, value };
+        }),
+      );
+    } else {
+      promises.push(
+        getTokenBalance(archethic, poolGenesisAddress, tokens[asset]).then(
+          (value) => {
+            return { name: `archethic_pools_balance{asset="${asset}"}`, value };
+          },
+        ),
+      );
+    }
+  }
+
   // htlcs statuses
   for (const [asset, poolGenesisAddress] of Object.entries(pools)) {
     promises.push(
