@@ -1,6 +1,6 @@
 import Archethic, { Utils } from "@archethicjs/sdk"
 import config from "../../config.js"
-import { getGenesisAddress } from "../utils.js"
+import { getServiceGenesisAddress } from "../utils.js"
 
 const command = "reveal_secret"
 const describe = "Reveal a secret to an HTLC contract when swapping from EVM to Archethic"
@@ -15,6 +15,11 @@ const builder = {
     demandOption: true,
     type: "string"
   },
+  access_seed: {
+    describe: "the keychain access seed (default in env config)",
+    demandOption: false,
+    type: "string"
+  },
   env: {
     describe: "The environment config to use (default to local)",
     demandOption: false,
@@ -26,26 +31,39 @@ const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
 
-  const htlcAddress = argv["htlc_address"]
-  const secret = argv["secret"]
+  const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
+
+  if (keychainAccessSeed == undefined) {
+    console.log("Keychain access seed not defined")
+    process.exit(1)
+  }
 
   const archethic = new Archethic(env.endpoint)
   await archethic.connect()
 
+  let keychain
+
+  try {
+    keychain = await archethic.account.getKeychain(keychainAccessSeed)
+  } catch (err) {
+    console.log(err)
+    process.exit(1)
+  }
+
+  const htlcAddress = argv["htlc_address"]
+  const secret = argv["secret"]
+
   const htlcAddressBefore = await getLastAddress(archethic, htlcAddress)
 
-  const genesisAddress = getGenesisAddress(env.userSeed)
-  console.log("User genesis address:", genesisAddress)
+  const genesisAddress = getServiceGenesisAddress(keychain, "Master")
+  console.log("Master genesis address:", genesisAddress)
   const index = await archethic.transaction.getTransactionIndex(genesisAddress)
 
-  // Get faucet before sending transaction
-  // await requestFaucet(env.endpoint, poolGenesisAddress)
-
-  const tx = archethic.transaction.new()
+  let tx = archethic.transaction.new()
     .setType("transfer")
     .addRecipient(htlcAddress, "reveal_secret", [secret])
-    .build(env.userSeed, index)
-    .originSign(Utils.originPrivateKey)
+
+  tx = keychain.buildTransaction(tx, "Master", index).originSign(Utils.originPrivateKey)
 
   tx.on("requiredConfirmation", (_confirmations) => {
     console.log("Secret successfully sent !")
@@ -78,7 +96,7 @@ async function getLastAddress(archethic, address) {
 
 async function wait(htlcAddressBefore, htlcAddress, endpoint, archethic, i = 0) {
   const htlcAddressAfter = await getLastAddress(archethic, htlcAddress)
-  if (i == 5) {
+  if (i == 30) {
     console.log("HTLC didn't withdrawn")
     process.exit(1)
   } else if (htlcAddressBefore == htlcAddressAfter) {
