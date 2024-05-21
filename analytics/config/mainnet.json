@@ -16,9 +16,6 @@
       },
       "reserves": {
         "UCO": "0x59074485D293523168459C02DA0fbbd2a47A8973"
-      },
-      "safetyModules": {
-        "UCO": "0x7F872fBf5b4a71D5CfCC35175bF93EAcAB0e50b1"
       }
     },
     "polygon": {
@@ -37,10 +34,6 @@
       "reserves": {
         "UCO": "0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD",
         "WETH": "0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD"
-      },
-      "safetyModules": {
-        "UCO": "0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b",
-        "WETH": "0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b"
       }
     },
     "bsc": {
@@ -56,9 +49,6 @@
       },
       "reserves": {
         "UCO": "0x20a2bf7Ea2A6c86aF78b41ca83E35C929D19aA61"
-      },
-      "safetyModules": {
-        "UCO": "0x05ADf7de77d86fDebE406D5171e781D918E50207"
       }
     }
   },

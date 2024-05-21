@@ -14,8 +14,6 @@ describe("ERC LiquidityPool", () => {
         const pool = await ethers.deployContract("ERCPool")
         await pool.initialize(
             accounts[4].address,
-            accounts[3].address,
-            5,
             archPoolSigner.address,
             ethers.parseEther("2.0"),
             60,
@@ -36,8 +34,6 @@ describe("ERC LiquidityPool", () => {
         const { pool, accounts, archPoolSigner, tokenAddress } = await loadFixture(deployPool)
 
         expect(await pool.reserveAddress()).to.equal(accounts[4].address)
-        expect(await pool.safetyModuleAddress()).to.equal(accounts[3].address)
-        expect(await pool.safetyModuleFeeRate()).to.equal(500)
         expect(await pool.archethicPoolSigner()).to.equal(archPoolSigner.address)
         expect(await pool.poolCap()).to.equal(ethers.parseEther('2'))
         expect(await pool.locked()).to.be.false
@@ -158,11 +154,9 @@ describe("ERC LiquidityPool", () => {
         const htlcAddress = await pool.mintedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)
 
-        expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
         expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('2.985'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
+        expect(await HTLCInstance.amount()).to.equal(amount)
         expect(await HTLCInstance.token()).to.equal(tokenAddress)
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
@@ -186,7 +180,6 @@ describe("ERC LiquidityPool", () => {
         let HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0'))
         expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress())
         expect(await HTLCInstance.refillAmount()).to.equal(0)
     })

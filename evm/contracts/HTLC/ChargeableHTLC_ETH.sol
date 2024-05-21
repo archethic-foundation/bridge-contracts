@@ -6,21 +6,14 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./HTLC_ETH.sol";
 import "../../interfaces/IPool.sol";
 
-/// @title HTLC contract with chargeable fee towards pool's safety module
+/// @title HTLC contract where funds are delivered by the user and allocated to the reserve or the pool depending of the pool cap and pool's balance
 /// @author Archethic Foundation
 contract ChargeableHTLC_ETH is HTLC_ETH {
-
-    /// @notice Return the fee's amount
-    uint256 public immutable fee;
-
     /// @notice Return the amount to refill the pool
     uint256 public refillAmount;
 
     /// @notice Return the amount to withdraw to the main's recipient
     uint256 public withdrawAmount;
-
-    /// @notice Return the satefy module destination wallet
-    address public immutable safetyModuleAddress;
 
     /// @notice Return the refill address to send the pool's capacity below its cap
     address public immutable refillAddress;
@@ -38,30 +31,19 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         bytes32 _hash,
         uint _lockTime,
         address payable _reserveAddress,
-        address payable _safetyModuleAddress,
-        uint256 _fee,
         address _refillAddress,
         address _poolSigner
     ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
-        fee = _fee;
-        safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAddress = _refillAddress;
         poolSigner = _poolSigner;
 
-        // We check if the received ethers adds the deducted amount from the fee
-        _assertReceivedFunds(_amount + _fee);
+        _assertReceivedFunds(_amount);
     }
 
-     /// @dev Check whether the HTLC have enough tokens to cover fee + amount
-    function _enoughFunds() internal view override returns (bool) {
-        return address(this).balance == (amount + fee);
-    }
-
-    /// @dev Send ethers to the HTLC's recipient and safety module fee
+    /// @dev Send ethers to the HTLC's recipient
     function _transferAsWithdraw() internal override {
         bool sent = false;
-        uint _fee = fee;
         address _refillAddress = refillAddress;
 
         IPool pool = IPool(_refillAddress);
@@ -82,11 +64,6 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
             }
         }
 
-        if (_fee > 0) {
-            (sent, ) = safetyModuleAddress.call{value: _fee}("");
-            require(sent, "ETH transfer failed - withdraw/safety");
-        }
-
         if (_withdrawAmount > 0) {
             withdrawAmount = _withdrawAmount;
             (sent, ) = recipient.call{value: _withdrawAmount}("");
@@ -98,12 +75,6 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
             (sent, ) = _refillAddress.call{value: _refillAmount}("");
             require(sent, "ETH transfer failed - withdraw/refill");
         }
-    }
-
-    /// @dev Send back ethers (amount + fee) to the HTLC's creator
-    function _transferAsRefund() internal override {
-        (bool sent, ) = from.call{value: amount + fee}("");
-        require(sent, "ETH transfer failed - refund");
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {

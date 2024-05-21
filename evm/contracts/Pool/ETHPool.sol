@@ -22,8 +22,8 @@ contract ETHPool is PoolBase {
     /// @notice Throws if the contract is not provisioned
     error ContractNotProvisioned();
 
-	function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) initializer external {
-        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
+	function initialize(address _reserveAddress, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) initializer external {
+        __Pool_Init(_reserveAddress, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
 	}
 
     /// @notice Accept the reception of ethers
@@ -50,10 +50,9 @@ contract ETHPool is PoolBase {
         return htlcContract;
     }
 
-    /// Create HTLC token with fee towards the pool's safety module
-    /// The recipients will be the pool's reserve address and safety module's address
+    /// Create HTLC token where funds are delivered by the user
+    /// The recipients will be the pool's reserve address or the pool depending of the pool balance and pool cap
     /// This can accept ethers for the same amount of the swap
-    /// The amount of the HTLC is then reduced by the pool's safety module rate
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         checkAmountWithDecimals(_amount);
 
@@ -61,10 +60,9 @@ contract ETHPool is PoolBase {
             revert ContractNotProvisioned();
         }
 
-        uint256 _fee = swapFee(_amount, 18);
-        uint256 _recipientAmount = _amount - _fee;
+        uint256 _recipientAmount = _amount;
 
-        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(safetyModuleAddress), _fee, payable(address(this)), archethicPoolSigner);
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(address(this)), archethicPoolSigner);
         return htlcContract;
     }
 

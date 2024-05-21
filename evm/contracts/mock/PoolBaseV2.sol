@@ -3,9 +3,9 @@ pragma solidity 0.8.21;
 
 import "../Pool/PoolBase.sol";
 
-abstract contract PoolBaseV2 is PoolBase {
-    function setSafetyModuleFeeRate(uint256 _safetyFeeRate) onlyOwner override external {
-        safetyModuleFeeRate = _safetyFeeRate * 2;
-        emit SafetyModuleFeeRateChanged(_safetyFeeRate * 2);
+contract PoolBaseV2 is PoolBase {
+    function setPoolCap(uint256 _poolCap) onlyOwner override external {
+        poolCap = _poolCap * 2;
+        emit PoolCapChanged(poolCap);
     }
 }

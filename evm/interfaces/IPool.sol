@@ -13,7 +13,7 @@ interface IPool {
     /// @param _v SIgnature's recovery part
     function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes memory _archethicHTLCAddress, bytes32 _r, bytes32 _s, uint8 _v) external;
 
-    /// @notice Mint an HTLC contract by specifying the reserve and safety module as recipient of the HTLC and chargeable in fee for the safety module.
+    /// @notice Mint an HTLC contract by specifying the reserve as recipient of the HTLC
     /// @param _hash Secret's hash of the HTLC
     /// @param _amount Amount of the swap
     function mintHTLC(bytes32 _hash, uint256 _amount) payable external;
@@ -21,14 +21,6 @@ interface IPool {
     /// @notice Update the reserve destination wallet. (Restricted to the pool's owner)
     /// @param _reserveAddress Destination address of the reserve wallet
     function setReserveAddress(address _reserveAddress) external;
-
-    /// @notice Update the safety module destination wallet. (Restricted to the pool's owner)
-    /// @param _safetyAddress Destination address of the safety module wallet
-    function setSafetyModuleAddress(address _safetyAddress) external;
-
-    /// @notice Update the safety module fee rate. (Restricted to the pool's owner)
-    /// @param _safetyFeeRate Satefy module fee rate
-    function setSafetyModuleFeeRate(uint256 _safetyFeeRate) external;
 
     /// @notice Update the Archethic pool signer address. (Restricted to the pool's owner)
     /// @param _archPoolSigner Archethic's pool signer address
@@ -51,14 +43,8 @@ interface IPool {
     /// @notice Returns the destination for the reserve's wallet (destination of the bridged assets)
     function reserveAddress() external returns(address);
 
-    /// @notice Returns the destination for the safety module's wallet (guarantee funds filled with protocol's fee)
-    function safetyModuleAddress() external returns(address);
-
     /// @notice Returns the address of the Archethic's pool able to sign and assert actions done on Archethic's blockchain
     function archethicPoolSigner() external returns(address);
-
-    /// @notice Returns the fee rate to fund the safety module
-    function safetyModuleFeeRate() external returns(uint256);
 
     /// @notice Returns the maximum amount of the capacity of the pool assets
     function poolCap() external returns(uint256);

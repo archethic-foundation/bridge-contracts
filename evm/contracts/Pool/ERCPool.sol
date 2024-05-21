@@ -25,8 +25,8 @@ contract ERCPool is PoolBase {
     /// @notice Throws this pool cannot received ethers
     error CannotSendEthers();
 
-    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
-        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
+    function initialize(address _reserveAddress, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
+        __Pool_Init(_reserveAddress, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
         token = _token;
 	}
 
@@ -66,14 +66,12 @@ contract ERCPool is PoolBase {
         _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
-    /// Create HTLC token with fee towards the pool's safety module
-    /// The amount of the HTLC is then reduced by the pool's safety module rate
-    /// The recipients will be the pool's reserve address and safety module's address
+    /// Create HTLC token where funds are delivered by the user
+    /// The recipients will be the pool's reserve address or the pool depending of the pool balance and pool cap
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        uint256 _fee = swapFee(_amount, token.decimals());
-        uint256 _recipientAmount = _amount - _fee;
+        uint256 _recipientAmount = _amount;
 
-        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, safetyModuleAddress, _fee, address(this), archethicPoolSigner);
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, address(this), archethicPoolSigner);
         return htlcContract;
     }
 

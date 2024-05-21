@@ -7,21 +7,15 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./HTLC_ERC.sol";
 import "../../interfaces/IPool.sol";
 
-/// @title HTLC contract with chargeable fee towards pool's safety module
+/// @title HTLC contract where funds are delivered by the user and allocated to the reserve or the pool depending of the pool cap and pool's balance
 /// @author Archethic Foundation
 contract ChargeableHTLC_ERC is HTLC_ERC {
-
-    /// @notice Return the fee's amount
-    uint256 public immutable fee;
 
     /// @notice Return the amount to refill the pool
     uint256 public refillAmount;
 
     /// @notice Return the amount to withdraw to the main's recipient
     uint256 public withdrawAmount;
-
-    /// @notice Return the satefy module destination wallet
-    address public immutable safetyModuleAddress;
 
     /// @notice Return the refill address to send the refillAmount
     address public immutable refillAddress;
@@ -38,28 +32,18 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         bytes32 _hash,
         uint _lockTime,
         address _reserveAddress,
-        address _safetyModuleAddress,
-        uint256 _fee,
         address _refillAddress,
         address _poolSigner
     ) HTLC_ERC(_reserveAddress, _token, _amount, _hash, _lockTime) {
-        fee = _fee;
-        safetyModuleAddress = _safetyModuleAddress;
         from = tx.origin;
         refillAddress = _refillAddress;
         poolSigner = _poolSigner;
     }
 
-    /// @dev Check whether the HTLC have enough tokens to cover fee + amount
-    function _enoughFunds() internal view override returns (bool) {
-        return token.balanceOf(address(this)) == (amount + fee);
-    }
-
-    /// @dev Send ERC20 to the HTLC's recipient and safety module fee
+    /// @dev Send ERC20 to the HTLC's recipient
     function _transferAsWithdraw() internal override {
         IERC20 _token = token;
 
-        uint _fee = fee;
         address _refillAddress = refillAddress;
 
         IPool pool = IPool(_refillAddress);
@@ -80,10 +64,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
             }
         }
 
-        if (_fee > 0) {
-            SafeERC20.safeTransfer(_token, safetyModuleAddress, _fee);
-        }
-
         if (_withdrawAmount > 0) {
             withdrawAmount = _withdrawAmount;
             SafeERC20.safeTransfer(_token, recipient, _withdrawAmount);
@@ -93,11 +73,6 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
             refillAmount = _refillAmount;
             SafeERC20.safeTransfer(_token, _refillAddress, _refillAmount);
         }
-    }
-
-    /// @dev Send back ERC20 (amount + fee) to the HTLC's creator
-    function _transferAsRefund() internal override {
-        SafeERC20.safeTransfer(token, from, amount + fee);
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
