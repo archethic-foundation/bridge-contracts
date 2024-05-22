@@ -31,7 +31,7 @@ export default {
     sepolia_ethereum: {
       endpoints: [
         "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-        "https://eth-sepolia.g.alchemy.com/v2/L4TxVWLSkKKzP2njMgq_smU6Fc_lpZ0S",
+        "https://eth-sepolia.g.alchemy.com/v2/eLhVAxz79HO5n2y98mdIl_gMkKSDc3G8",
       ],
       chainId: 11155111,
       tokens: {
@@ -90,7 +90,7 @@ export default {
     bnb_chain: {
       endpoints: [
         "https://bsc-dataseed.binance.org",
-        "https://bsc-dataseed2.bnbchain.org",
+        "https://bnb-mainnet.g.alchemy.com/v2/vEwguDBTJiCViiNOeiHa2erYw-K-OVZr",
       ],
       chainId: 56,
       tokens: {
@@ -103,7 +103,7 @@ export default {
     ethereum: {
       endpoints: [
         "https://mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-        "https://eth-mainnet.g.alchemy.com/v2/JAc2BgnstbViUKxOuj1d-5q44RVxofYO",
+        "https://eth-mainnet.g.alchemy.com/v2/tgCq5a1zrmYn4ZjEn74UAW9gUXlDPzQi",
       ],
       chainId: 1,
       tokens: {
@@ -116,7 +116,7 @@ export default {
     polygon_pos: {
       endpoints: [
         "https://polygon-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-        "https://polygon-mainnet.g.alchemy.com/v2/M6fI2T_O_njP5xbaPUz6ef2HkGHe6czE",
+        "https://polygon-mainnet.g.alchemy.com/v2/0aM2uAp3J-LsOlijDBZ3aZiCUvZdjiHb",
       ],
       chainId: 137,
       tokens: {
