@@ -16,7 +16,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @inheritdoc IPool
     bool public locked;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     address public reserveAddress;
 
     /// @notice deprecated
@@ -25,7 +25,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @inheritdoc IPool
     address public archethicPoolSigner;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     uint256 public poolCap;
 
     /// @notice deprecated
@@ -40,14 +40,8 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     address[] private _provisionedSwaps;
     address[] private _mintedSwaps;
 
-    /// @notice Notifies a change about the reserve destination wallet
-    event ReserveAddressChanged(address indexed _reservedAddress);
-
     /// @notice Notifies a change about the Archethic's pool address to sign provisioning of contracts
     event ArchethicPoolSignerChanged(address indexed _signer);
-
-    /// @notice Notifies a change about the pool assets capacity
-    event PoolCapChanged(uint256 indexed _poolCap);
 
     /// @notice Notifies the pool locking
     event Lock();
@@ -64,14 +58,8 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Notifies a change about the lock time period
     event LockTimePeriodChanged(uint256 indexed _lockTimePeriod);
 
-    /// @notice Throws when the reserve address is invalid
-    error InvalidReserveAddress();
-
     /// @notice Throws when the Archethic's pool signer is invalid
     error InvalidArchethicPoolSigner();
-
-    /// @notice Throws when the reserve address is invalid
-    error AlreadyProvisioned();
 
     /// @notice Throws when a secret have already been used in a swap
     error AlreadyMinted();
@@ -85,7 +73,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Throws when pool is locked
     error Locked();
 
-    /// @notice Throws when the reserve address is invalid
+    /// @notice Throws when the locktime period is invalid
     error InvalidLockTimePeriod();
 
     /// @notice Throws when the lock time is invalid
@@ -98,17 +86,11 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     error InvalidAmount();
 
     /// @notice Initizalize the pool with all the given properties
-    /// @param _reserveAddress The destination address for the reserve wallet
     /// @param _archPoolSigner The address of the Archethic's pool signer
-    /// @param _poolCap The maximum capacity of the pool's asset
     /// @param _lockTimePeriod The locktime period of the new HTLC contracts
-    function __Pool_Init(address _reserveAddress, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
+    function __Pool_Init(address _archPoolSigner, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
         __UUPSUpgradeable_init();
         __Ownable2Step_init();
-
-        if(_reserveAddress == address(0)) {
-            revert InvalidReserveAddress();
-        }
 
         if(_archPoolSigner == address(0)) {
             revert InvalidArchethicPoolSigner();
@@ -118,9 +100,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
             revert InvalidLockTimePeriod();
         }
 
-        reserveAddress = _reserveAddress;
         archethicPoolSigner = _archPoolSigner;
-        poolCap = _poolCap;
         locked = false;
         lockTimePeriod = _lockTimePeriod;
 
@@ -135,17 +115,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     }
 
     /// @inheritdoc IPool
-    /// @dev ReserveAddressChanged event is emitted once done
-    function setReserveAddress(address _reserveAddress) virtual external {
-        _checkOwner();
-        if(_reserveAddress == address(0)) {
-            revert InvalidReserveAddress();
-        }
-        reserveAddress = _reserveAddress;
-        emit ReserveAddressChanged(_reserveAddress);
-    }
-
-    /// @inheritdoc IPool
     /// @dev ArchethicPoolSignerChanged event is emitted once done
     function setArchethicPoolSigner(address _archPoolSigner) virtual external {
         _checkOwner();
@@ -154,14 +123,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         }
         archethicPoolSigner = _archPoolSigner;
         emit ArchethicPoolSignerChanged(_archPoolSigner);
-    }
-
-    /// @inheritdoc IPool
-    /// @dev PoolCapChanged event is emitted once done
-    function setPoolCap(uint256 _poolCap) virtual external {
-        _checkOwner();
-        poolCap = _poolCap;
-        emit PoolCapChanged(_poolCap);
     }
 
     /// @inheritdoc IPool
@@ -296,30 +257,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         // We need to round to the minute as Archethic's smart contract self trigger feature restrict timestamp to rounded minute
         uint256 minuteRoundedBlockTimestamp = block.timestamp - (block.timestamp % (60));
         return minuteRoundedBlockTimestamp + lockTimePeriod;
-    }
-
-    /// @dev Redirect the funds toward the reserve's wallet if the pool can accept assets below its cap
-    /// @return (address, uint256, uint256) represeting the main's recipient address, the recipient's amount and the additional refill amount
-    function _maybeRedirectAmountToPool(uint256 _poolBalance, uint256 _recipientAmount) internal view returns (address, uint256, uint256) {
-        if (_poolBalance < poolCap) {
-            uint256 _poolPlace = poolCap - _poolBalance;
-            if(_poolPlace > 0) {
-                if (_recipientAmount < _poolPlace) {
-                    // To avoid the constraint of HTLC contract(amount > 0),
-                    // we change the recipient to target directly the pool instead of the reserve's wallet
-                    return (address(this), _recipientAmount, 0);
-                }
-                else {
-                    // We allocate the maxium to the pool and the overflow goes to the reserve
-                    uint256 _refillPoolAmount = _recipientAmount - _poolPlace;
-                    return (reserveAddress, _refillPoolAmount, _poolPlace);
-                }
-            }
-
-            return (reserveAddress, _recipientAmount, 0);
-        }
-
-        return (reserveAddress, _recipientAmount, 0);
     }
 
     function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) internal virtual{}

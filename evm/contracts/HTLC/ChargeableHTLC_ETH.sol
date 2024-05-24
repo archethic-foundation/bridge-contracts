@@ -6,18 +6,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./HTLC_ETH.sol";
 import "../../interfaces/IPool.sol";
 
-/// @title HTLC contract where funds are delivered by the user and allocated to the reserve or the pool depending of the pool cap and pool's balance
+/// @title HTLC contract where funds are delivered by the user
 /// @author Archethic Foundation
 contract ChargeableHTLC_ETH is HTLC_ETH {
-    /// @notice Return the amount to refill the pool
-    uint256 public refillAmount;
-
-    /// @notice Return the amount to withdraw to the main's recipient
-    uint256 public withdrawAmount;
-
-    /// @notice Return the refill address to send the pool's capacity below its cap
-    address public immutable refillAddress;
-
     /// @notice Returns the Archethic's pool signer address
     address public immutable poolSigner;
 
@@ -30,51 +21,13 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         uint256 _amount,
         bytes32 _hash,
         uint _lockTime,
-        address payable _reserveAddress,
-        address _refillAddress,
+        address payable _recipient,
         address _poolSigner
-    ) payable HTLC_ETH(_reserveAddress, _amount, _hash, _lockTime, true) {
+    ) payable HTLC_ETH(_recipient, _amount, _hash, _lockTime, true) {
         from = tx.origin;
-        refillAddress = _refillAddress;
         poolSigner = _poolSigner;
 
         _assertReceivedFunds(_amount);
-    }
-
-    /// @dev Send ethers to the HTLC's recipient
-    function _transferAsWithdraw() internal override {
-        bool sent = false;
-        address _refillAddress = refillAddress;
-
-        IPool pool = IPool(_refillAddress);
-        uint256 _poolCap = pool.poolCap();
-        uint256 _poolBalance = _refillAddress.balance;
-
-        uint256 _withdrawAmount = amount;
-        uint256 _refillAmount;
-
-        if (_poolBalance < _poolCap) {
-            uint256 _poolCapacity = _poolCap - _poolBalance;
-            if(_withdrawAmount > _poolCapacity) {
-                _withdrawAmount = _withdrawAmount - _poolCapacity;
-                _refillAmount = _poolCapacity;
-            } else {
-                _refillAmount = _withdrawAmount;
-                _withdrawAmount = 0;
-            }
-        }
-
-        if (_withdrawAmount > 0) {
-            withdrawAmount = _withdrawAmount;
-            (sent, ) = recipient.call{value: _withdrawAmount}("");
-            require(sent, "ETH transfer failed - withdraw/recipient");
-        }
-
-        if (_refillAmount > 0) {
-            refillAmount = _refillAmount;
-            (sent, ) = _refillAddress.call{value: _refillAmount}("");
-            require(sent, "ETH transfer failed - withdraw/refill");
-        }
     }
 
     function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {

@@ -38,7 +38,6 @@ export async function tick(db) {
       );
 
       const tokenPoolAddress = networkConf.pools[tokenName];
-      const tokenReserveAddress = networkConf.reserves[tokenName];
 
       metrics.push(
         await Promise.all([
@@ -47,13 +46,7 @@ export async function tick(db) {
               name: `evm_pools_balance{asset="${tokenName}",network="${networkName}"}`,
               value: ethers.formatEther(value),
             };
-          }),
-          tokenContract.balanceOf(tokenReserveAddress).then((value) => {
-            return {
-              name: `evm_reserve_balance{asset="${tokenName}",network="${networkName}"}`,
-              value: ethers.formatEther(value),
-            };
-          }),
+          })
         ]),
       );
     }
@@ -61,7 +54,6 @@ export async function tick(db) {
     if (networkConf.pools.NATIVE) {
       // balances native (concurrently)
       const poolNativeAddress = networkConf.pools.NATIVE;
-      const reserveNativeAddress = networkConf.reserves.NATIVE;
       metrics.push(
         await Promise.all([
           provider.getBalance(poolNativeAddress).then((value) => {
@@ -69,14 +61,7 @@ export async function tick(db) {
               name: `evm_pools_balance{asset="NATIVE",network="${networkName}"}`,
               value: ethers.formatEther(value),
             };
-          }),
-
-          provider.getBalance(reserveNativeAddress).then((value) => {
-            return {
-              name: `evm_reserve_balance{asset="NATIVE",network="${networkName}"}`,
-              value: ethers.formatEther(value),
-            };
-          }),
+          })
         ]),
       );
     }

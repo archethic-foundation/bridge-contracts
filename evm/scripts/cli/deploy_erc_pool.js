@@ -17,19 +17,6 @@ async function promptTokenAddress() {
   });
 }
 
-async function promptReserveAddress() {
-  return new Promise((r) => {
-    readline.question(
-      "Reserve's address [default: 0x4Cd7ce379953FeDd88938a9a4385f8D2bd77BD1d]: ",
-      (input) => {
-        if (input == "") return r("0x4Cd7ce379953FeDd88938a9a4385f8D2bd77BD1d");
-
-        r(input);
-      },
-    );
-  });
-}
-
 // pool signer is generated via this CLI:
 //
 // node bridge derive_eth_address --token UCO
@@ -46,32 +33,19 @@ async function promptPoolSigner() {
   });
 }
 
-async function promptPoolCap() {
-  return new Promise((r) => {
-    readline.question("Pool cap [default: 200]: ", (input) => {
-      if (input == "") return r(ethers.parseEther("200"));
-
-      r(ethers.parseEther(input));
-    });
-  });
-}
-
 async function main() {
     const tokenAddress = await promptTokenAddress()
-    const reserveAddress = await promptReserveAddress()
     const poolSigner = await promptPoolSigner()
-    const poolCap = await promptPoolCap()
 
     // not very useful to prompt this
     const lockTimePeriod = 7200; // 2H
 
     const ERCPool = await ethers.getContractFactory("ERCPool");
     const instance = await upgrades.deployProxy(ERCPool, [
-        reserveAddress,
         poolSigner,
-        poolCap,
         lockTimePeriod,
-        tokenAddress
+        tokenAddress,
+        accounts[0].address
     ]);
 
   console.log(`ERC20 Pool deployed at: ${await instance.getAddress()}`);

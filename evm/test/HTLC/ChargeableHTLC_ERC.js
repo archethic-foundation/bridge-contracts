@@ -15,11 +15,11 @@ describe("Chargeable ERC HTLC", () => {
     return { instance: contract, address: await contract.getAddress() };
   }
 
-  it("should create contract and associated recipient", async () => {
+  it("should create contract", async () => {
     const { address: tokenAddress } = await loadFixture(deployTokenFixture);
 
     const accounts = await ethers.getSigners();
-    const reserveAddress = accounts[4].address;
+    const recipientAddress = accounts[4].address;
     const archPoolSigner = ethers.Wallet.createRandom();
 
     const amount = ethers.parseEther("0.995")
@@ -32,40 +32,26 @@ describe("Chargeable ERC HTLC", () => {
       amount,
       "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
       lockTime,
-      reserveAddress,
-      accounts[5].address,
+      recipientAddress,
       archPoolSigner.address
     ])
 
     expect(await HTLCInstance.amount()).to.equal(amount)
     expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
     expect(await HTLCInstance.token()).to.equal(await tokenAddress)
-    expect(await HTLCInstance.recipient()).to.equal(reserveAddress)
+    expect(await HTLCInstance.recipient()).to.equal(recipientAddress)
     expect(await HTLCInstance.status()).to.equal(0)
     expect(await HTLCInstance.lockTime()).to.equal(lockTime)
     expect(await HTLCInstance.poolSigner()).to.equal(archPoolSigner.address)
   })
 
-  it("withdraw should send tokens to the reserve address and to the refill address", async () => {
+  it("withdraw should send tokens to the recipient address upon signature verification", async () => {
     const { instance: tokenInstance, address: tokenAddress } = await loadFixture(deployTokenFixture);
     const accounts = await ethers.getSigners()
 
     const archPoolSigner = ethers.Wallet.createRandom()
 
-    const poolCap = ethers.parseEther("0.95")
-
-    const pool = await ethers.deployContract("ERCPool")
-    await pool.initialize(
-      accounts[4].address,
-      archPoolSigner.address,
-      poolCap,
-      60,
-      tokenAddress,
-      accounts[0]
-    )
-    const poolAddress = await pool.getAddress()
-
-    const reserveAddress = accounts[4].address
+    const recipientAddress = accounts[4].address
 
     const secret = randomBytes(32)
     const secretHash = createHash("sha256")
@@ -82,8 +68,7 @@ describe("Chargeable ERC HTLC", () => {
       amount,
       `0x${secretHash}`,
       lockTime,
-      reserveAddress,
-      poolAddress,
+      recipientAddress,
       archPoolSigner.address
     ])
 
@@ -106,34 +91,18 @@ describe("Chargeable ERC HTLC", () => {
     ).to.changeTokenBalances(
       tokenInstance,
       [
-        reserveAddress,
-        poolAddress,
+        recipientAddress,
         await HTLCInstance.getAddress(),
       ],
-      [
-        amount - poolCap,
-        poolCap,
-        -amount,
-      ],
+      [ amount,-amount]
     );
   });
 
   it("withdraw should not be feasable after locktime", async () => {
     const { address: tokenAddress } = await loadFixture(deployTokenFixture);
     const accounts = await ethers.getSigners();
-    const reserveAddress = accounts[4].address;
+    const recipientAddress = accounts[4].address;
     const archPoolSigner = ethers.Wallet.createRandom();
-
-    const pool = await ethers.deployContract("ERCPool")
-    await pool.initialize(
-      accounts[4].address,
-      archPoolSigner.address,
-      ethers.parseEther("0.95"),
-      60,
-      tokenAddress,
-      accounts[0]
-    )
-    const poolAddress = await pool.getAddress()
 
     const secret = randomBytes(32);
     const secretHash = createHash("sha256").update(secret).digest("hex");
@@ -148,8 +117,7 @@ describe("Chargeable ERC HTLC", () => {
       amount,
       `0x${secretHash}`,
       lockTime,
-      reserveAddress,
-      poolAddress,
+      recipientAddress,
       archPoolSigner.address
     ])
 
@@ -172,7 +140,7 @@ describe("Chargeable ERC HTLC", () => {
       await loadFixture(deployTokenFixture);
     const accounts = await ethers.getSigners();
 
-    const reserveAddress = accounts[4].address;
+    const recipientAddress = accounts[4].address;
     const archPoolSigner = ethers.Wallet.createRandom();
 
     const secret = randomBytes(32);
@@ -188,8 +156,7 @@ describe("Chargeable ERC HTLC", () => {
       amount,
       `0x${secretHash}`,
       lockTime,
-      reserveAddress,
-      accounts[5].address,
+      recipientAddress,
       archPoolSigner.address
     ])
 

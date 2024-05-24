@@ -22,17 +22,13 @@ contract ETHPool is PoolBase {
     /// @notice Throws if the contract is not provisioned
     error ContractNotProvisioned();
 
-	function initialize(address _reserveAddress, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) initializer external {
-        __Pool_Init(_reserveAddress, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
+	function initialize(address _archPoolSigner, uint256 _lockTimePeriod, address _multisig) initializer external {
+        __Pool_Init(_archPoolSigner, _lockTimePeriod, _multisig);
 	}
 
     /// @notice Accept the reception of ethers
     /// @dev FundsReceived is emitted once done
-    /// @dev Checks whether the pool's capacity isn't reached and throws ProvisionLimitReached otherwise
     receive() payable external {
-        if(address(this).balance > poolCap) {
-            revert ProvisionLimitReached();
-        }
         emit FundsReceived(msg.value);
     }
 
@@ -51,7 +47,6 @@ contract ETHPool is PoolBase {
     }
 
     /// Create HTLC token where funds are delivered by the user
-    /// The recipients will be the pool's reserve address or the pool depending of the pool balance and pool cap
     /// This can accept ethers for the same amount of the swap
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         checkAmountWithDecimals(_amount);
@@ -62,7 +57,7 @@ contract ETHPool is PoolBase {
 
         uint256 _recipientAmount = _amount;
 
-        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(reserveAddress), payable(address(this)), archethicPoolSigner);
+        ChargeableHTLC_ETH htlcContract = (new ChargeableHTLC_ETH){value: _amount}(_recipientAmount, _hash, _lockTime, payable(address(this)), archethicPoolSigner);
         return htlcContract;
     }
 

@@ -4,8 +4,13 @@ pragma solidity 0.8.21;
 import "../Pool/PoolBase.sol";
 
 contract PoolBaseV2 is PoolBase {
-    function setPoolCap(uint256 _poolCap) onlyOwner override external {
-        poolCap = _poolCap * 2;
-        emit PoolCapChanged(poolCap);
+    function setLockTimePeriod(uint _lockTimePeriod) override external {
+        _checkOwner();
+        if (_lockTimePeriod == 0) {
+            revert InvalidLockTimePeriod();
+        }
+
+        lockTimePeriod = _lockTimePeriod * 3600;
+        emit LockTimePeriodChanged(lockTimePeriod);
     }
 }

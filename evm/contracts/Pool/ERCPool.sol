@@ -25,8 +25,8 @@ contract ERCPool is PoolBase {
     /// @notice Throws this pool cannot received ethers
     error CannotSendEthers();
 
-    function initialize(address _reserveAddress, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
-        __Pool_Init(_reserveAddress, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
+    function initialize(address _archPoolSigner, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
+        __Pool_Init(_archPoolSigner, _lockTimePeriod, _multisig);
         token = _token;
 	}
 
@@ -67,11 +67,10 @@ contract ERCPool is PoolBase {
     }
 
     /// Create HTLC token where funds are delivered by the user
-    /// The recipients will be the pool's reserve address or the pool depending of the pool balance and pool cap
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         uint256 _recipientAmount = _amount;
 
-        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, address(this), archethicPoolSigner);
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, address(this), archethicPoolSigner);
         return htlcContract;
     }
 

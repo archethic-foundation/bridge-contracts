@@ -16,11 +16,6 @@
         "UCO": "0x50b8B73327613468e5605eD59B980555DAAC354a",
         "NATIVE": "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650",
         "USDC": "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e"
-      },
-      "reserves": {
-        "UCO": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
-        "NATIVE": "0x3FDf8f04cBe76c1376F593634096A5299B494678",
-        "USDC": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc"
       }
     },
     "bsctestnet": {
@@ -34,10 +29,6 @@
       "pools": {
         "UCO": "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
         "NATIVE": "0xef695c0c4034304300bd01f6c300a28000f2c163"
-      },
-      "reserves": {
-        "UCO": "0x157aB6F84d3a3874d1dEd1b0a63EC834C640FBda",
-        "NATIVE": "0x7F9E1c2Bb1Ab391bA9987070ED8e7db77A9c8818"
       }
     }
   },
