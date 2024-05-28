@@ -104,28 +104,18 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
       request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
 
-      headers = ["Content-Type": "application/json"]
-      body = Json.to_string(request)
+      evm_response = query_evm_apis(\#{endpoints}, body)
+      result = Map.get(evm_response, "result")
+      if result == nil do
+        throw message: "Invalid EVM RPC response", data: response, code: 500
+      end
 
-      evm_responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
-      for res in evm_responses do
-        if res.status != 200 || !Json.is_valid?(res.body) do
-          throw message: "Invalid EVM RPC call", data: res.body, code: 500
-        end
+      decoded_abi = Evm.abi_decode("(uint)", result)
 
-        response = Json.parse(res.body)
-        result = Map.get(response, "result")
-        if result == nil do
-          throw message: "Invalid EVM RPC response", data: response, code: 500
-        end
-
-        decoded_abi = Evm.abi_decode("(uint)", result)
-
-        # Refund status is 2
-        htlc_status = List.at(decoded_abi, 0)
-        if htlc_status != 2 do
-          throw message: "Cannot refund the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
-        end
+      # Refund status is 2
+      htlc_status = List.at(decoded_abi, 0)
+      if htlc_status != 2 do
+        throw message: "Cannot refund the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
       end
 
       true
@@ -158,28 +148,18 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
       request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
 
-      headers = ["Content-Type": "application/json"]
-      body = Json.to_string(request)
+      response = query_evm_apis(\#{endpoints}, request)
+      result = Map.get(response, "result")
 
-      responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
-      for res in responses do
-        if res.status != 200 || !Json.is_valid?(res.body) do
-          throw message: "Invalid EVM RPC call", data: res.body, code: 500
-        end
+      if result == nil do
+        throw message: "Invalid EVM RPC response", data: response, code: 500
+      end
 
-        response = Json.parse(res.body)
-        result = Map.get(response, "result")
-
-        if result == nil do
-          throw message: "Invalid EVM RPC response", data: response, code: 500
-        end
-
-        decoded_abi = Evm.abi_decode("(uint)", result)
-        status = List.at(decoded_abi, 0)
-        # Withdrawn status is 1
-        if status != 1 do
-          throw message: "Cannot withdraw the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
-        end
+      decoded_abi = Evm.abi_decode("(uint)", result)
+      status = List.at(decoded_abi, 0)
+      # Withdrawn status is 1
+      if status != 1 do
+        throw message: "Cannot withdraw the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
       end
 
       true
@@ -203,12 +183,28 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       \\\"""
     end
 
-    fun query_evm_apis(endpoints, method, headers, body) do
+    fun query_evm_apis(endpoints, body) do
       requests = []
       for endpoint in endpoints do
-        requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+        requests = List.append(requests, url: endpoint, method: "POST", headers: ["Content-Type": "application/json"], body: Json.to_string(body))
       end
-      Http.request_many(requests, false)
+
+      responses = Http.request_many(requests, false)
+
+      valid_http_request? = false
+      valid_response = nil
+      for res in responses do
+        if !valid_http_request? && res.status == 200 && Json.is_valid?(res.body) do
+          valid_response = Json.parse(res.body)
+          valid_http_request? = true
+        end
+      end
+
+      if !valid_http_request? do
+        throw message: "Cannot fetch EVM RPC endpoints", code: 500
+      end
+
+      valid_response
     end
 
     export fun get_provision_signature() do

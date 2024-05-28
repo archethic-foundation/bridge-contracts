@@ -34,63 +34,55 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
   call_amount_request = get_call_request(evm_contract, "amount()", 6)
 
-  body = Json.to_string([
+  body = [
     tx_receipt_request,
     call_status_request,
     call_enough_funds_request,
     call_hash_request,
     call_end_time_request,
     call_amount_request
-  ])
+  ]
 
   chain_data = get_chain_data(chain_id)
-  headers = ["Content-Type": "application/json"]
+  evm_response = query_evm_apis(chain_data.endpoints, body)
 
-  evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
-  for res in evm_responses do
-    if res.status != 200 || !Json.is_valid?(res.body) do
-      throw message: "Invalid EVM RPC call", data: res.body, code: 500
-    end
-    responses = Json.parse(res.body)
+  tx_receipt = get_response(evm_response, 1)
+  call_status = get_response(evm_response, 2)
+  call_enough_funds = get_response(evm_response, 3)
+  call_hash = get_response(evm_response, 4)
+  call_end_time = get_response(evm_response, 5)
+  call_amount = get_response(evm_response, 6)
 
-    tx_receipt = get_response(responses, 1)
-    call_status = get_response(responses, 2)
-    call_enough_funds = get_response(responses, 3)
-    call_hash = get_response(responses, 4)
-    call_end_time = get_response(responses, 5)
-    call_amount = get_response(responses, 6)
+  if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+    throw message: "Invalid EVM RPC response", code: 500
+  end
 
-    if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-      throw message: "Invalid EVM RPC responses", code: 500
-    end
+  # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
+  event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
 
-    # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
-    event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+  if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
+    throw message: "Invalid transaction's receipt", code: 400
+  end
 
-    if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
-      throw message: "Invalid transaction's receipt", code: 400
-    end
+  # Pending is status 0
+  if !valid_status?(call_status, 0) do
+    throw message: "Invalid HTLC's status", code: 400, data: call_status
+  end
 
-    # Pending is status 0
-    if !valid_status?(call_status, 0) do
-      throw message: "Invalid HTLC's status", code: 400, data: call_status
-    end
+  if !enough_funds?(call_enough_funds) do
+    throw message: "Unsufficient funds on the HTLC", code: 400
+  end
 
-    if !enough_funds?(call_enough_funds) do
-      throw message: "Unsufficient funds on the HTLC", code: 400
-    end
+  if !valid_hash?(call_hash, secret_hash) do
+    throw message: "Invalid hash", code: 400
+  end
 
-    if !valid_hash?(call_hash, secret_hash) do
-      throw message: "Invalid hash", code: 400
-    end
+  if !valid_end_time?(call_end_time, end_time) do
+    throw message: "Invalid endtime", code: 400
+  end
 
-    if !valid_end_time?(call_end_time, end_time) do
-      throw message: "Invalid endtime", code: 400
-    end
-
-    if !valid_amount?(call_amount, amount, chain_data.decimals) do
-      throw message: "Invalid amount", code: 400
-    end
+  if !valid_amount?(call_amount, amount, chain_data.decimals) do
+    throw message: "Invalid amount", code: 400
   end
 
   true
@@ -233,69 +225,60 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
   call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
   call_amount_request = get_call_request(evm_contract, "amount()", 6)
 
-  body = Json.to_string([
+  body = [
     tx_receipt_request,
     call_status_request,
     call_enough_funds_request,
     call_hash_request,
     call_end_time_request,
     call_amount_request
-  ])
+  ]
 
   chain_data = get_chain_data(htlc_map.chain_id)
-  headers = ["Content-Type": "application/json"]
+  evm_response = query_evm_apis(chain_data.endpoints, body)
 
-  evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
-  for res in evm_responses do
-    if res.status != 200 || !Json.is_valid?(res.body) do
-      throw message: "Invalid EVM RPC call", data: res.body, code: 500
-    end
+  tx_receipt = get_response(evm_response, 1)
+  call_status = get_response(evm_response, 2)
+  call_enough_funds = get_response(evm_response, 3)
+  call_hash = get_response(evm_response, 4)
+  call_end_time = get_response(evm_response, 5)
+  call_amount = get_response(evm_response, 6)
 
-    responses = Json.parse(res.body)
+  if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+    throw message: "Invalid EVM RPC response", code: 500
+  end
 
-    tx_receipt = get_response(responses, 1)
-    call_status = get_response(responses, 2)
-    call_enough_funds = get_response(responses, 3)
-    call_hash = get_response(responses, 4)
-    call_end_time = get_response(responses, 5)
-    call_amount = get_response(responses, 6)
+  # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
+  event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
 
-    if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-      throw message: "Invalid EVM RPC responses", code: 500
-    end
+  secret = Crypto.hmac(htlc_map.hmac_address)
+  secret_hash = Crypto.hash(secret, "sha256")
 
-    # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
-    event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
+  htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
 
-    secret = Crypto.hmac(htlc_map.hmac_address)
-    secret_hash = Crypto.hash(secret, "sha256")
+  if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
+    throw message: "Invalid transaction's receipt", code: 400
+  end
 
-    htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
+  # Pending is status 0
+  if !valid_status?(call_status, 0) do
+    throw message: "Invalid HTLC's status", code: 400, data: call_status
+  end
 
-    if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
-      throw message: "Invalid transaction's receipt", code: 400
-    end
+  if !enough_funds?(call_enough_funds) do
+    throw message: "Unsufficient funds on the HTLC", code: 400
+  end
 
-    # Pending is status 0
-    if !valid_status?(call_status, 0) do
-      throw message: "Invalid HTLC's status", code: 400, data: call_status
-    end
+  if !valid_hash?(call_hash, secret_hash) do
+    throw message: "Invalid hash", code: 400
+  end
 
-    if !enough_funds?(call_enough_funds) do
-      throw message: "Unsufficient funds on the HTLC", code: 400
-    end
+  if !valid_end_time?(call_end_time, htlc_map.end_time) do
+    throw message: "Invalid endtime", code: 400
+  end
 
-    if !valid_hash?(call_hash, secret_hash) do
-      throw message: "Invalid hash", code: 400
-    end
-
-    if !valid_end_time?(call_end_time, htlc_map.end_time) do
-      throw message: "Invalid endtime", code: 400
-    end
-
-    if !valid_amount?(call_amount, htlc_data.amount, chain_data.decimals) do
-      throw message: "Invalid amount", code: 400
-    end
+  if !valid_amount?(call_amount, htlc_data.amount, chain_data.decimals) do
+    throw message: "Invalid amount", code: 400
   end
 
   true
@@ -579,12 +562,26 @@ fun sign_for_evm(data) do
   sig
 end
 
-fun query_evm_apis(endpoints, method, headers, body) do
+fun query_evm_apis(endpoints, body) do
   requests = []
-
   for endpoint in endpoints do
-    requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+    requests = List.append(requests, url: endpoint, method: "POST", headers: ["Content-Type": "application/json"], body: Json.to_string(body))
   end
 
-  Http.request_many(requests, false)
+  responses = Http.request_many(requests, false)
+
+  valid_http_request? = false
+  valid_response = nil
+  for res in responses do
+    if !valid_http_request? && res.status == 200 && Json.is_valid?(res.body) do
+      valid_response = Json.parse(res.body)
+      valid_http_request? = true
+    end
+  end
+
+  if !valid_http_request? do
+    throw message: "Cannot fetch EVM RPC endpoints", code: 500
+  end
+
+  valid_response
 end
