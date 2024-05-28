@@ -1,9 +1,5 @@
 @version 1
 
-# condition inherit: [
-#   # Add condition inherit to allow upgrade of this contract
-# ]
-
 export fun get_protocol_fee() do
   0.3
 end
@@ -87,47 +83,53 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   """
   @version 1
 
-  condition triggered_by: transaction, on: provision(_evm_contract, _endpoints, _signature, _evm_pool), as: [
-		previous_public_key: (
-	    # Transaction is not yet validated so we need to use previous address
-		  # to get the genesis address
-		  previous_address = Chain.get_previous_address()
-		  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-	  )
-  ]
+  condition triggered_by: transaction, on: provision(_evm_contract, _endpoints, _signature, _evm_pool) do
+    # Transaction is not yet validated so we need to use previous address to get the genesis address
+    previous_address = Chain.get_previous_address(transaction)
+    genesis_address = Chain.get_genesis_address(previous_address)
+    if genesis_address != 0x#{pool_address} do
+      throw message: "Transaction's chain unauthorized", code: 403
+    end
+
+    true
+  end
 
   actions triggered_by: transaction, on: provision(evm_contract, endpoints, signature, evm_pool) do
     endpoints = Json.to_string(endpoints)
     Contract.set_code \"""
     @version 1
 
-    condition triggered_by: transaction, on: refund(), as: [
-      content: (
-        valid? = false
+    condition triggered_by: transaction, on: refund() do
+      abi_data = Evm.abi_encode("status()")
+      tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
+      request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
 
-        abi_data = Evm.abi_encode("status()")
-        tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
-        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
+      headers = ["Content-Type": "application/json"]
+      body = Json.to_string(request)
 
-        headers = ["Content-Type": "application/json"]
-        body = Json.to_string(request)
-
-        evm_responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
-        for res in evm_responses do
-          if !valid? && res.status == 200 && Json.is_valid?(res.body) do
-            response = Json.parse(res.body)
-            result = Map.get(response, "result")
-            if result != nil do
-              decoded_abi = Evm.abi_decode("(uint)", result)
-              # Refund status is 2
-              valid? = List.at(decoded_abi, 0) == 2
-            end
-          end
+      evm_responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
+      for res in evm_responses do
+        if res.status != 200 || !Json.is_valid?(res.body) do
+          throw message: "Invalid EVM RPC call", data: res.body, code: 500
         end
 
-        valid?
-      )
-    ]
+        response = Json.parse(res.body)
+        result = Map.get(response, "result")
+        if result == nil do
+          throw message: "Invalid EVM RPC response", data: response, code: 500
+        end
+
+        decoded_abi = Evm.abi_decode("(uint)", result)
+
+        # Refund status is 2
+        htlc_status = List.at(decoded_abi, 0)
+        if htlc_status != 2 do
+          throw message: "Cannot refund the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
+        end
+      end
+
+      true
+    end
 
     actions triggered_by: transaction, on: refund() do
       Contract.set_type "transfer"
@@ -147,35 +149,41 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       \\\"""
     end
 
-    condition triggered_by: transaction, on: reveal_secret(secret), as: [
-      content: Crypto.hash(String.to_hex(secret)) == 0x#{secret_hash},
-      address: (
-        valid? = false
+    condition triggered_by: transaction, on: reveal_secret(secret) do
+      if Crypto.hash(String.to_hex(secret)) != 0x#{secret_hash} do
+        throw message: "Invalid secret", code: 400
+      end
 
-        abi_data = Evm.abi_encode("status()")
-        tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
-        request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
+      abi_data = Evm.abi_encode("status()")
+      tx = [to: "\#{evm_contract}", data: "0x\\\#{abi_data}"]
+      request = [jsonrpc: "2.0", id: "1", method: "eth_call", params: [tx, "latest"]]
 
-        headers = ["Content-Type": "application/json"]
-        body = Json.to_string(request)
+      headers = ["Content-Type": "application/json"]
+      body = Json.to_string(request)
 
-        responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
-        for res in responses do
-          if !valid? && res.status == 200 && Json.is_valid?(res.body) do
-            response = Json.parse(res.body)
-            result = Map.get(response, "result")
-
-            if result != nil do
-              decoded_abi = Evm.abi_decode("(uint)", result)
-              # Withdrawn status is 1
-              valid? = List.at(decoded_abi, 0) == 1
-            end
-          end
+      responses = query_evm_apis(\#{endpoints}, "POST", headers, body)
+      for res in responses do
+        if res.status != 200 || !Json.is_valid?(res.body) do
+          throw message: "Invalid EVM RPC call", data: res.body, code: 500
         end
 
-        valid?
-      )
-    ]
+        response = Json.parse(res.body)
+        result = Map.get(response, "result")
+
+        if result == nil do
+          throw message: "Invalid EVM RPC response", data: response, code: 500
+        end
+
+        decoded_abi = Evm.abi_decode("(uint)", result)
+        status = List.at(decoded_abi, 0)
+        # Withdrawn status is 1
+        if status != 1 do
+          throw message: "Cannot withdraw the HTLC before EVM", data: [evm_htlc_status: htlc_status], code: 405
+        end
+      end
+
+      true
+    end
 
     actions triggered_by: transaction, on: reveal_secret(secret) do
       Contract.set_type "transfer"
@@ -194,7 +202,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       end
       \\\"""
     end
-    
+
     fun query_evm_apis(endpoints, method, headers, body) do
       requests = []
       for endpoint in endpoints do
@@ -282,26 +290,36 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   """
   @version 1
 
-  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time, _evm_pool), as: [
-    previous_public_key: (
-      # Transaction is not yet validated so we need to use previous address
-      # to get the genesis address
-      previous_address = Chain.get_previous_address()
-      Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-    )
-  ]
+  condition triggered_by: transaction, on: set_secret_hash(_secret_hash, _secret_hash_signature, _end_time, _evm_pool) do
+    # Transaction is not yet validated so we need to use previous address to get the genesis address
+    previous_address = Chain.get_previous_address(transaction)
+    genesis_address = Chain.get_genesis_address(previous_address)
+    if genesis_address != 0x#{pool_address} do
+      throw message: "Transaction's chain unauthorized", code: 403
+    end
+
+    true
+  end
 
   actions triggered_by: transaction, on: set_secret_hash(secret_hash, secret_hash_signature, end_time, evm_pool) do
     Contract.set_code \"""
     @version 1
 
-    condition triggered_by: transaction, on: refund(secret, secret_signature), as: [
-      previous_public_key: (
-        previous_address = Chain.get_previous_address()
-        Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-      ),
-      timestamp: timestamp >= \#{end_time}
-    ]
+    condition triggered_by: transaction, on: refund(secret, secret_signature) do
+
+      # Transaction is not yet validated so we need to use previous address to get the genesis address
+      previous_address = Chain.get_previous_address(transaction)
+      genesis_address = Chain.get_genesis_address(previous_address)
+      if genesis_address != 0x#{pool_address} do
+        throw message: "Transaction's chain unauthorized", code: 403
+      end
+
+      if transaction.timestamp < end_time do
+        throw message: "Refund cannot be done before the lock time", code: 405
+      end
+
+      true
+    end
 
     actions triggered_by: transaction, on: refund(secret, secret_signature) do
       Contract.set_type "transfer"
@@ -332,16 +350,24 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
       \\\"""
     end
 
-    condition triggered_by: transaction, on: reveal_secret(secret, secret_signature, _evm_contract), as: [
-      previous_public_key: (
-        # Transaction is not yet validated so we need to use previous address
-        # to get the genesis address
-        previous_address = Chain.get_previous_address()
-        Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-      ),
-      timestamp: transaction.timestamp < \#{end_time},
-      content: Crypto.hash(String.to_hex(secret)) == 0x\#{secret_hash}
-    ]
+    condition triggered_by: transaction, on: reveal_secret(secret, secret_signature, _evm_contract) do
+      # Transaction is not yet validated so we need to use previous address to get the genesis address
+      previous_address = Chain.get_previous_address(transaction)
+      genesis_address = Chain.get_genesis_address(previous_address)
+      if genesis_address != 0x#{pool_address} do
+        throw message: "Transaction's chain unauthorized", code: 403
+      end
+
+      if transaction.timestamp >= \#{end_time} do
+        throw message: "Withdraw cannot be after after the end of the locktime", code: 405
+      end
+
+      if Crypto.hash(String.to_hex(secret)) != 0x\#{secret_hash} do
+        throw message: "Invalid secret", code: 400
+      end
+
+      true
+    end
 
     actions triggered_by: transaction, on: reveal_secret(secret, secret_signature, evm_contract) do
       Contract.set_type "transfer"
