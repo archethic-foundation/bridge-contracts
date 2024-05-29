@@ -21,8 +21,7 @@ contract SignedHTLC_ERC is HTLC_ERC {
     }
 
     /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address upon the Archethic's pool signature
-    /// @dev Signature verification is done before to do the usual withdraw flow of the HTLC
-    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) override external {
         bytes32 sigHash = ECDSA.toEthSignedMessageHash(_secret);
         address signer = ECDSA.recover(sigHash, _v, _r, _s);
 
@@ -35,11 +34,6 @@ contract SignedHTLC_ERC is HTLC_ERC {
         delete signer;
 
         _withdraw(_secret);
-    }
-
-    /// @dev Prevent to use the direct withdraw's function without the signature
-    function withdraw(bytes32) override pure external {
-        revert InvalidSignature();
     }
 
     function refund(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {

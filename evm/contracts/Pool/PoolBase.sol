@@ -61,7 +61,10 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Throws when the Archethic's pool signer is invalid
     error InvalidArchethicPoolSigner();
 
-    /// @notice Throws when a secret have already been used in a swap
+    /// @notice Throws when a hash have already been used in a swap
+    error AlreadyProvisioned();
+
+    /// @notice Throws when a hash have already been used in a swap
     error AlreadyMinted();
 
     /// @notice Throws when the signature from Archethic's pool signer is invalid

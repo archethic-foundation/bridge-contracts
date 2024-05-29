@@ -30,7 +30,8 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         _assertReceivedFunds(_amount);
     }
 
-    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) external {
+    /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address upon the Archethic's pool signature
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) override external {
         if (!_beforeLockTime(block.timestamp)) {
             revert TooLate();
         }
@@ -45,10 +46,5 @@ contract ChargeableHTLC_ETH is HTLC_ETH {
         delete signer;
 
         _withdraw(_secret);
-    }
-
-    /// @dev Prevent to use the direct withdraw's function without the signature
-    function withdraw(bytes32) override pure external {
-        revert InvalidSignature();
     }
 }
