@@ -90,12 +90,7 @@ abstract contract HTLCBase is IHTLC {
     /// @dev It raises if the hash of the given secret doesn't match the HTLC's hash
     /// @dev It raises if the HTLC doesn't have enough funds
     /// @dev It raises if it's called after the locktime
-    function withdraw(bytes32 _secret) virtual external {
-        if (!_beforeLockTime(block.timestamp)) {
-            revert TooLate();
-        }
-        _withdraw(_secret);
-    }
+    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) virtual external {}
 
     function _withdraw(bytes32 _secret) internal {
         if (status != HTLCStatus.PENDING) {

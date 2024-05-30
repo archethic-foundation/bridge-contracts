@@ -47,6 +47,10 @@ export default {
           proxyAddress: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
           decimals: 18,
         },
+        aeEURe: {
+          proxyAddress: "0x15b9B55b3B96Ff49902F2B23cD46A8404F222058",
+          decimals: 18
+        }
       },
     },
     mumbai_polygon: {
@@ -163,5 +167,10 @@ export default {
         testnet: ["sepolia_ethereum"],
       },
     },
+    aeEURe: {
+      availableEvmNetworks: {
+        testnet: ["sepolia_ethereum"]
+      }
+    }
   },
 };

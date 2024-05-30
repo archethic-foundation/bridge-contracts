@@ -11,32 +11,28 @@ describe("LP Proxy", () => {
         const accounts = await ethers.getSigners()
         const archPoolSigner = ethers.Wallet.createRandom()
 
-        const reserveAddress = accounts[3].address
-        const satefyModuleAddress = accounts[4].address
-
         const pool = await ethers.getContractFactory("ETHPool");
-        const proxiedPoolInstance = await deployProxy(pool, [reserveAddress, satefyModuleAddress, 5, archPoolSigner.address, ethers.parseEther('200'), 60, accounts[0].address]);
+        const proxiedPoolInstance = await deployProxy(pool, [archPoolSigner.address, 60, accounts[0].address]);
 
         return { proxy: proxiedPoolInstance, archPoolSigner, accounts }
     }
 
     it("initialize pool", async () => {
-        const { proxy, accounts } = await loadFixture(deployPool)
-        expect(await proxy.reserveAddress()).to.equal(accounts[3].address)
-        expect(await proxy.poolCap()).to.equal(ethers.parseEther("200"))
+        const { proxy } = await loadFixture(deployPool)
+        expect(await proxy.lockTimePeriod()).to.equal(60)
     })
 
     it("delegate mint call", async () => {
         const { proxy, accounts } = await loadFixture(deployPool)
-        await proxy.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", ethers.parseEther("1"), { value: ethers.parseEther("1") })
+        const amount = ethers.parseEther("1")
+        await proxy.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount, { value: amount })
         const htlcAddress = await proxy.mintedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ETH", htlcAddress)
 
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
         expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
-        expect(await HTLCInstance.recipient()).to.equal(await proxy.reserveAddress());
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.995'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.005'))
+        expect(await HTLCInstance.recipient()).to.equal(await proxy.getAddress());
+        expect(await HTLCInstance.amount()).to.equal(amount)
     })
 
     it("delegate provision call", async () => {
@@ -91,17 +87,14 @@ describe("LP Proxy", () => {
 
     it("change implementation", async () => {
         const { proxy, accounts, archPoolSigner } = await loadFixture(deployPool)
-        expect(await proxy.safetyModuleFeeRate()).to.equal(500)
+        expect(await proxy.lockTimePeriod()).to.equal(60)
 
         const poolv2 = await ethers.getContractFactory("ETHPoolV2");
 
-        const reserveAddress = accounts[3].address
-        const safetyModuleAddress = accounts[4].address
+        await upgradeProxy(await proxy.getAddress(), poolv2, [archPoolSigner.address, 60, accounts[4].address]);
+        await expect(proxy.setLockTimePeriod(2))
+            .to.emit(proxy, "LockTimePeriodChanged").withArgs(2 * 3600)
 
-        await upgradeProxy(await proxy.getAddress(), poolv2, [reserveAddress, safetyModuleAddress, 5, archPoolSigner.address, ethers.parseEther('200'), 60]);
-        await expect(proxy.setSafetyModuleFeeRate(500))
-            .to.emit(proxy, "SafetyModuleFeeRateChanged").withArgs(1000)
-
-        expect(await proxy.safetyModuleFeeRate()).to.equal(1000)
+        expect(await proxy.lockTimePeriod()).to.equal(2 * 3600)
     })
 })

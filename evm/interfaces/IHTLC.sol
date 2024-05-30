@@ -37,8 +37,8 @@ interface IHTLC {
     /// @return HTLCStatus
     function status() external returns(HTLCStatus);
 
-    /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address
-    function withdraw(bytes32) external;
+    /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address upon the Archethic's pool signature
+    function withdraw(bytes32, bytes32, bytes32, uint8) external;
 
     /// @notice Refund the swap after the locktime
     function refund() external;
