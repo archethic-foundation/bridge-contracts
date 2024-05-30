@@ -2,6 +2,7 @@
   "cron": "*/15 * * * *",
   "port": 9102,
   "dbFolder": "./db-mainnet",
+  "since": -1,
   "evm": {
     "ethereum": {
       "coin": "ETH",
