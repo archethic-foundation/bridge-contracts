@@ -50,6 +50,11 @@ module.exports = {
       usdc: {
         pool: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
         token: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      },
+      eure: {
+        archethicPoolSigner: "0xd2d423aa5ac8cc0e02319d82cea1aa0f7ba57c4f",
+        token: "0xd58C5Db52B5B3Eb24EE38AF287d2cb0F424172A5",
+        multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
       }
     },
 
