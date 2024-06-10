@@ -193,15 +193,20 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
 
       valid_http_request? = false
       valid_response = nil
+      errorDetails = []
       for res in responses do
-        if !valid_http_request? && res.status == 200 && Json.is_valid?(res.body) do
-          valid_response = Json.parse(res.body)
-          valid_http_request? = true
+        if !valid_http_request? do
+          if res.status == 200 && Json.is_valid?(res.body) do
+            valid_response = Json.parse(res.body)
+            valid_http_request? = true
+          else
+            errorDetails = List.append(errorDetails, [status: res.status, body: res.body])
+          end
         end
       end
 
       if !valid_http_request? do
-        throw message: "Cannot fetch EVM RPC endpoints", code: 500
+        throw message: "Cannot fetch EVM RPC endpoints", code: 500, data: errorDetails
       end
 
       valid_response
