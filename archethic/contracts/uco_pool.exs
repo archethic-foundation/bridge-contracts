@@ -4,76 +4,93 @@
 # EVM => Archethic : Request funds #
 ####################################
 
-condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash, evm_tx_address, evm_contract, chain_id), as: [
-  type: "contract",
-  code: valid_chargeable_code?(end_time, amount, user_address, secret_hash),
-  timestamp: (
-    # End time cannot be less than now or more than 1 day
-    now = Time.now()
-    end_time > now && end_time <= now + 86400
-  ),
-  uco_transfers: (
-    # Ensure the pool has enough UCO to send the requested fund
-    contract.balance.uco >= amount
-  ),
-  content: List.in?([@CHAIN_IDS], chain_id),
-  token_transfers: (
-    charged_contracts = State.get("charged_contracts", Map.new())
-    !contract_already_charged?(charged_contracts, chain_id, evm_contract)
-  ),
-  address: (
-    valid? = false
+condition triggered_by: transaction, on: request_funds(end_time, amount, user_address, secret_hash, evm_tx_address, evm_contract, chain_id) do
+  if transaction.type != "contract" do
+    throw message: "Invalid transaction's type", code: 400
+  end
 
-    tx_receipt_request = get_tx_receipt_request(evm_tx_address)
-    call_status_request = get_call_request(evm_contract, "status()", 2)
-    call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
-    call_hash_request = get_call_request(evm_contract, "hash()", 4)
-    call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
-    call_amount_request = get_call_request(evm_contract, "amount()", 6)
+  now = Time.now()
+  if end_time <= now || end_time > now + 86400 do
+    throw message: "Invalid endtime's argument", code: 400, data: "End time cannot be less than now or more than 1 day"
+  end
 
-    body = Json.to_string([
-      tx_receipt_request,
-      call_status_request,
-      call_enough_funds_request,
-      call_hash_request,
-      call_end_time_request,
-      call_amount_request
-    ])
+  # Ensure the pool has enough UCO to send the requested fund
+  if contract.balance.uco < amount do
+    throw message: "Not enough UCO in the pool", code: 500
+  end
 
-    chain_data = get_chain_data(chain_id)
-    headers = ["Content-Type": "application/json"]
+  if !List.in?([@CHAIN_IDS], chain_id) do
+    throw message: "Invalid EVM chain id", code: 400
+  end
 
-    evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
-    for res in evm_responses do
-      if !valid? && res.status == 200 && Json.is_valid?(res.body) do
-        responses = Json.parse(res.body)
+  charged_contracts = State.get("charged_contracts", Map.new())
+  if contract_already_charged?(charged_contracts, chain_id, evm_contract) do
+    throw message: "Contract already charged", code: 405
+  end
 
-        tx_receipt = get_response(responses, 1)
-        call_status = get_response(responses, 2)
-        call_enough_funds = get_response(responses, 3)
-        call_hash = get_response(responses, 4)
-        call_end_time = get_response(responses, 5)
-        call_amount = get_response(responses, 6)
+  if !valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
+    throw message: "Invalid HTLC's code", code: 400
+  end
 
-        if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-          # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
-          event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
-          valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
-          # Pending is status 0
-          valid_status? = valid_status?(call_status, 0)
-          enough_funds? = enough_funds?(call_enough_funds)
-          valid_hash? = valid_hash?(call_hash, secret_hash)
-          valid_end_time? = valid_end_time?(call_end_time, end_time)
-          valid_amount? = valid_amount?(call_amount, amount, chain_data.decimals)
+  tx_receipt_request = get_tx_receipt_request(evm_tx_address)
+  call_status_request = get_call_request(evm_contract, "status()", 2)
+  call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
+  call_hash_request = get_call_request(evm_contract, "hash()", 4)
+  call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
+  call_amount_request = get_call_request(evm_contract, "amount()", 6)
 
-          valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
-        end
-      end
-    end
+  body = [
+    tx_receipt_request,
+    call_status_request,
+    call_enough_funds_request,
+    call_hash_request,
+    call_end_time_request,
+    call_amount_request
+  ]
 
-    valid?
-  )
-]
+  chain_data = get_chain_data(chain_id)
+  evm_response = query_evm_apis(chain_data.endpoints, body)
+
+  tx_receipt = get_response(evm_response, 1)
+  call_status = get_response(evm_response, 2)
+  call_enough_funds = get_response(evm_response, 3)
+  call_hash = get_response(evm_response, 4)
+  call_end_time = get_response(evm_response, 5)
+  call_amount = get_response(evm_response, 6)
+
+  if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+    throw message: "Invalid EVM RPC response", code: 500
+  end
+  # event = Crypto.hash("ContractMinted(address,uint256)", "keccak256")
+  event = "0x8640c3cb3cba5653efe5a3766dc7a9fb9b02102a9f97fbe9ea39f0082c3bf497"
+
+  if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
+    throw message: "Invalid transaction's receipt", code: 400
+  end
+
+  # Pending is status 0
+  if !valid_status?(call_status, 0) do
+    throw message: "Invalid HTLC's status", code: 400, data: call_status
+  end
+
+  if !enough_funds?(call_enough_funds) do
+    throw message: "Unsufficient funds on the HTLC", code: 400
+  end
+
+  if !valid_hash?(call_hash, secret_hash) do
+    throw message: "Invalid hash", code: 400
+  end
+
+  if !valid_end_time?(call_end_time, end_time) do
+    throw message: "Invalid endtime", code: 400
+  end
+
+  if !valid_amount?(call_amount, amount, chain_data.decimals) do
+    throw message: "Invalid amount", code: 400
+  end
+
+  true
+end
 
 actions triggered_by: transaction, on: request_funds(end_time, amount, _, secret_hash, _, evm_contract, chain_id) do
   chain_data = get_chain_data(chain_id)
@@ -101,16 +118,26 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id), as: [
-  type: "transfer",
-  code: valid_signed_code?(htlc_genesis_address, amount, user_address),
-  content: List.in?([@CHAIN_IDS], chain_id),
-  uco_transfers:
-    (
-      htlc_genesis_address = String.to_hex(htlc_genesis_address)
-      Map.get(htlc_genesis_address) == amount
-    )
-]
+condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id) do
+  if transaction.type != "transfer" do
+    throw message: "Invalid transaction's type", code: 400
+  end
+
+  if !List.in?([@CHAIN_IDS], chain_id) do
+    throw message: "Invalid EVM chain id", code: 400
+  end
+
+  htlc_genesis_address = String.to_hex(htlc_genesis_address)
+  if Map.get(transaction.uco_transfers, htlc_genesis_address) != amount do
+    throw message: "Invalid transfer's amount", code: 400
+  end
+
+  if !valid_signed_code?(htlc_genesis_address, amount, user_address) do
+    throw message: "Invalid HTLC's code", code: 400
+  end
+
+  true
+end
 
 actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
   # Here delete old secret that hasn't been used before endTime
@@ -155,89 +182,90 @@ end
 # Archethic => EVM : Reveal secret #
 ####################################
 
-condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm_tx_address, evm_contract), as: [
-  type: "transfer",
-  content: (
-    # Ensure htlc_genesis_address exists in pool state
-    # and end_time has not been reached
-    valid? = false
+condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm_tx_address, evm_contract) do
+  if transaction.type != "transfer" do
+    throw message: "Invalid transaction's type", code: 400
+  end
 
-    htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = State.get("requested_secrets", Map.new())
-    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
+  # Ensure htlc_genesis_address exists in pool state
+  # and end_time has not been reached
 
-    if htlc_map != nil do
-      valid? = htlc_map.end_time > Time.now()
-    end
+  htlc_genesis_address = String.to_hex(htlc_genesis_address)
+  requested_secrets = State.get("requested_secrets", Map.new())
+  htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
-    valid?
-  ),
-  address: (
-    valid? = false
-    htlc_map = nil
+  if htlc_map == nil do
+    throw message: "HTLC's not found", code: 400
+  end
 
-    htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = State.get("requested_secrets", Map.new())
-    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
+  if htlc_map.end_time <= Time.now() do
+    throw message: "Cannot reveal HTLC's secret after locktime", code: 405
+  end
 
-    if htlc_map != nil do
-      tx_receipt_request = get_tx_receipt_request(evm_tx_address)
-      call_status_request = get_call_request(evm_contract, "status()", 2)
-      call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
-      call_hash_request = get_call_request(evm_contract, "hash()", 4)
-      call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
-      call_amount_request = get_call_request(evm_contract, "amount()", 6)
+  tx_receipt_request = get_tx_receipt_request(evm_tx_address)
+  call_status_request = get_call_request(evm_contract, "status()", 2)
+  call_enough_funds_request = get_call_request(evm_contract, "enoughFunds()", 3)
+  call_hash_request = get_call_request(evm_contract, "hash()", 4)
+  call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
+  call_amount_request = get_call_request(evm_contract, "amount()", 6)
 
-      body = Json.to_string([
-        tx_receipt_request,
-        call_status_request,
-        call_enough_funds_request,
-        call_hash_request,
-        call_end_time_request,
-        call_amount_request
-      ])
+  body = [
+    tx_receipt_request,
+    call_status_request,
+    call_enough_funds_request,
+    call_hash_request,
+    call_end_time_request,
+    call_amount_request
+  ]
 
-      chain_data = get_chain_data(htlc_map.chain_id)
-      headers = ["Content-Type": "application/json"]
+  chain_data = get_chain_data(htlc_map.chain_id)
+  evm_response = query_evm_apis(chain_data.endpoints, body)
 
-      evm_responses = query_evm_apis(chain_data.endpoints, "POST", headers, body)
-      for res in evm_responses do
-        if !valid? && res.status == 200 && Json.is_valid?(res.body) do
-          responses = Json.parse(res.body)
+  tx_receipt = get_response(evm_response, 1)
+  call_status = get_response(evm_response, 2)
+  call_enough_funds = get_response(evm_response, 3)
+  call_hash = get_response(evm_response, 4)
+  call_end_time = get_response(evm_response, 5)
+  call_amount = get_response(evm_response, 6)
 
-          tx_receipt = get_response(responses, 1)
-          call_status = get_response(responses, 2)
-          call_enough_funds = get_response(responses, 3)
-          call_hash = get_response(responses, 4)
-          call_end_time = get_response(responses, 5)
-          call_amount = get_response(responses, 6)
+  if any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+    throw message: "Invalid EVM RPC response", code: 500
+  end
+  # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
+  event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
 
-          if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
-            # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
-            event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
+  secret = Crypto.hmac(htlc_map.hmac_address)
+  secret_hash = Crypto.hash(secret, "sha256")
 
-            secret = Crypto.hmac(htlc_map.hmac_address)
-            secret_hash = Crypto.hash(secret, "sha256")
+  htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
 
-            htlc_data = Contract.call_function(htlc_genesis_address, "get_htlc_data", [])
+  if !valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event) do
+    throw message: "Invalid transaction's receipt", code: 400
+  end
 
-            valid_tx_receipt? = valid_tx_receipt?(tx_receipt, chain_data.proxy_address, evm_contract, event)
-            # Pending is status 0
-            valid_status? = valid_status?(call_status, 0)
-            enough_funds? = enough_funds?(call_enough_funds)
-            valid_hash? = valid_hash?(call_hash, secret_hash)
-            valid_end_time? = valid_end_time?(call_end_time, htlc_map.end_time)
-            valid_amount? = valid_amount?(call_amount, htlc_data.amount, chain_data.decimals)
+  # Pending is status 0
+  if !valid_status?(call_status, 0) do
+    throw message: "Invalid HTLC's status", code: 400, data: call_status
+  end
 
-            valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
-          end
-        end
-      end
-    end
+  if !enough_funds?(call_enough_funds) do
+    throw message: "Unsufficient funds on the HTLC", code: 400
+  end
 
-    valid?
-  )
-]
+  if !valid_hash?(call_hash, secret_hash) do
+    throw message: "Invalid hash", code: 400
+  end
+
+  if !valid_end_time?(call_end_time, htlc_map.end_time) do
+    throw message: "Invalid endtime", code: 400
+  end
+
+  if !valid_amount?(call_amount, htlc_data.amount, chain_data.decimals) do
+    throw message: "Invalid amount", code: 400
+  end
+
+  true
+end
 
 actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_tx_address, evm_contract_address) do
   requested_secrets = State.get("requested_secrets", Map.new())
@@ -258,23 +286,24 @@ actions triggered_by: transaction, on: reveal_secret(htlc_genesis_address, _evm_
   )
 end
 
-condition triggered_by: transaction, on: refund(htlc_genesis_address), as: [
-  content: (
-    # Ensure htlc_genesis_address exists in pool state
-    # and end_time has not been reached
-    valid? = false
+condition triggered_by: transaction, on: refund(htlc_genesis_address) do
+  # Ensure htlc_genesis_address exists in pool state
+  # and end_time has not been reached
 
-    htlc_genesis_address = String.to_hex(htlc_genesis_address)
-    requested_secrets = State.get("requested_secrets", Map.new())
-    htlc_map = Map.get(requested_secrets, htlc_genesis_address)
+  htlc_genesis_address = String.to_hex(htlc_genesis_address)
+  requested_secrets = State.get("requested_secrets", Map.new())
+  htlc_map = Map.get(requested_secrets, htlc_genesis_address)
 
-    if htlc_map != nil do
-      valid? = htlc_map.end_time <= Time.now()
-    end
+  if htlc_map == nil do
+    throw message: "HTLC's not found", code: 400
+  end
 
-    valid?
-  )
-]
+  if htlc_map.end_time > Time.now() do
+    throw message: "Cannot refund before the locktime", code: 405
+  end
+
+  true
+end
 
 actions triggered_by: transaction, on: refund(htlc_genesis_address) do
   requested_secrets = State.get("requested_secrets", Map.new())
@@ -298,18 +327,20 @@ actions triggered_by: transaction, on: refund(htlc_genesis_address) do
   )
 end
 
-condition triggered_by: transaction, on: update_code(new_code), as: [
-  previous_public_key:
-    (
-      # Pool code can only be updated from the master chain if the bridge
+condition triggered_by: transaction, on: update_code(new_code) do
+  if !Code.is_valid?(new_code) do
+    throw message: "Invalid code", code: 400
+  end
 
-      # Transaction is not yet validated so we need to use previous address
-      # to get the genesis address
-      previous_address = Chain.get_previous_address()
-      Chain.get_genesis_address(previous_address) == @MASTER_GENESIS_ADDRESS
-    ),
-  code: Code.is_valid?(new_code)
-]
+  # Pool code can only be updated from the master chain if the bridge
+  # Transaction is not yet validated so we need to use previous address to get the genesis address
+  previous_address = Chain.get_previous_address(transaction)
+  if Chain.get_genesis_address(previous_address) != @MASTER_GENESIS_ADDRESS do
+    throw message: "Transaction's chain unauthorized", code: 403
+  end
+
+  true
+end
 
 actions triggered_by: transaction, on: update_code(new_code) do
   Contract.set_type("contract")
@@ -515,12 +546,31 @@ fun sign_for_evm(data) do
   sig
 end
 
-fun query_evm_apis(endpoints, method, headers, body) do
+fun query_evm_apis(endpoints, body) do
   requests = []
-
   for endpoint in endpoints do
-    requests = List.append(requests, url: endpoint, method: method, headers: headers, body: body)
+    requests = List.append(requests, url: endpoint, method: "POST", headers: ["Content-Type": "application/json"], body: Json.to_string(body))
   end
 
-  Http.request_many(requests, false)
+  responses = Http.request_many(requests, false)
+
+  valid_http_request? = false
+  valid_response = nil
+  errorDetails = []
+  for res in responses do
+    if !valid_http_request? do
+      if res.status == 200 && Json.is_valid?(res.body) do
+        valid_response = Json.parse(res.body)
+        valid_http_request? = true
+      else
+        errorDetails = List.append(errorDetails, [status: res.status, body: res.body])
+      end
+    end
+  end
+
+  if !valid_http_request? do
+    throw message: "Cannot fetch EVM RPC endpoints", code: 500, data: errorDetails
+  end
+
+  valid_response
 end
