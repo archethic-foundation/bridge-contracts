@@ -134,18 +134,15 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
   transfers = Map.get(transaction.token_transfers, htlc_genesis_address, [])
 
+  valid_token_transfer? = false
   for transfer in transfers do
-    if transfer.token_address != @TOKEN_ADDRESS do
-      throw message: "Invalid transfer token's address", code: 400
+    if !valid_token_transfer? && (transfer.token_address == @TOKEN_ADDRESS && transfer.token_id == 0 && transfer.amount == amount) do
+      valid_token_transfer? = true
     end
+  end
 
-    if transfer.token_id != 0 do
-      throw message: "Invalid transfer token's id", code: 400
-    end
-
-    if transfer.amount != amount do
-      throw message: "Invalid transfer's amount", code: 400
-    end
+  if !valid_token_transfer? do
+    throw message: "Missing expected token transfer", code: 400, data: [ expected_token_address: @TOKEN_ADDRESS, expected_amount: amount]
   end
 
   if !valid_signed_code?(htlc_genesis_address, amount, user_address) do
