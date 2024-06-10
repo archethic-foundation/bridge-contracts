@@ -9,10 +9,6 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
     throw message: "Invalid transaction's type", code: 400
   end
 
-  if !valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
-    throw message: "Invalid HTLC's code", code: 400
-  end
-
   now = Time.now()
   if end_time <= now || end_time > now + 86400 do
     throw message: "Invalid endtime's argument", code: 400, data: "End time cannot be less than now or more than 1 day"
@@ -30,6 +26,10 @@ condition triggered_by: transaction, on: request_funds(end_time, amount, user_ad
   charged_contracts = State.get("charged_contracts", Map.new())
   if contract_already_charged?(charged_contracts, chain_id, evm_contract) do
     throw message: "Contract already charged", code: 405
+  end
+
+  if !valid_chargeable_code?(end_time, amount, user_address, secret_hash) do
+    throw message: "Invalid HTLC's code", code: 400
   end
 
   tx_receipt_request = get_tx_receipt_request(evm_tx_address)
@@ -123,10 +123,6 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
     throw message: "Invalid transaction's type", code: 400
   end
 
-  if !valid_signed_code?(htlc_genesis_address, amount, user_address) do
-    throw message: "Invalid HTLC's code", code: 400
-  end
-
   if !List.in?([@CHAIN_IDS], chain_id) do
     throw message: "Invalid EVM chain id", code: 400
   end
@@ -134,6 +130,10 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
   if Map.get(transaction.uco_transfers, htlc_genesis_address) != amount do
     throw message: "Invalid transfer's amount", code: 400
+  end
+
+  if !valid_signed_code?(htlc_genesis_address, amount, user_address) do
+    throw message: "Invalid HTLC's code", code: 400
   end
 
   true
@@ -328,15 +328,15 @@ actions triggered_by: transaction, on: refund(htlc_genesis_address) do
 end
 
 condition triggered_by: transaction, on: update_code(new_code) do
+  if !Code.is_valid?(new_code) do
+    throw message: "Invalid code", code: 400
+  end
+
   # Pool code can only be updated from the master chain if the bridge
   # Transaction is not yet validated so we need to use previous address to get the genesis address
   previous_address = Chain.get_previous_address(transaction)
   if Chain.get_genesis_address(previous_address) != @MASTER_GENESIS_ADDRESS do
     throw message: "Transaction's chain unauthorized", code: 403
-  end
-
-  if !Code.is_valid?(new_code) do
-    throw message: "Invalid code", code: 400
   end
 
   true
