@@ -57,34 +57,15 @@ export fun(get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     """
   end
 
-  fee_amount = amount * 0.003
-  user_amount = amount - fee_amount
-
-  fee_transfer_code = ""
-
-  if fee_amount == 0 do
-    fee_transfer_code = "# Transfer fee is less than the minimum decimals"
-  else
-    if token == "UCO" do
-      fee_transfer_code =
-        "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
-    else
-      fee_transfer_code =
-        "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
-    end
-  end
-
   valid_transfer_code = ""
 
   if token == "UCO" do
     valid_transfer_code = """
-    Contract.add_uco_transfer to: 0x#{user_address}, amount: #{user_amount}
-      #{fee_transfer_code}
+    Contract.add_uco_transfer to: 0x#{user_address}, amount: #{amount}
     """
   else
     valid_transfer_code = """
-    Contract.add_token_transfer to: 0x#{user_address}, amount: #{user_amount}, token_address: 0x#{token}
-      #{fee_transfer_code}
+    Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}
     """
   end
 
@@ -198,7 +179,7 @@ export fun(get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       end
       \\\"""
     end
-    
+
     fun query_evm_apis(endpoints, method, headers, body) do
       requests = []
       for endpoint in endpoints do
