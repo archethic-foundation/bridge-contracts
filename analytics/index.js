@@ -8,6 +8,7 @@ import Debug from "debug";
 import { tick as tickArchethic } from "./src/archethic.js";
 import { tick as tickEVM } from "./src/evm.js";
 import htlcsController from "./src/controllers/htlcs.js";
+import refundsController from "./src/controllers/refunds.js";
 
 const debug = Debug("server");
 const ENDPOINT = config.get("archethic.endpoint");
@@ -33,6 +34,7 @@ app.set("views", "./src/views");
 app.set("view engine", "jade");
 
 app.get("/htlcs", htlcsController(db));
+app.get("/refunds", refundsController(db));
 
 app.get("/metrics", (req, res) => {
   let text = "";
