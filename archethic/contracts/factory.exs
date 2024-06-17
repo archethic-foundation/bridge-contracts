@@ -5,7 +5,7 @@
 # ]
 
 export fun get_protocol_fee() do
-  0.3
+  0.5
 end
 
 export fun get_protocol_fee_address() do
@@ -178,7 +178,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
       end
       \\\"""
     end
-    
+
     fun query_evm_apis(endpoints, method, headers, body) do
       requests = []
       for endpoint in endpoints do
@@ -234,7 +234,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     return_transfer_code = "Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}"
   end
 
-  fee_amount = amount * 0.003
+  fee_amount = amount * 0.005
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
