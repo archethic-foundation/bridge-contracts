@@ -18,12 +18,19 @@ contract HTLC_ERC is HTLCBase {
 
     /// @dev Send ERC20 to the HTLC's recipient
     function _transferAsWithdraw() internal override virtual {
+        uint256 beforeBalance = token.balanceOf(recipient);
         SafeERC20.safeTransfer(token, recipient, amount);
+        uint256 afterBalance = token.balanceOf(recipient);
+        require(afterBalance - beforeBalance == amount, "Amount transfered not the same");
     }
 
     /// @dev Send back ERC20 to the HTLC's creator
     function _transferAsRefund() internal override virtual {
+        uint256 beforeBalance = token.balanceOf(from);
         SafeERC20.safeTransfer(token, from, amount);
+        uint256 afterBalance = token.balanceOf(from);
+        require(afterBalance - beforeBalance == amount, "Amount transfered not the same");
+
     }
 
     function _enoughFunds() internal override virtual view returns (bool) {
