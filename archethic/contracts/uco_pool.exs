@@ -101,7 +101,7 @@ end
 # Archethic => EVM : Request secret hash #
 ##########################################
 
-condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id), as: [
+condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, user_address, chain_id, evm_user_address), as: [
   type: "transfer",
   code: valid_signed_code?(htlc_genesis_address, amount, user_address),
   content: List.in?([@CHAIN_IDS], chain_id),
@@ -112,7 +112,7 @@ condition triggered_by: transaction, on: request_secret_hash(htlc_genesis_addres
     )
 ]
 
-actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id) do
+actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address, amount, _user_address, chain_id, evm_user_address) do
   # Here delete old secret that hasn't been used before endTime
   requested_secrets = State.get("requested_secrets", Map.new())
 
@@ -120,7 +120,7 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   secret_hash = Crypto.hash(secret, "sha256")
 
   # Perform a first hash to combine data and chain_id
-  abi_data = Evm.abi_encode("(bytes32, bytes32,uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id])
+  abi_data = Evm.abi_encode("(bytes32, bytes32, uint, address)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id, evm_user_address])
   signature_data = Crypto.hash(abi_data, "keccak256")
 
   # Build signature for EVM verification
@@ -134,7 +134,8 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   htlc_map = [
     hmac_address: transaction.address,
     end_time: end_time,
-    chain_id: chain_id
+    chain_id: chain_id,
+    evm_user_address: evm_user_address
   ]
 
   htlc_genesis_address = String.to_hex(htlc_genesis_address)
@@ -187,6 +188,7 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
       call_hash_request = get_call_request(evm_contract, "hash()", 4)
       call_end_time_request = get_call_request(evm_contract, "lockTime()", 5)
       call_amount_request = get_call_request(evm_contract, "amount()", 6)
+      call_recipient_request = get_call_request(evm_contract, "recipient()", 7)
 
       body = Json.to_string([
         tx_receipt_request,
@@ -194,7 +196,8 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
         call_enough_funds_request,
         call_hash_request,
         call_end_time_request,
-        call_amount_request
+        call_amount_request,
+        call_recipient_request
       ])
 
       chain_data = get_chain_data(htlc_map.chain_id)
@@ -211,8 +214,9 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
           call_hash = get_response(responses, 4)
           call_end_time = get_response(responses, 5)
           call_amount = get_response(responses, 6)
+          call_recipient = get_response(responses, 7)
 
-          if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount]) do
+          if !any_nil?([tx_receipt, call_status, call_enough_funds, call_hash, call_end_time, call_amount, call_recipient]) do
             # event = Crypto.hash("ContractProvisioned(address,uint256)", "keccak256")
             event = "0x0c5d1829e93110ff9c24aa8ac41893b65509108384b3036d4f73ffccb235e9ec"
 
@@ -228,8 +232,9 @@ condition triggered_by: transaction, on: reveal_secret(htlc_genesis_address, evm
             valid_hash? = valid_hash?(call_hash, secret_hash)
             valid_end_time? = valid_end_time?(call_end_time, htlc_map.end_time)
             valid_amount? = valid_amount?(call_amount, htlc_data.amount, chain_data.decimals)
+            valid_recipient? = valid_recipient?(call_recipient, Map.get(htlc_map, "evm_user_address"))
 
-            valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount?
+            valid? = valid_tx_receipt? && valid_status? && enough_funds? && valid_hash? && valid_end_time? && valid_amount? && valid_recipient?
           end
         end
       end
@@ -498,6 +503,11 @@ fun valid_amount?(call_amount, amount, decimals) do
   big_int_amount = List.at(decoded_data, 0)
   decimal_amount = big_int_amount / Math.pow(10, decimals)
   decimal_amount == amount
+end
+
+fun valid_recipient?(call_recipient, evm_user_address) do
+  decoded_data = Evm.abi_decode("(address)", call_recipient)
+   String.to_uppercase(List.at(decoded_data, 0)) == String.to_uppercase(evm_user_address)
 end
 
 fun sign_for_evm(data) do

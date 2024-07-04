@@ -89,7 +89,7 @@ node bridge deploy_signed_htlc --token aeDTK --seed htlc1 --amount 11
 ## Provision Archethic HTLC & request secret hash from LP
 
 ```bash
-node bridge provision_htlc --token aeDTK --htlc_address 00003c4ab952924fc90236b0192a9692833ade9fa685c0377c557d4496250e188f7b --amount 11
+node bridge provision_htlc --token aeDTK --htlc_address 00003c4ab952924fc90236b0192a9692833ade9fa685c0377c557d4496250e188f7b --amount 11 --evm_user_address 0x5bA1D8DC7E0baC18D7dD7664AAB59998FC6d3229
 ```
 
 ## Create EVM HTLC

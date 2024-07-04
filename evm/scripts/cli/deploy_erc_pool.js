@@ -40,6 +40,8 @@ async function main() {
     // not very useful to prompt this
     const lockTimePeriod = 7200; // 2H
 
+    const accounts = await ethers.getSigners()
+
     const ERCPool = await ethers.getContractFactory("ERCPool");
     const instance = await upgrades.deployProxy(ERCPool, [
         poolSigner,

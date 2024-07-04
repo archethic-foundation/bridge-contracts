@@ -25,6 +25,11 @@ const builder = {
     demandOption: false,
     type: "integer"
   },
+  evm_user_address: {
+    describe: "The address of the EVM user wallet",
+    demandOption: true,
+    type: "string"
+  },
   access_seed: {
     describe: "the keychain access seed (default in env config)",
     demandOption: false,
@@ -64,6 +69,7 @@ const handler = async function(argv) {
   const htlcGenesisAddress = argv["htlc_address"]
   const amount = argv["amount"]
   const chainId = argv["chainID"] ? argv["chainID"] : 31337
+  const evmUserAddress = argv["evm_user_address"]
 
   const tokenAddress = getTokenAddress(keychain, token)
 
@@ -75,7 +81,7 @@ const handler = async function(argv) {
 
   const tx = archethic.transaction.new()
     .setType("transfer")
-    .addRecipient(poolGenesisAddress, "request_secret_hash", [htlcGenesisAddress, amount, userAddress, chainId])
+    .addRecipient(poolGenesisAddress, "request_secret_hash", [htlcGenesisAddress, amount, userAddress, chainId, evmUserAddress])
 
   if (tokenAddress == "UCO") {
     tx.addUCOTransfer(htlcGenesisAddress, Utils.toBigInt(amount))
