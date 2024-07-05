@@ -126,9 +126,11 @@ describe("ERC LiquidityPool", () => {
 
     it("should mint and send funds to the HTLC contract", async () => {
         const date = new Date()
-        const { pool, tokenAddress, accounts } = await loadFixture(deployPool)
+        const { pool, tokenAddress, tokenInstance, accounts } = await loadFixture(deployPool)
 
         const amount = ethers.parseEther('3')
+        await tokenInstance.approve(await pool.getAddress(), amount)
+
         const tx = pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
         await tx
 
@@ -143,6 +145,7 @@ describe("ERC LiquidityPool", () => {
         expect(await HTLCInstance.amount()).to.equal(amount)
         expect(await HTLCInstance.token()).to.equal(tokenAddress)
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
+        expect(await tokenInstance.balanceOf(await HTLCInstance.getAddress())).to.equal(amount)
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)
@@ -152,9 +155,10 @@ describe("ERC LiquidityPool", () => {
     })
 
     it("should mint and send funds to the HTLC contract with fee handling low decimals", async () => {
-        const { pool } = await loadFixture(deployPool)
+        const { pool, tokenInstance } = await loadFixture(deployPool)
 
         let amount = ethers.parseEther('0.000001')
+        await tokenInstance.approve(await pool.getAddress(), amount)
         let tx = await pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
 
         await expect(tx).to.emit(pool, "ContractMinted")
@@ -164,5 +168,6 @@ describe("ERC LiquidityPool", () => {
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
         expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
+        expect(await tokenInstance.balanceOf(await HTLCInstance.getAddress())).to.equal(amount)
     })
 })
