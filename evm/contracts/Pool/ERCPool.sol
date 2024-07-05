@@ -27,14 +27,23 @@ contract ERCPool is PoolBase {
     /// @notice Throws this pool cannot received ethers
     error CannotSendEthers();
 
+    /// @notice Throws when the token address is invalid
+    error InvalidToken();
+
     function initialize(address _archPoolSigner, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
         __Pool_Init(_archPoolSigner, _lockTimePeriod, _multisig);
+        if (address(_token) == address(0)) {
+            revert InvalidToken();
+        }
         token = _token;
 	}
 
     /// @notice Update the pool's asset ERC20 (Restricted to the pool's owner)
     /// @dev TokenChanged event is emitted once done
     function setToken(ERC20 _token) onlyOwner external {
+        if (address(_token) == address(0)) {
+            revert InvalidToken();
+        }
         token = _token;
         emit TokenChanged(address(_token));
     }

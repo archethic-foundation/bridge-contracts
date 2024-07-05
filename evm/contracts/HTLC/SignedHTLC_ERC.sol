@@ -16,7 +16,13 @@ contract SignedHTLC_ERC is HTLC_ERC {
     /// @notice Throws when the Archethic's pool signature is invalid
     error InvalidSignature();
 
+    /// @notice Throws when the Archethic's pool signer is invalid
+    error InvalidPoolSigner();
+
     constructor(address _recipient, IERC20 _token, uint256 _amount, bytes32 _hash, uint _lockTime, address _poolSigner) HTLC_ERC(_recipient, _token,  _amount, _hash, _lockTime) {
+        if (_poolSigner == address(0)) {
+            revert InvalidPoolSigner();
+        }
         poolSigner = _poolSigner;
     }
 

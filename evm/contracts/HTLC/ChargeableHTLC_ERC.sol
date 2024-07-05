@@ -16,6 +16,9 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     /// @notice Throws when the Archethic's pool signature is invalid
     error InvalidSignature();
 
+    /// @notice Throws when the Archethic's pool signer is invalid
+    error InvalidPoolSigner();
+
     constructor(
         IERC20 _token,
         uint256 _amount,
@@ -24,6 +27,9 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
         address _recipient,
         address _poolSigner
     ) HTLC_ERC(_recipient, _token, _amount, _hash, _lockTime) {
+        if (_poolSigner == address(0)) {
+            revert InvalidPoolSigner();
+        }
         from = tx.origin;
         poolSigner = _poolSigner;
     }

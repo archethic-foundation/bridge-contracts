@@ -12,7 +12,13 @@ contract HTLC_ERC is HTLCBase {
     /// @notice HTLC's ERC20 token
     IERC20 public token;
 
+    /// @notice Throws when the token address is invalid
+    error InvalidToken();
+
     constructor(address _recipient, IERC20 _token, uint256 _amount, bytes32 _hash, uint _lockTime) HTLCBase(_recipient, _amount, _hash, _lockTime) {
+        if (address(_token) == address(0)) {
+            revert InvalidToken();
+        }
         token = _token;
     }
 

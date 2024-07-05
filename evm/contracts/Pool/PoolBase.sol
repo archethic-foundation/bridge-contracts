@@ -108,6 +108,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         lockTimePeriod = _lockTimePeriod;
 
         // Initialize OwnableUpgradeable explicitly with given multisig address.
+        require(_multisig != address(0));
         transferOwnership(_multisig);
     }
 
