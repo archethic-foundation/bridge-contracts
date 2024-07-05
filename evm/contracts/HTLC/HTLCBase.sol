@@ -104,9 +104,9 @@ abstract contract HTLCBase is IHTLC {
         }
 
         secret = _secret;
-        _transferAsWithdraw();
         status = HTLCStatus.WITHDRAWN;
         emit Withdrawn();
+        _transferAsWithdraw();
     }
 
     /// @inheritdoc IHTLC
@@ -134,9 +134,9 @@ abstract contract HTLCBase is IHTLC {
             revert InsufficientFunds();
         }
 
-        _transferAsRefund();
         status = HTLCStatus.REFUNDED;
         emit Refunded();
+        _transferAsRefund();
     }
 
     function _beforeLockTime(uint256 timestamp) internal view returns (bool) {
