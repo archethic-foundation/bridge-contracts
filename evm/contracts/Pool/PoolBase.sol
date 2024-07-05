@@ -196,7 +196,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         }
 
         bytes32 _archethicHTLCAddressHash = sha256(_archethicHTLCAddress);
-        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid, msg.sender));
+        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid, msg.sender, _amount));
         bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayloadHash);
 
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);

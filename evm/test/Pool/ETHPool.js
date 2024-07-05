@@ -90,9 +90,16 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
@@ -102,7 +109,7 @@ describe("ETH LiquidityPool", () => {
 
         const tx = pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -141,16 +148,23 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -170,16 +184,23 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         await expect(pool.provisionHTLC(
             "0x0000000000000000000000000000000000000000000000000000000000000000",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -199,16 +220,23 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('0')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('0'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -225,16 +253,23 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             0,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -245,7 +280,7 @@ describe("ETH LiquidityPool", () => {
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             await time.latest() - 10, // Before the latest block
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -256,7 +291,7 @@ describe("ETH LiquidityPool", () => {
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             await time.latest() + 90000, // More than 1 day from the latest block
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -278,9 +313,16 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1')
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
@@ -290,7 +332,7 @@ describe("ETH LiquidityPool", () => {
 
         await pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -343,9 +385,16 @@ describe("ETH LiquidityPool", () => {
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
         const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther("1.0")
 
         const abiEncoder = new ethers.AbiCoder()
-        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress])
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
+        ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
@@ -355,7 +404,7 @@ describe("ETH LiquidityPool", () => {
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
