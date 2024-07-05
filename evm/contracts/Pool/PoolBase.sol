@@ -231,6 +231,8 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @dev An error is thrown whether the secret's hash is already taken by a previous swap
     /// @dev The HTLC locktime is determined by the pool's locktime period
     function mintHTLC(bytes32 _hash, uint256 _amount) payable virtual external {
+        checkUnlocked();
+
         if (_hash == bytes32(0)) {
             revert InvalidHash();
         }
