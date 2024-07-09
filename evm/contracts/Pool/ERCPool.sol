@@ -79,6 +79,12 @@ contract ERCPool is PoolBase {
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
         ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _amount, _hash, _lockTime, address(this), archethicPoolSigner);
         SafeERC20.safeTransferFrom(token, msg.sender, address(htlcContract), _amount);
+
+        // Ensure the amount received by the HTLC contract is the expected one
+        // This prevent using fee-on-transfer tokens
+        uint256 htlcBalance = token.balanceOf(address(htlcContract));
+        require(htlcBalance == _amount, "Amount sent/received are not the same");
+
         return htlcContract;
     }
 

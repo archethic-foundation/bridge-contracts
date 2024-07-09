@@ -2,12 +2,20 @@ const { network: { config: networkConfig } } = require("hardhat");
 const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai")
 
-const { hexToUintArray, concatUint8Arrays, uintArrayToHex } = require("../utils")
+const { hexToUintArray } = require("../utils")
 
 describe("ERC LiquidityPool", () => {
 
     async function deployPool() {
-        const token = await ethers.deployContract("DummyToken", [ethers.parseEther('1000')])
+        return doDeployPool("DummyToken")
+    }
+
+    async function deployPoolFee() {
+        return doDeployPool("DummyTokenFee")
+    }
+
+    async function doDeployPool(tokenImpl) {
+        const token = await ethers.deployContract(tokenImpl, [ethers.parseEther('1000')])
         const accounts = await ethers.getSigners()
         const archPoolSigner = ethers.Wallet.createRandom()
 
@@ -177,5 +185,15 @@ describe("ERC LiquidityPool", () => {
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
         expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
         expect(await tokenInstance.balanceOf(await HTLCInstance.getAddress())).to.equal(amount)
+    })
+
+    it("should revert as token has a fee-on-transfer", async () => {
+        const { pool, tokenInstance } = await loadFixture(deployPoolFee)
+
+        const amount = ethers.parseEther('3')
+        await tokenInstance.approve(await pool.getAddress(), amount)
+
+        const tx = pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
+        await expect(tx).to.be.revertedWith("Amount sent/received are not the same")
     })
 })
