@@ -9,8 +9,6 @@ import "../../interfaces/IHTLC.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "hardhat/console.sol";
-
 /// @custom:oz-upgrades-unsafe-allow external-library-linking
 /// @title Pool to manage ERC assets for Archethic's bridge on EVM's side
 /// @author Archethic Foundation
