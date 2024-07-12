@@ -7,7 +7,7 @@
     "ethereum": {
       "coin": "ETH",
       "chainID": 1,
-      "providerEndpoint": "https://mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "providerEndpoint": "https://mainnet.infura.io/v3/4a81d19b601a4da8a261fbc492dc0877",
       "explorer": "https://etherscan.io/",
       "tokens": {
         "UCO": "0x8a3d77e9d6968b780564936d15B09805827C21fa"
@@ -25,7 +25,7 @@
     "polygon": {
       "coin": "MATIC",
       "chainID": 137,
-      "providerEndpoint": "https://polygon-mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "providerEndpoint": "https://polygon-mainnet.infura.io/v3/4a81d19b601a4da8a261fbc492dc0877",
       "explorer": "https://polygonscan.com/",
       "tokens": {
         "UCO": "0x3C720206bFaCB2d16fA3ac0ed87D2048Dbc401Fc",
