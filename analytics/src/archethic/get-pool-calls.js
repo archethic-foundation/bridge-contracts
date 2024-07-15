@@ -1,4 +1,7 @@
 import Debug from "debug";
+import config from "config";
+
+const SINCE = config.get("since") || -1;
 
 const debug = Debug("archethic:calls");
 
@@ -50,24 +53,26 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
   const setSecretHashCalls = [];
   const signedRevealSecretCalls = [];
 
-  const callQueries = poolTxs.reduce((acc, poolTx) => {
-    const call = poolTx.validationStamp.ledgerOperations.consumedInputs.find(
-      (input) => input.type == "call",
-    );
+  const callQueries = poolTxs
+    .filter((poolTx) => poolTx.validationStamp.timestamp > SINCE)
+    .reduce((acc, poolTx) => {
+      const call = poolTx.validationStamp.ledgerOperations.consumedInputs.find(
+        (input) => input.type == "call",
+      );
 
-    const recipients = poolTx.data.actionRecipients;
-    if (recipients.length > 0 && recipients[0].action == "set_secret_hash") {
-      setSecretHashCalls.push(poolTx);
-    }
-    if (recipients.length > 0 && recipients[0].action == "reveal_secret") {
-      signedRevealSecretCalls.push(poolTx);
-    }
+      const recipients = poolTx.data.actionRecipients;
+      if (recipients.length > 0 && recipients[0].action == "set_secret_hash") {
+        setSecretHashCalls.push(poolTx);
+      }
+      if (recipients.length > 0 && recipients[0].action == "reveal_secret") {
+        signedRevealSecretCalls.push(poolTx);
+      }
 
-    // some transactions are of type token so there is no call consumed
-    return call ? acc + "\n" + callQuery(poolTx.address, call.from) : acc;
-  }, "");
+      // some transactions are of type token so there is no call consumed
+      return call ? acc + "\n" + callQuery(poolTx.address, call.from) : acc;
+    }, "");
 
-  if (!callQueries) {
+  if (!poolTxs.length) {
     // returning the same pagingAddress wil break the while loop
     return {
       fundsCalls: [],
@@ -76,6 +81,20 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
       revealSecretCalls: [],
       failedCalls: [],
       pagingAddress,
+    };
+  }
+
+  const [{ address: nextPagingAddress }] = poolTxs.slice(-1);
+
+  if (!callQueries) {
+    // we skipped them because of SINCE
+    return {
+      fundsCalls: [],
+      secretHashCalls: [],
+      setSecretHashCalls: [],
+      revealSecretCalls: [],
+      failedCalls: [],
+      pagingAddress: nextPagingAddress,
     };
   }
 
@@ -90,8 +109,6 @@ async function nextPage(archethic, poolGenesisAddress, pagingAddress) {
     secretHashCalls,
     revealSecretCalls: chargeableRevealSecretCalls,
   } = splitCallTxs(callTxs);
-
-  const [{ address: nextPagingAddress }] = poolTxs.slice(-1);
 
   return {
     fundsCalls,
@@ -168,6 +185,7 @@ function poolChainQuery(poolGenesisAddress, pagingAddress) {
           }
         }
         validationStamp {
+          timestamp
           ledgerOperations{
             consumedInputs {
               type
@@ -189,6 +207,7 @@ function poolChainQuery(poolGenesisAddress, pagingAddress) {
           }
         }
         validationStamp {
+          timestamp
           ledgerOperations{
             consumedInputs {
               type

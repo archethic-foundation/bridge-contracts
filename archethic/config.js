@@ -132,6 +132,10 @@ export default {
           proxyAddress: "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca",
           decimals: 18,
         },
+        aeEURe: {
+          proxyAddress: "0xF6922A1C40788C8519E42797eD9242552979b60D",
+          decimals: 18
+        }
       },
     },
   },
@@ -169,7 +173,8 @@ export default {
     },
     aeEURe: {
       availableEvmNetworks: {
-        testnet: ["sepolia_ethereum"]
+        testnet: ["sepolia_ethereum"],
+        mainnet: ["polygon_pos"]
       }
     }
   },

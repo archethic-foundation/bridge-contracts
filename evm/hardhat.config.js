@@ -99,6 +99,14 @@ module.exports = {
         archethicPoolSigner: '0xbd788947035dc3edee57f38c82b143c2c529470c',
         token: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
         multisig: '0x114F7a61F436f85f3Dba03da7a7c744689aA6a42'
+      },
+      eure: {
+        archethicPoolSigner: '0xf12bf6064165c24df79f268b7be7dc3213970df4',
+        token: '0x18ec0A6E18E5bc3784fDd3a3634b31245ab704F6',
+        reserve: '0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD',
+        safety: '0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b',
+        poolCap: BigInt('10000000000000000000000'), // 10 000
+        multisig: '0x114F7a61F436f85f3Dba03da7a7c744689aA6a42'
       }
     },
 

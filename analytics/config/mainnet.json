@@ -2,11 +2,12 @@
   "cron": "*/15 * * * *",
   "port": 9102,
   "dbFolder": "./db-mainnet",
+  "since": -1,
   "evm": {
     "ethereum": {
       "coin": "ETH",
       "chainID": 1,
-      "providerEndpoint": "https://mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "providerEndpoint": "https://mainnet.infura.io/v3/4a81d19b601a4da8a261fbc492dc0877",
       "explorer": "https://etherscan.io/",
       "tokens": {
         "UCO": "0x8a3d77e9d6968b780564936d15B09805827C21fa"
@@ -18,15 +19,17 @@
     "polygon": {
       "coin": "MATIC",
       "chainID": 137,
-      "providerEndpoint": "https://polygon-mainnet.infura.io/v3/74deb7f2531e4d8d8fc727b7b6d48746",
+      "providerEndpoint": "https://polygon-mainnet.infura.io/v3/4a81d19b601a4da8a261fbc492dc0877",
       "explorer": "https://polygonscan.com/",
       "tokens": {
         "UCO": "0x3C720206bFaCB2d16fA3ac0ed87D2048Dbc401Fc",
-        "WETH": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
+        "WETH": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        "EURe": "0x18ec0A6E18E5bc3784fDd3a3634b31245ab704F6"
       },
       "pools": {
         "UCO": "0xd5cA9F76495b853a5054814A10b6365ee8ed745B",
         "WETH": "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca"
+        "EURe": "0xF6922A1C40788C8519E42797eD9242552979b60D"
       }
     },
     "bsc": {
@@ -45,11 +48,13 @@
   "archethic": {
     "endpoint": "https://mainnet.archethic.net",
     "tokens": {
-      "aeETH": "0000457eaca7fbaa96db4a8d506a0b69684f546166fbf3c55391b1461907efa58eaf"
+      "aeETH": "0000457eaca7fbaa96db4a8d506a0b69684f546166fbf3c55391b1461907efa58eaf",
+      "aeEURe": "00005751A05BA007E7E2518DEA171DBBD67B0527C637232F923830C39BFF9E8F159A"
     },
     "pools": {
       "UCO": "00002075e9fb5329c7f5149802eb75f925d79b5fec5bfcf09dc81993cb9c39feaf5d",
-      "aeETH": "0000ec74226e85766fe5ade9ffea53d453f569799142f9ff248dcf532cebff4b3d32"
+      "aeETH": "0000ec74226e85766fe5ade9ffea53d453f569799142f9ff248dcf532cebff4b3d32",
+      "aeEURe": "0000C3E866E5E926869F4F9F0649D8E1E5E0D339F9D92A7128F72D57444D954E7907"
     },
     "protocolFeesAddress": "00007db8dc8dc7808c2e1f681b593a08ff8aa708447ae3a410b347ab15c562ec2126"
   }

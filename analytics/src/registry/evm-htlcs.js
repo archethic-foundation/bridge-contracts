@@ -1,5 +1,5 @@
 import config from "config";
-
+const SINCE = config.get("since") || -1;
 const CHAIN_BY_POOL_ADDRESS = {};
 const evmNetworks = Object.keys(config.get("evm"));
 for (const evmNetwork of evmNetworks) {
@@ -60,19 +60,17 @@ export async function persistHTLCs(db, htlcs, poolAddress, htlcType, asset) {
 
   await Promise.all(
     htlcs.map(
-      async ({
-        address,
-        status,
-        amount,
-        lockTime,
-        userAddress,
-        secretHash,
-      }) => {
+      ({ address, status, amount, lockTime, userAddress, secretHash }) => {
         if (status != "PENDING") {
           newAddressesToDiscard.push(address);
         }
 
-        await db.put(
+        // Skip everything legacy
+        if (lockTime < SINCE) {
+          return Promise.resolve();
+        }
+
+        return db.put(
           `${htlcNamespaceKey(poolAddress, htlcType, asset)}:${address}`,
           {
             status,
