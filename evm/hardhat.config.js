@@ -38,18 +38,16 @@ module.exports = {
       url: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       timeout: 100000,
       natif: {
-        pool: "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650",
-        archethicPoolSigner: '0x28c9efc42e2cbdfb581c212fe1e918a480ca1421',
-        multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
+        archethicPoolSigner: '0x28c9efc42e2cbdfb581c212fe1e918a480ca1421'
       },
       uco: {
-        pool: "0x50b8B73327613468e5605eD59B980555DAAC354a",
         token: "0xCBBd3374090113732393DAE1433Bc14E5233d5d7",
-        multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
+        archethicPoolSigner: "0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69"
       },
       usdc: {
-        pool: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
         token: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+        archethicPoolSigner: "0x6bb165b6f8d06b2761227f1d90304edc24262291",
+        multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
       },
       eure: {
         archethicPoolSigner: "0xd2d423aa5ac8cc0e02319d82cea1aa0f7ba57c4f",
@@ -71,18 +69,18 @@ module.exports = {
       },
     },
 
-    mumbai: {
-      url: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-      timeout: 100000,
-      natif: {
-        pool: "0x56c86b45fCe906af9dF535EB27968aE46CBF170E",
-        archethicPoolSigner: '0x4e57f0bf5813f5a516d23a59df1c767c4a3e8eef',
-      },
-      uco: {
-        pool: "0xe55915D112711127339f073e75185E6311Dd72C8",
-        token: "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6",
-      },
-    },
+    // mumbai: {
+    //   url: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+    //   timeout: 100000,
+    //   natif: {
+    //     pool: "0x56c86b45fCe906af9dF535EB27968aE46CBF170E",
+    //     archethicPoolSigner: '0x4e57f0bf5813f5a516d23a59df1c767c4a3e8eef',
+    //   },
+    //   uco: {
+    //     pool: "0xe55915D112711127339f073e75185E6311Dd72C8",
+    //     token: "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6",
+    //   },
+    // },
 
     polygon: {
       ledgerAccounts: [
@@ -103,9 +101,6 @@ module.exports = {
       eure: {
         archethicPoolSigner: '0xf12bf6064165c24df79f268b7be7dc3213970df4',
         token: '0x18ec0A6E18E5bc3784fDd3a3634b31245ab704F6',
-        reserve: '0xacb2AfF4bed7De894A3f3bc3b836e2caA38a4CcD',
-        safety: '0x68aC810D6a86801c7ACC3D71BfCda5d88a64b54b',
-        poolCap: BigInt('10000000000000000000000'), // 10 000
         multisig: '0x114F7a61F436f85f3Dba03da7a7c744689aA6a42'
       }
     },
@@ -114,12 +109,11 @@ module.exports = {
       url: "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
       timeout: 100000,
       natif: {
-        pool: "0xEF695C0C4034304300bD01f6C300a28000F2c163",
         archethicPoolSigner: '0x461ac2fa849767e4059fd98903a61315434ccf64',
       },
       uco: {
-        pool: "0xacc408CB6D6D9C73C6003269D322cb78150fc137",
         token: "0x5e6554593E4fe61276AD09094f16A6D5133461A5",
+        archethicPoolSigner: "0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69"
       },
     },
 
