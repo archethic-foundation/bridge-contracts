@@ -73,6 +73,7 @@ async function main() {
     const pool = await ethers.getContractAt("ERCPool", poolAddr)
 
     const tx = await pool.provisionHTLC(hash, amount, lockTimeUnix, `0x${archethicHTLCAddress}`, signature.r, signature.s, signature.v)
+    await tx.wait()
     const htlcContract = await pool.provisionedSwap(hash)
 
     console.log(`HTLC CONTRACT address: ${htlcContract}`)

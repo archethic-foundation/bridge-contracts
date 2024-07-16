@@ -34,6 +34,7 @@ async function main() {
   const pool = await ethers.getContractAt("ETHPool", poolAddress)
 
   const tx = await pool.mintHTLC(hash, amount, { value: amount })
+  await tx.wait()
   const contractAddress = await pool.mintedSwap(hash)
   const htlc = await ethers.getContractAt("HTLCBase", contractAddress)
 
@@ -52,4 +53,3 @@ main()
     console.error(error);
     process.exit(1)
   });
-
