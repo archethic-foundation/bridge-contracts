@@ -120,8 +120,11 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   secret_hash = Crypto.hash(secret, "sha256")
 
   protocol_fee = Contract.call_function(@FACTORY_ADDRESS, "get_protocol_fee", [])
+  chain_data = get_chain_data(chain_id)
+  decimals = Map.get(chain_data, "decimals")
+
   fee_amount = amount * (protocol_fee / 100)
-  evm_amount = Math.trunc((amount - fee_amount) * 1.0e18)
+  evm_amount = Math.trunc((amount - fee_amount) * Math.pow(10, decimals))
 
   abi_data = Evm.abi_encode("(bytes32, bytes32, uint, address, uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id, evm_user_address, evm_amount])
   signature_data = Crypto.hash(abi_data, "keccak256")
@@ -145,7 +148,6 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   requested_secrets = Map.set(requested_secrets, htlc_genesis_address, htlc_map)
   State.set("requested_secrets", requested_secrets)
 
-  chain_data = get_chain_data(chain_id)
   proxy_address = Map.get(chain_data, "proxy_address")
 
   Contract.add_recipient(
