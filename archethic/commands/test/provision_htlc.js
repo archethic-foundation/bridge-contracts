@@ -68,7 +68,7 @@ const handler = async function(argv) {
   const token = argv["token"]
   const htlcGenesisAddress = argv["htlc_address"]
   const amount = argv["amount"]
-  const chainId = argv["chainID"] ? argv["chainID"] : 31337
+  const chainId = argv["chain_id"] ? argv["chain_id"] : 31337
   const evmUserAddress = argv["evm_user_address"]
 
   const tokenAddress = getTokenAddress(keychain, token)

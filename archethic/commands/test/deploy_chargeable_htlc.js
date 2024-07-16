@@ -89,6 +89,7 @@ const handler = async function(argv) {
   const secretHash = argv["secret_hash"]
   const evmTxAddress = argv["evm_tx_address"]
   const evmContractAddress = argv["evm_contract_address"]
+  const chainId = argv["chain_id"] ? argv["chain_id"] : 31337
 
   const poolServiceName = getPoolServiceName(token)
   const tokenAddress = getTokenAddress(keychain, token)
@@ -113,7 +114,7 @@ const handler = async function(argv) {
   const tx = archethic.transaction.new()
     .setType("contract")
     .setCode(htlcCode)
-    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash, evmTxAddress, evmContractAddress, 31337])
+    .addRecipient(poolGenesisAddress, "request_funds", [endTime, amount, userAddress, secretHash, evmTxAddress, evmContractAddress, chainId])
     .addOwnership(encryptedSecret, authorizedKeys)
     .build(seed, index)
     .originSign(Utils.originPrivateKey)
