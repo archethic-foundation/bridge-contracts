@@ -51,12 +51,13 @@ async function main() {
   const pool = await ethers.getContractAt("ERCPool", poolAddr)
   const token = await ethers.getContractAt(tokenName, tokenAddr)
 
+  await token.approve(poolAddr, amount)
+
   const tx = await pool.mintHTLC(hash, amount)
   await tx.wait()
   const contractAddress = await pool.mintedSwap(hash)
   const htlc = await ethers.getContractAt("HTLCBase", contractAddress)
 
-  await token.transfer(contractAddress, amount)
 
   console.log("tx address:", tx.hash)
   console.log("contract address:", contractAddress)
