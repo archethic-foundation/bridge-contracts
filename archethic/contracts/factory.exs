@@ -4,28 +4,26 @@
 #   # Add condition inherit to allow upgrade of this contract
 # ]
 
-export fun get_protocol_fee() do
+export fun(get_protocol_fee()) do
   0.3
 end
 
-export fun get_protocol_fee_address() do
+export fun(get_protocol_fee_address()) do
   @PROTOCOL_FEE_ADDRESS
 end
 
-export fun get_token_resupply_definition(token_address, amount, htlc_address) do
+export fun(get_token_resupply_definition(token_address, amount, htlc_address)) do
   token_address = String.to_hex(token_address)
   htlc_address = String.to_hex(htlc_address)
 
   big_int_amount = Math.trunc(amount * 100_000_000)
 
   Json.to_string(
-    [
-      aeip: [8, 18, 19],
-      supply: big_int_amount,
-      token_reference: token_address,
-      recipients: [
-        [to: htlc_address, amount: big_int_amount]
-      ]
+    aeip: [8, 18, 19],
+    supply: big_int_amount,
+    token_reference: token_address,
+    recipients: [
+      [to: htlc_address, amount: big_int_amount]
     ]
   )
 end
@@ -34,7 +32,7 @@ end
 # External chain => Archethic #
 ###############################
 
-export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash, token, amount) do
+export fun(get_chargeable_htlc(end_time, user_address, pool_address, secret_hash, token, amount)) do
   # Here we should ensure end_time is valid compared to Time.now() and return error
 
   user_address = String.to_hex(user_address)
@@ -43,6 +41,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   token = String.to_uppercase(token)
 
   return_transfer_code = ""
+
   if token == "UCO" do
     # We don't burn UCO, we return them in pool contract
     return_transfer_code = """
@@ -51,6 +50,7 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
     """
   else
     burn_address = Chain.get_burn_address()
+
     return_transfer_code = """
     # Burn the non withdrawed tokens
       Contract.add_token_transfer to: 0x#{burn_address}, amount: #{amount}, token_address: 0x#{token}
@@ -61,17 +61,21 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
+
   if fee_amount == 0 do
     fee_transfer_code = "# Transfer fee is less than the minimum decimals"
   else
     if token == "UCO" do
-      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+      fee_transfer_code =
+        "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
     else
-      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+      fee_transfer_code =
+        "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
     end
   end
 
   valid_transfer_code = ""
+
   if token == "UCO" do
     valid_transfer_code = """
     Contract.add_uco_transfer to: 0x#{user_address}, amount: #{user_amount}
@@ -88,12 +92,12 @@ export fun get_chargeable_htlc(end_time, user_address, pool_address, secret_hash
   @version 1
 
   condition triggered_by: transaction, on: provision(_evm_contract, _endpoints, _signature, _evm_pool), as: [
-		previous_public_key: (
-	    # Transaction is not yet validated so we need to use previous address
-		  # to get the genesis address
-		  previous_address = Chain.get_previous_address()
-		  Chain.get_genesis_address(previous_address) == 0x#{pool_address}
-	  )
+  previous_public_key: (
+     # Transaction is not yet validated so we need to use previous address
+    # to get the genesis address
+    previous_address = Chain.get_previous_address()
+    Chain.get_genesis_address(previous_address) == 0x#{pool_address}
+   )
   ]
 
   actions triggered_by: transaction, on: provision(evm_contract, endpoints, signature, evm_pool) do
@@ -236,7 +240,7 @@ end
 # Archethic => External chain #
 ###############################
 
-export fun get_signed_htlc(user_address, pool_address, token, amount) do
+export fun(get_signed_htlc(user_address, pool_address, token, amount)) do
   # Here we should ensure end_time is valid compared to Time.now() and return error
 
   user_address = String.to_hex(user_address)
@@ -244,27 +248,33 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   token = String.to_uppercase(token)
 
   return_transfer_code = ""
+
   if token == "UCO" do
     return_transfer_code = "Contract.add_uco_transfer to: 0x#{user_address}, amount: #{amount}"
   else
-    return_transfer_code = "Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}"
+    return_transfer_code =
+      "Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}"
   end
 
   fee_amount = amount * 0.003
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
+
   if fee_amount == 0 do
     fee_transfer_code = "# Transfer fee is less than the minimum decimals"
   else
     if token == "UCO" do
-      fee_transfer_code = "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
+      fee_transfer_code =
+        "Contract.add_uco_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}"
     else
-      fee_transfer_code = "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
+      fee_transfer_code =
+        "Contract.add_token_transfer to: @PROTOCOL_FEE_ADDRESS, amount: #{fee_amount}, token_address: 0x#{token}"
     end
   end
 
   valid_transfer_code = ""
+
   if token == "UCO" do
     # We don't burn UCO, we return them in pool contract
     valid_transfer_code = """
@@ -273,6 +283,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
     """
   else
     burn_address = Chain.get_burn_address()
+
     valid_transfer_code = """
         Contract.add_token_transfer to: 0x#{burn_address}, amount: #{user_amount}, token_address: 0x#{token}
         #{fee_transfer_code}
@@ -398,7 +409,7 @@ export fun get_signed_htlc(user_address, pool_address, token, amount) do
   export fun info() do
     [
       ae_pool: 0x#{pool_address},
-      stauts: 0 # PENDING
+      status: 0 # PENDING
     ]
   end
   """
