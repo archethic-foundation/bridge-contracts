@@ -25,14 +25,23 @@ contract ERCPool is PoolBase {
     /// @notice Throws this pool cannot received ethers
     error CannotSendEthers();
 
-    function initialize(address _reserveAddress, address _safetyAddress, uint256 _safetyFee, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
-        __Pool_Init(_reserveAddress, _safetyAddress, _safetyFee, _archPoolSigner, _poolCap, _lockTimePeriod, _multisig);
+    /// @notice Throws when the token address is invalid
+    error InvalidToken();
+
+    function initialize(address _archPoolSigner, uint256 _lockTimePeriod, ERC20 _token, address _multisig) initializer external {
+        __Pool_Init(_archPoolSigner, _lockTimePeriod, _multisig);
+        if (address(_token) == address(0)) {
+            revert InvalidToken();
+        }
         token = _token;
 	}
 
     /// @notice Update the pool's asset ERC20 (Restricted to the pool's owner)
     /// @dev TokenChanged event is emitted once done
     function setToken(ERC20 _token) onlyOwner external {
+        if (address(_token) == address(0)) {
+            revert InvalidToken();
+        }
         token = _token;
         emit TokenChanged(address(_token));
     }
@@ -66,14 +75,16 @@ contract ERCPool is PoolBase {
         _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
-    /// Create HTLC token with fee towards the pool's safety module
-    /// The amount of the HTLC is then reduced by the pool's safety module rate
-    /// The recipients will be the pool's reserve address and safety module's address
+    /// Create HTLC token where funds are delivered by the user
     function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) override internal returns (IHTLC) {
-        uint256 _fee = swapFee(_amount, token.decimals());
-        uint256 _recipientAmount = _amount - _fee;
+        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _amount, _hash, _lockTime, address(this), archethicPoolSigner);
+        SafeERC20.safeTransferFrom(token, msg.sender, address(htlcContract), _amount);
 
-        ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(token, _recipientAmount, _hash, _lockTime, reserveAddress, safetyModuleAddress, _fee, address(this), archethicPoolSigner);
+        // Ensure the amount received by the HTLC contract is the expected one
+        // This prevent using fee-on-transfer tokens
+        uint256 htlcBalance = token.balanceOf(address(htlcContract));
+        require(htlcBalance == _amount, "Amount sent/received are not the same");
+
         return htlcContract;
     }
 

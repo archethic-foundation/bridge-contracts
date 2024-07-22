@@ -17,21 +17,9 @@
       "pools": {
         "UCO": "0x50b8B73327613468e5605eD59B980555DAAC354a",
         "NATIVE": "0xcfBA4FA32527bFf23E073406c772e9a8b8D02650",
-        "USDC": "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
+        "USDC": "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e"
         "EURe": "0x15b9B55b3B96Ff49902F2B23cD46A8404F222058"
       },
-      "reserves": {
-        "UCO": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
-        "NATIVE": "0x3FDf8f04cBe76c1376F593634096A5299B494678",
-        "USDC": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc",
-        "EURe": "0x4c5B45aD4347bAAF2E2d1817D0e1eea483910acc"
-      },
-      "safetyModules": {
-        "UCO": "0xbEF25E2b992494aF270092562e92aAC8394e0982",
-        "NATIVE": "0x57B5Fe2F6A28E108208BA4965d9879FACF629442",
-        "USDC": "0xbEF25E2b992494aF270092562e92aAC8394e0982",
-        "EURe": "0xbEF25E2b992494aF270092562e92aAC8394e0982"
-      }
     },
     "bsctestnet": {
       "coin": "tBNB",
@@ -44,14 +32,6 @@
       "pools": {
         "UCO": "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
         "NATIVE": "0xef695c0c4034304300bd01f6c300a28000f2c163"
-      },
-      "reserves": {
-        "UCO": "0x157aB6F84d3a3874d1dEd1b0a63EC834C640FBda",
-        "NATIVE": "0x7F9E1c2Bb1Ab391bA9987070ED8e7db77A9c8818"
-      },
-      "safetyModules": {
-        "UCO": "0x95Cc38814d37E0A9b08f77a02Ff4045CeAd2106c",
-        "NATIVE": "0x6f3dec2738b063D9aFe4436b1ec307D84f9C2EDe"
       }
     }
   },

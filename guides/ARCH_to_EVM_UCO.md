@@ -66,7 +66,7 @@ node bridge deploy_signed_htlc --token UCO --seed htlc1 --amount 11
 ## Provision Archethic HTLC & request secret hash from LP
 
 ```bash
-node bridge provision_htlc --token UCO --htlc_address 00003c4ab952924fc90236b0192a9692833ade9fa685c0377c557d4496250e188f7b --amount 11
+node bridge provision_htlc --token UCO --htlc_address 00008ec119cb4df590468ebf29651bf993f7a807f045c66b5aabec16162d91332776 --amount --evm_user_address 0x5bA1D8DC7E0baC18D7dD7664AAB59998FC6d3229 11
 ```
 
 ## Create EVM HTLC

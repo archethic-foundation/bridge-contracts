@@ -36,17 +36,21 @@ export default {
       chainId: 11155111,
       tokens: {
         UCO: {
-          proxyAddress: "0x50b8b73327613468e5605ed59b980555daac354a",
+          proxyAddress: "0x08Bfc8BA9fD137Fb632F79548B150FE0Be493254",
           decimals: 18,
         },
         aeETH: {
-          proxyAddress: "0xcfba4fa32527bff23e073406c772e9a8b8d02650",
+          proxyAddress: "0xe983d3dBCB15038dbF2AE69A445A5576B0280d1c",
           decimals: 18,
         },
         aeUSDC: {
           proxyAddress: "0xC53A7c2f8C988AA319F0ACAd211dBb7206D5586e",
           decimals: 18,
         },
+        aeEURe: {
+          proxyAddress: "0x15b9B55b3B96Ff49902F2B23cD46A8404F222058",
+          decimals: 18
+        }
       },
     },
     mumbai_polygon: {
@@ -78,11 +82,11 @@ export default {
       chainId: 97,
       tokens: {
         UCO: {
-          proxyAddress: "0xacc408cb6d6d9c73c6003269d322cb78150fc137",
+          proxyAddress: "0xb361b5AC4eAEb918dCed9d60417975c89556DDEA",
           decimals: 18,
         },
         aeBNB: {
-          proxyAddress: "0xef695c0c4034304300bd01f6c300a28000f2c163",
+          proxyAddress: "0x3Fa0d410064FcE2744e4feebB3Be338e1fA3C967",
           decimals: 18,
         },
       },
@@ -169,6 +173,7 @@ export default {
     },
     aeEURe: {
       availableEvmNetworks: {
+        testnet: ["sepolia_ethereum"],
         mainnet: ["polygon_pos"]
       }
     }

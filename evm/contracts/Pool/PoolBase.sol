@@ -16,19 +16,19 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @inheritdoc IPool
     bool public locked;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     address public reserveAddress;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     address public safetyModuleAddress;
 
     /// @inheritdoc IPool
     address public archethicPoolSigner;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     uint256 public poolCap;
 
-    /// @inheritdoc IPool
+    /// @notice deprecated
     uint256 public safetyModuleFeeRate;
 
     /// @notice Returns the lock time period for the deployed contracts
@@ -40,20 +40,8 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     address[] private _provisionedSwaps;
     address[] private _mintedSwaps;
 
-    /// @notice Notifies a change about the reserve destination wallet
-    event ReserveAddressChanged(address indexed _reservedAddress);
-
-    /// @notice Notifies a change about the safety module destination wallet
-    event SafetyModuleAddressChanged(address indexed _safetyModuleAddress);
-
-    /// @notice Notifies a change about the safety module fee
-    event SafetyModuleFeeRateChanged(uint256 indexed _safetyModuleFeeRate);
-
     /// @notice Notifies a change about the Archethic's pool address to sign provisioning of contracts
     event ArchethicPoolSignerChanged(address indexed _signer);
-
-    /// @notice Notifies a change about the pool assets capacity
-    event PoolCapChanged(uint256 indexed _poolCap);
 
     /// @notice Notifies the pool locking
     event Lock();
@@ -70,19 +58,13 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Notifies a change about the lock time period
     event LockTimePeriodChanged(uint256 indexed _lockTimePeriod);
 
-    /// @notice Throws when the reserve address is invalid
-    error InvalidReserveAddress();
-
-    /// @notice Throws when the safety module address is invalid
-    error InvalidSafetyModuleAddress();
-
     /// @notice Throws when the Archethic's pool signer is invalid
     error InvalidArchethicPoolSigner();
 
-    /// @notice Throws when the reserve address is invalid
+    /// @notice Throws when a hash have already been used in a swap
     error AlreadyProvisioned();
 
-    /// @notice Throws when a secret have already been used in a swap
+    /// @notice Throws when a hash have already been used in a swap
     error AlreadyMinted();
 
     /// @notice Throws when the signature from Archethic's pool signer is invalid
@@ -94,7 +76,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Throws when pool is locked
     error Locked();
 
-    /// @notice Throws when the reserve address is invalid
+    /// @notice Throws when the locktime period is invalid
     error InvalidLockTimePeriod();
 
     /// @notice Throws when the lock time is invalid
@@ -107,24 +89,12 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     error InvalidAmount();
 
     /// @notice Initizalize the pool with all the given properties
-    /// @param _reserveAddress The destination address for the reserve wallet
-    /// @param _safetyAddress The destination address for the safety module wallet
-    /// @param _safetyFeeRate The fee rate to fund the safety module
     /// @param _archPoolSigner The address of the Archethic's pool signer
-    /// @param _poolCap The maximum capacity of the pool's asset
     /// @param _lockTimePeriod The locktime period of the new HTLC contracts
-    /// @dev The safety module fee rate is multiplied by 100 to match 2 decimals percentage
-    function __Pool_Init(address _reserveAddress, address _safetyAddress, uint256 _safetyFeeRate, address _archPoolSigner, uint256 _poolCap, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
+    function __Pool_Init(address _archPoolSigner, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
         __UUPSUpgradeable_init();
         __Ownable2Step_init();
 
-        if(_reserveAddress == address(0)) {
-            revert InvalidReserveAddress();
-        }
-
-        if(_safetyAddress == address(0)) {
-            revert InvalidSafetyModuleAddress();
-        }
         if(_archPoolSigner == address(0)) {
             revert InvalidArchethicPoolSigner();
         }
@@ -133,15 +103,12 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
             revert InvalidLockTimePeriod();
         }
 
-        reserveAddress = _reserveAddress;
-        safetyModuleAddress = _safetyAddress;
-        safetyModuleFeeRate = _safetyFeeRate * 100;
         archethicPoolSigner = _archPoolSigner;
-        poolCap = _poolCap;
         locked = false;
         lockTimePeriod = _lockTimePeriod;
 
         // Initialize OwnableUpgradeable explicitly with given multisig address.
+        require(_multisig != address(0));
         transferOwnership(_multisig);
     }
 
@@ -149,37 +116,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @dev This is used instead of modifier to be more gas efficient
     function checkUnlocked() internal view {
         require(!locked, "Locked");
-    }
-
-    /// @inheritdoc IPool
-    /// @dev ReserveAddressChanged event is emitted once done
-    function setReserveAddress(address _reserveAddress) virtual external {
-        _checkOwner();
-        if(_reserveAddress == address(0)) {
-            revert InvalidReserveAddress();
-        }
-        reserveAddress = _reserveAddress;
-        emit ReserveAddressChanged(_reserveAddress);
-    }
-
-    /// @inheritdoc IPool
-    /// @dev SafetyModuleAddressChanged event is emitted once done
-    function setSafetyModuleAddress(address _safetyAddress) virtual external {
-        _checkOwner();
-        if(_safetyAddress == address(0)) {
-            revert InvalidSafetyModuleAddress();
-        }
-        safetyModuleAddress = _safetyAddress;
-        emit SafetyModuleAddressChanged(_safetyAddress);
-    }
-
-    /// @inheritdoc IPool
-    /// @dev SafetyModuleFeeRateChanged event is emitted once done
-    /// @dev The fee rate is multiplied by 100 to match 2 decimals percentage
-    function setSafetyModuleFeeRate(uint256 _safetyFeeRate) virtual external {
-        _checkOwner();
-        safetyModuleFeeRate = _safetyFeeRate * 100;
-        emit SafetyModuleFeeRateChanged(_safetyFeeRate);
     }
 
     /// @inheritdoc IPool
@@ -191,14 +127,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         }
         archethicPoolSigner = _archPoolSigner;
         emit ArchethicPoolSignerChanged(_archPoolSigner);
-    }
-
-    /// @inheritdoc IPool
-    /// @dev PoolCapChanged event is emitted once done
-    function setPoolCap(uint256 _poolCap) virtual external {
-        _checkOwner();
-        poolCap = _poolCap;
-        emit PoolCapChanged(_poolCap);
     }
 
     /// @inheritdoc IPool
@@ -227,27 +155,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
 
         lockTimePeriod = _lockTimePeriod;
         emit LockTimePeriodChanged(_lockTimePeriod);
-    }
-
-    /// @notice Returns the swap fee to be send to the safety module
-    /// @dev The fee is multiplied by 100000 to convert back from 2 decimals using wei in the amount
-    /// @dev The fee is truncated after 8 decimals to match Archethic decimals policy
-    /// @param _amount Asset's amount to swap
-    /// @param _decimals Number of decimals for the token
-    function swapFee(uint256 _amount, uint8 _decimals) internal view returns (uint256) {
-        uint256 _safetyModuleFeeRate = safetyModuleFeeRate;
-
-        if (_safetyModuleFeeRate == 0) {
-            return 0;
-        }
-        uint256 _fee = (_amount * _safetyModuleFeeRate) / 100000;
-
-        if (_decimals > 8) {
-            uint256 _decimalsToTrunc = 10 ** (_decimals - 8);
-            return (_fee / _decimalsToTrunc) * _decimalsToTrunc;
-        } else {
-            return _fee;
-        }
     }
 
     /// @inheritdoc IPool
@@ -290,7 +197,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         }
 
         bytes32 _archethicHTLCAddressHash = sha256(_archethicHTLCAddress);
-        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid));
+        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid, msg.sender, _amount));
         bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayloadHash);
 
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
@@ -325,6 +232,8 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @dev An error is thrown whether the secret's hash is already taken by a previous swap
     /// @dev The HTLC locktime is determined by the pool's locktime period
     function mintHTLC(bytes32 _hash, uint256 _amount) payable virtual external {
+        checkUnlocked();
+
         if (_hash == bytes32(0)) {
             revert InvalidHash();
         }
@@ -354,30 +263,6 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         // We need to round to the minute as Archethic's smart contract self trigger feature restrict timestamp to rounded minute
         uint256 minuteRoundedBlockTimestamp = block.timestamp - (block.timestamp % (60));
         return minuteRoundedBlockTimestamp + lockTimePeriod;
-    }
-
-    /// @dev Redirect the funds toward the reserve's wallet if the pool can accept assets below its cap
-    /// @return (address, uint256, uint256) represeting the main's recipient address, the recipient's amount and the additional refill amount
-    function _maybeRedirectAmountToPool(uint256 _poolBalance, uint256 _recipientAmount) internal view returns (address, uint256, uint256) {
-        if (_poolBalance < poolCap) {
-            uint256 _poolPlace = poolCap - _poolBalance;
-            if(_poolPlace > 0) {
-                if (_recipientAmount < _poolPlace) {
-                    // To avoid the constraint of HTLC contract(amount > 0),
-                    // we change the recipient to target directly the pool instead of the reserve's wallet
-                    return (address(this), _recipientAmount, 0);
-                }
-                else {
-                    // We allocate the maxium to the pool and the overflow goes to the reserve
-                    uint256 _refillPoolAmount = _recipientAmount - _poolPlace;
-                    return (reserveAddress, _refillPoolAmount, _poolPlace);
-                }
-            }
-
-            return (reserveAddress, _recipientAmount, 0);
-        }
-
-        return (reserveAddress, _recipientAmount, 0);
     }
 
     function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) internal virtual{}

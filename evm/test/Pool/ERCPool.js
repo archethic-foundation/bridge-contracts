@@ -2,22 +2,26 @@ const { network: { config: networkConfig } } = require("hardhat");
 const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai")
 
-const { hexToUintArray, concatUint8Arrays, uintArrayToHex } = require("../utils")
+const { hexToUintArray } = require("../utils")
 
 describe("ERC LiquidityPool", () => {
 
     async function deployPool() {
-        const token = await ethers.deployContract("DummyToken", [ethers.parseEther('1000')])
+        return doDeployPool("DummyToken")
+    }
+
+    async function deployPoolFee() {
+        return doDeployPool("DummyTokenFee")
+    }
+
+    async function doDeployPool(tokenImpl) {
+        const token = await ethers.deployContract(tokenImpl, [ethers.parseEther('1000')])
         const accounts = await ethers.getSigners()
         const archPoolSigner = ethers.Wallet.createRandom()
 
         const pool = await ethers.deployContract("ERCPool")
         await pool.initialize(
-            accounts[4].address,
-            accounts[3].address,
-            5,
             archPoolSigner.address,
-            ethers.parseEther("2.0"),
             60,
             await token.getAddress(),
             accounts[0].address
@@ -33,13 +37,9 @@ describe("ERC LiquidityPool", () => {
     }
 
     it("should create contract", async () => {
-        const { pool, accounts, archPoolSigner, tokenAddress } = await loadFixture(deployPool)
+        const { pool, archPoolSigner, tokenAddress } = await loadFixture(deployPool)
 
-        expect(await pool.reserveAddress()).to.equal(accounts[4].address)
-        expect(await pool.safetyModuleAddress()).to.equal(accounts[3].address)
-        expect(await pool.safetyModuleFeeRate()).to.equal(500)
         expect(await pool.archethicPoolSigner()).to.equal(archPoolSigner.address)
-        expect(await pool.poolCap()).to.equal(ethers.parseEther('2'))
         expect(await pool.locked()).to.be.false
         expect(await pool.token()).to.equal(tokenAddress)
         expect(await pool.lockTimePeriod()).to.equal(60)
@@ -62,21 +62,16 @@ describe("ERC LiquidityPool", () => {
 
         await tokenInstance.transfer(await pool.getAddress(), ethers.parseEther("2"))
 
-        const buffer = new ArrayBuffer(32);
-        const view = new DataView(buffer);
-        view.setUint32(0x0, networkConfig.chainId, true);
-        const networkIdUint8Array = new Uint8Array(buffer).reverse();
-
         const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
-        const sigPayload = concatUint8Arrays([
-            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
-            hexToUintArray("bd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a"), // HTLC's hash
-            networkIdUint8Array
-        ])
+        const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1');
 
-        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const abiEncoder = new ethers.AbiCoder()
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress, amount])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         const blockTimestamp = await time.latest()
@@ -110,23 +105,24 @@ describe("ERC LiquidityPool", () => {
     })
 
     it("should return an error when the pool doesn't have enough funds to provide HTLC contract", async () => {
-        const { pool, archPoolSigner } = await loadFixture(deployPool)
-
-        const buffer = new ArrayBuffer(32);
-        const view = new DataView(buffer);
-        view.setUint32(0x0, networkConfig.chainId, true);
-        const networkIdUint8Array = new Uint8Array(buffer).reverse();
+        const { pool, archPoolSigner, accounts } = await loadFixture(deployPool)
 
         const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
         const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
 
-        const sigPayload = concatUint8Arrays([
-            hexToUintArray(archethicHtlcAddressHash.slice(2)), // Archethic HTLC's address hash
-            hexToUintArray("bd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a"), // HTLC's hash
-            networkIdUint8Array
+        const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther("1.0")
+
+        const abiEncoder = new ethers.AbiCoder()
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
+          archethicHtlcAddressHash,
+          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+          networkConfig.chainId,
+          senderAddress,
+          amount
         ])
 
-        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(`0x${uintArrayToHex(sigPayload)}`).slice(2))
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
         const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
 
         const blockTimestamp = await time.latest()
@@ -134,7 +130,7 @@ describe("ERC LiquidityPool", () => {
 
         await expect(pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -144,11 +140,13 @@ describe("ERC LiquidityPool", () => {
             .to.be.revertedWithCustomError(pool, "InsufficientFunds")
     })
 
-    it("should mint and send funds to the HTLC contract with fee integration", async () => {
+    it("should mint and send funds to the HTLC contract", async () => {
         const date = new Date()
-        const { pool, tokenAddress, accounts } = await loadFixture(deployPool)
+        const { pool, tokenAddress, tokenInstance, accounts } = await loadFixture(deployPool)
 
         const amount = ethers.parseEther('3')
+        await tokenInstance.approve(await pool.getAddress(), amount)
+
         const tx = pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
         await tx
 
@@ -158,14 +156,12 @@ describe("ERC LiquidityPool", () => {
         const htlcAddress = await pool.mintedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)
 
-        expect(await HTLCInstance.safetyModuleAddress()).to.equal(await pool.safetyModuleAddress())
         expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
-        expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress());
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('2.985'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0.015'))
+        expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress());
+        expect(await HTLCInstance.amount()).to.equal(amount)
         expect(await HTLCInstance.token()).to.equal(tokenAddress)
         expect(await HTLCInstance.from()).to.equal(accounts[0].address)
-        expect(await HTLCInstance.refillAddress()).to.equal(await pool.getAddress())
+        expect(await tokenInstance.balanceOf(await HTLCInstance.getAddress())).to.equal(amount)
 
         const lockTime = await HTLCInstance.lockTime()
         const nowTimestamp = Math.floor(date.getTime() / 1000)
@@ -175,9 +171,10 @@ describe("ERC LiquidityPool", () => {
     })
 
     it("should mint and send funds to the HTLC contract with fee handling low decimals", async () => {
-        const { pool } = await loadFixture(deployPool)
+        const { pool, tokenInstance } = await loadFixture(deployPool)
 
         let amount = ethers.parseEther('0.000001')
+        await tokenInstance.approve(await pool.getAddress(), amount)
         let tx = await pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
 
         await expect(tx).to.emit(pool, "ContractMinted")
@@ -186,8 +183,17 @@ describe("ERC LiquidityPool", () => {
         let HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)
 
         expect(await HTLCInstance.amount()).to.equal(ethers.parseEther('0.000001'))
-        expect(await HTLCInstance.fee()).to.equal(ethers.parseEther('0'))
-        expect(await HTLCInstance.recipient()).to.equal(await pool.reserveAddress())
-        expect(await HTLCInstance.refillAmount()).to.equal(0)
+        expect(await HTLCInstance.recipient()).to.equal(await pool.getAddress())
+        expect(await tokenInstance.balanceOf(await HTLCInstance.getAddress())).to.equal(amount)
+    })
+
+    it("should revert as token has a fee-on-transfer", async () => {
+        const { pool, tokenInstance } = await loadFixture(deployPoolFee)
+
+        const amount = ethers.parseEther('3')
+        await tokenInstance.approve(await pool.getAddress(), amount)
+
+        const tx = pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
+        await expect(tx).to.be.revertedWith("Amount sent/received are not the same")
     })
 })
