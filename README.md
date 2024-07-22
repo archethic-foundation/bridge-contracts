@@ -25,6 +25,10 @@ There are different kind of EVM smart contracts:
 
 All the contract have their own type depending on the token used: native or ERC, because transfers/balance verification acts differently.
 
+### Audit of EVM Smart Contracts
+
+Our EVM smart contracts have been audited by [Hacken](https://hacken.io), a recognized leader in blockchain security. The full audit report is available [here](https://wiki.archethic.net/assets/files/Hacken_Archethic_[SCA]%20Archethic%20_%20Bridge-Contracts%20_%20June2024_P-2024-692_1_20240722%2011_07-30521586ca69963b7d512e27e98e0ab3.pdf).
+
 ### HTLC
 
 Those contract provide the atomic swap logic.
