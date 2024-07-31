@@ -1,24 +1,23 @@
 {
-  "name": "archethic-bridge-analytics",
-  "type": "module",
+  "name": "bridge-analytics",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "testnet": "NODE_ENV=testnet DEBUG=* node index.js",
-    "mainnet": "NODE_ENV=mainnet DEBUG=* node index.js",
+    "testnet": "NODE_ENV=testnet DEBUG=* node server.js",
+    "mainnet": "NODE_ENV=mainnet DEBUG=* node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@archethicjs/sdk": "^1.20.2",
-    "config": "^3.3.11",
-    "debug": "^4.3.4",
-    "ethers": "^6.11.1",
+    "@archethicjs/sdk": "1.20.2",
+    "config": "^3.3.12",
+    "ethers": "^6.13.2",
     "express": "^4.19.2",
     "jade": "^1.11.0",
-    "level": "^8.0.1",
-    "node-cron": "^3.0.3"
+    "sequelize": "^6.37.3",
+    "sqlite3": "^5.1.7"
   }
 }

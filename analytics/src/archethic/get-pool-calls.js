@@ -3,7 +3,7 @@ import config from "config";
 
 const SINCE = config.get("since") || -1;
 
-const debug = Debug("archethic:calls");
+const debug = Debug("bridge:cron:ae:htlc:calls");
 
 export default async function (archethic, poolGenesisAddress, pagingAddress) {
   let fundsCalls = [];

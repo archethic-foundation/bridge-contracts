@@ -1,2 +1,4 @@
-node_modules/
-db-*/
+db
+node_modules
+*.sqlite
+*.save

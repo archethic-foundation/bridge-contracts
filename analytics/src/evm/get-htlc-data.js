@@ -1,13 +1,8 @@
 import fs from "fs";
 import { ethers } from "ethers";
 import Debug from "debug";
-import {
-  getAddressesToDiscard,
-  getHTLCs,
-  persistHTLCs,
-} from "../registry/evm-htlcs.js";
 
-const debug = Debug("evm:htlc");
+const debug = Debug("bridge:cron:evm:htlc:calls");
 
 const CHUNK_SIZE = 10;
 
@@ -38,21 +33,28 @@ const SIGNED_ERC = JSON.parse(
   ),
 );
 
-export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
+export async function getHTLCData(
+  provider,
+  poolAddress,
+  htlcType,
+  asset,
+  addressesToDiscard,
+  chainId,
+) {
   let poolAbi;
   let htlcAbi;
   let contractFunction;
   let userAddressVariable;
 
   switch (htlcType) {
-    case "chargeable":
+    case "CHARGEABLE":
       htlcAbi = asset == "NATIVE" ? CHARGEABLE_NATIVE.abi : CHARGEABLE_ERC.abi;
       poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "mintedSwaps";
       userAddressVariable = "from";
       break;
 
-    case "signed":
+    case "SIGNED":
       htlcAbi = asset == "NATIVE" ? SIGNED_NATIVE.abi : SIGNED_ERC.abi;
       poolAbi = asset == "NATIVE" ? NATIVE_POOL.abi : ERC_POOL.abi;
       contractFunction = "provisionedSwaps";
@@ -63,40 +65,47 @@ export async function getHTLCStats(db, provider, poolAddress, htlcType, asset) {
       throw new Error("invalid HTLC TYPE");
   }
 
-  const addressesToDiscard = await getAddressesToDiscard(
-    db,
-    poolAddress,
-    htlcType,
-    asset,
-  );
   const poolContract = new ethers.Contract(poolAddress, poolAbi, provider);
   const htlcsAddresses = await poolContract[contractFunction]();
 
   const htlcsAddressesToProcess = htlcsAddresses.filter(
     (address) => !addressesToDiscard.includes(address),
   );
-
+  debug(
+    `${htlcType}/${asset}: discarded ${htlcsAddresses.length - htlcsAddressesToProcess.length} HTLCs`,
+  );
   debug(
     `${htlcType}/${asset}: processing ${htlcsAddressesToProcess.length} HTLCs`,
   );
-  const htlcs = await list(
+  return list(
     provider,
     htlcsAddressesToProcess,
     htlcAbi,
     userAddressVariable,
+    poolAddress,
+    chainId,
   );
-  await persistHTLCs(db, htlcs, poolAddress, htlcType, asset);
-  return stats(await getHTLCs(db, htlcType, asset, poolAddress));
 }
 
-async function list(provider, addresses, abi, userAddressVariable) {
+async function list(
+  provider,
+  addresses,
+  abi,
+  userAddressVariable,
+  addressPool,
+  chainId,
+) {
   let swaps = [];
   for (let i = 0; i < addresses.length; i += CHUNK_SIZE) {
     const chunkAddresses = addresses.slice(i, i + CHUNK_SIZE);
     const chunkSwaps = await Promise.all(
-      chunkAddresses.map(async (address) => {
-        const htlcContract = new ethers.Contract(address, abi, provider);
-        const [statusEnum, amount, lockTime, userAddress, secretHash] =
+      chunkAddresses.map(async (addressCreation) => {
+        const htlcContract = new ethers.Contract(
+          addressCreation,
+          abi,
+          provider,
+        );
+        const [statusEnum, amount, timeLockEnd, addressUser, secretHash] =
           await Promise.all([
             htlcContract.status(),
             htlcContract.amount(),
@@ -106,12 +115,14 @@ async function list(provider, addresses, abi, userAddressVariable) {
           ]);
 
         return {
-          secretHash,
-          address,
-          status: statusFromEnum(statusEnum),
+          addressCreation,
+          addressUser,
+          addressPool,
+          chainId,
           amount,
-          lockTime,
-          userAddress,
+          status: statusFromEnum(statusEnum),
+          secretHash,
+          timeLockEnd,
         };
       }),
     );
@@ -120,43 +131,6 @@ async function list(provider, addresses, abi, userAddressVariable) {
     debug(`+ ${chunkSwaps.length}`);
   }
   return swaps;
-}
-
-function stats(htlcs) {
-  let amountWithdrawn = 0n;
-  let amountRefunded = 0n;
-  let amountPending = 0n;
-  let countPending = 0;
-  let countWithdrawn = 0;
-  let countRefunded = 0;
-
-  htlcs.forEach(({ status, amount }) => {
-    switch (status) {
-      case "PENDING":
-        countPending++;
-        amountPending += amount;
-        break;
-
-      case "WITHDRAWN":
-        countWithdrawn++;
-        amountWithdrawn += amount;
-        break;
-
-      case "REFUNDED":
-        countRefunded++;
-        amountRefunded += amount;
-        break;
-    }
-  });
-
-  return {
-    amountWithdrawn,
-    amountRefunded,
-    amountPending,
-    countPending,
-    countWithdrawn,
-    countRefunded,
-  };
 }
 
 function statusFromEnum(s) {

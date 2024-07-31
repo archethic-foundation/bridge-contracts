@@ -31,7 +31,6 @@ html(lang="en")
 
                 th(scope="col" class="table-primary") status
                 th(scope="col" class="table-primary") amount
-                th(scope="col" class="table-primary") fee
                 th(scope="col" class="table-primary") user
                 th(scope="col" class="table-primary") contract
 
@@ -39,49 +38,39 @@ html(lang="en")
             each htlc in htlcs
                 tr
                     td
-                        if htlc.endTime
-                            span #{formatDate(new Date(htlc.endTime * 1000))}
-                        else if (htlc.evmHtlc && htlc.evmHtlc.lockTime)
-                            span #{formatDate(new Date(htlc.evmHtlc.lockTime * 1000))}
+                        if htlc.timeLockEnd
+                            span #{formatDate(new Date(htlc.timeLockEnd * 1000))}
+                        else if (htlc.evmHtlc && htlc.evmHtlc.timeLockEnd)
+                            span #{formatDate(new Date(htlc.evmHtlc.timeLockEnd * 1000))}
 
                     if htlc.evmHtlc
                         td
-                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.address}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.address)}
+                            a(href=`${urlExplorerContract(htlc.evmHtlc)}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.addressCreation)}
                         td
-                            a(href=`${htlc.evmHtlc.explorer}address/${htlc.evmHtlc.userAddress}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.userAddress)}
+                            a(href=`${urlExplorerUser(htlc.evmHtlc)}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.addressUser)}
 
-                        td #{htlc.evmHtlc.amount}
+                        td #{ethers.formatEther(BigInt(htlc.evmHtlc.amount))}
                         td #{htlc.evmHtlc.status}
-                        td #{htlc.evmHtlc.chain}
+                        td #{formatChainId(htlc.evmHtlc.chainId)}
                     else
                         td
                         td
                         td
                         td
-                        td #{formatChainId(htlc.evmChainID)}
+                        td #{formatChainId(htlc.evmChainId)}
 
                     td(class="table-warning")
                         if (htlc.type && htlc.type == "chargeable") || (htlc.evmHtlc && htlc.evmHtlc.type == "chargeable")
-                            p -#{htlc.asset || htlc.evmHtlc.asset }->
+                            p -#{poolToAsset("archethic", htlc.addressPool) || poolToAsset("evm", htlc.evmHtlc.addressPool) }->
                         else
-                            p <-#{htlc.asset || htlc.evmHtlc.asset}-
+                            p <-#{poolToAsset("archethic", htlc.addressPool) || poolToAsset("evm", htlc.evmHtlc.addressPool) }-
 
-                    if htlc.type
-                        td(class="table-primary") #{HTLC_STATUS[htlc.status]}
-                        td(class="table-primary")
-                            if htlc.status == 4
-                                span #{(htlc.refundAmount) / 100000000}
-                            else
-                                span #{(htlc.userAmount+htlc.fee) / 100000000}
 
-                        td(class="table-primary") #{htlc.fee / 100000000}
-                        td(class="table-primary")
-                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.userAddress}` target="_blank") #{formatArchethicAddr(htlc.userAddress)}
-                        td(class="table-primary")
-                            a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.address}` target="_blank") #{formatArchethicAddr(htlc.address)}
-                    else
-                        td(class="table-primary")
-                        td(class="table-primary")
-                        td(class="table-primary")
-                        td(class="table-primary")
-                        td(class="table-primary")
+                    td(class="table-primary") #{htlc.status}
+                    td(class="table-primary")
+                        if (htlc.amount)
+                            span #{formatArchethicAmount(htlc.amount)}
+                    td(class="table-primary")
+                        a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.addressUser}` target="_blank") #{formatArchethicAddr(htlc.addressUser)}
+                    td(class="table-primary")
+                        a(href=`${ARCHETHIC_ENDPOINT}/explorer/chain?address=${htlc.addressCreation}` target="_blank") #{formatArchethicAddr(htlc.addressCreation)}
