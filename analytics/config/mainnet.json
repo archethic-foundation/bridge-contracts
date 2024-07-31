@@ -2,6 +2,7 @@
   "cron": "*/15 * * * *",
   "port": 9102,
   "dbFolder": "./db-mainnet",
+  "dbFile": "./mainnet.sqlite",
   "since": -1,
   "evm": {
     "ethereum": {
@@ -28,7 +29,7 @@
       },
       "pools": {
         "UCO": "0xd5cA9F76495b853a5054814A10b6365ee8ed745B",
-        "WETH": "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca"
+        "WETH": "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca",
         "EURe": "0xF6922A1C40788C8519E42797eD9242552979b60D"
       }
     },
