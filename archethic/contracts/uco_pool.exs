@@ -123,7 +123,10 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
   chain_data = get_chain_data(chain_id)
   decimals = Map.get(chain_data, "decimals")
 
-  regex_res = Regex.scan(String.from_number(amount), "(\\d+)")
+  fee_amount = amount * protocol_fee / 100
+  evm_amount = amount - fee_amount
+
+  regex_res = Regex.scan(String.from_number(evm_amount), "(\\d+)")
   decimals_to_add = nil
   string_amount = nil
 
@@ -145,12 +148,9 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
     string_amount = "#{string_amount}#{decimal_string}"
   end
 
-  big_amount = String.to_number(string_amount)
-  protocol_fee = Math.trunc(protocol_fee * 100)
-  fee_amount = (big_amount * protocol_fee) / 10000
-  evm_amount = big_amount - fee_amount
+  evm_big_amount = String.to_number(string_amount)
 
-  abi_data = Evm.abi_encode("(bytes32, bytes32, uint, address, uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id, evm_user_address, evm_amount])
+  abi_data = Evm.abi_encode("(bytes32, bytes32, uint, address, uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id, evm_user_address, evm_big_amount])
   signature_data = Crypto.hash(abi_data, "keccak256")
 
   # Build signature for EVM verification
