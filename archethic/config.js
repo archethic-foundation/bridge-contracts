@@ -102,6 +102,14 @@ export default {
           proxyAddress: "0xE01F0ee653648192812B2D23CBfe7E147727B672",
           decimals: 18,
         },
+        aeETH: {
+          proxyAddress: "0x947DE182C16C8ee2851529aE574058D5837D47c9",
+          decimals: 18,
+        },
+        aeBTC: {
+          proxyAddress: "0x73a0aB31DED89aF1F9CDcB115B3E32f111d9f648",
+          decimals: 18
+        }
       },
     },
     ethereum: {
@@ -115,6 +123,18 @@ export default {
           proxyAddress: "0x346Dba8b51485FfBd4b07B0BCb84F48117751AD9",
           decimals: 18,
         },
+        aeETH: {
+          proxyAddress: "0x37A57dB56F558435a16C31dBeDe48F278545A37e",
+          decimals: 18,
+        },
+        aeEURe: {
+          proxyAddress: "0xAbAb69EF6bCE7F57DB741680adADC3827A6325eB",
+          decimals: 18
+        },
+        aeBTC: {
+          proxyAddress: "0xB141cA8ECE6409198B8543A9BdFbF088Fc8010A8",
+          decimals: 8
+        }
       },
     },
     polygon_pos: {
@@ -135,6 +155,10 @@ export default {
         aeEURe: {
           proxyAddress: "0xF6922A1C40788C8519E42797eD9242552979b60D",
           decimals: 18
+        },
+        aeBTC: {
+          proxyAddress: "0x71A5f7d244C3a5EedC00dA4933336e35115E73c7",
+          decimals: 8
         }
       },
     },
@@ -175,6 +199,11 @@ export default {
       availableEvmNetworks: {
         testnet: ["sepolia_ethereum"],
         mainnet: ["polygon_pos"]
+      }
+    },
+    aeBTC: {
+      availableEvmNetworks: {
+        mainnet: ["ethereum"]
       }
     }
   },
