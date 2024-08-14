@@ -104,7 +104,7 @@ function chain_id_to_network(chainId) {
 }
 
 function cast_amount(amount, blockchain) {
-  amount = BigInt(amount);
+  amount = BigInt(Math.floor(amount));
   if (blockchain == "evm") {
     return amount / BigInt(1e18);
   }
