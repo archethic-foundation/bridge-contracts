@@ -71,7 +71,7 @@ function formatChainId(chainID) {
 }
 
 function formatArchethicAmount(amount) {
-  return ethers.formatUnits(amount + "", 8);
+  return ethers.formatUnits(Math.floor(amount) + "", 8);
 }
 
 function urlExplorerContract(evmHtlc) {
