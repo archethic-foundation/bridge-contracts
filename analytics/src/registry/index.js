@@ -9,6 +9,7 @@ import KeyValue from "./models/key-value.js";
 
 const sequelize = new Sequelize({
   dialect: "sqlite",
+  logging: false,
   storage: config.get("dbFile"),
 });
 
