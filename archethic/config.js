@@ -175,7 +175,7 @@ export default {
       availableEvmNetworks: {
         local: ["local"],
         testnet: ["sepolia_ethereum", "mumbai_polygon"],
-        mainnet: ["polygon_pos"],
+        mainnet: ["polygon_pos", "ethereum", "bnb_chain"],
       },
     },
     aeBNB: {
@@ -198,12 +198,12 @@ export default {
     aeEURe: {
       availableEvmNetworks: {
         testnet: ["sepolia_ethereum"],
-        mainnet: ["polygon_pos"]
+        mainnet: ["polygon_pos", "ethereum"]
       }
     },
     aeBTC: {
       availableEvmNetworks: {
-        mainnet: ["ethereum"]
+        mainnet: ["ethereum", "polygon_pos", "bnb_chain"]
       }
     }
   },
