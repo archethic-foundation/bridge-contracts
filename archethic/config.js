@@ -94,7 +94,7 @@ export default {
     bnb_chain: {
       endpoints: [
         "https://bsc-dataseed.binance.org",
-        "https://bnb-mainnet.g.alchemy.com/v2/vEwguDBTJiCViiNOeiHa2erYw-K-OVZr",
+        "https://bsc-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       ],
       chainId: 56,
       tokens: {
