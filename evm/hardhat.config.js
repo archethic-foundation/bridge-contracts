@@ -67,6 +67,20 @@ module.exports = {
         token: '0x8a3d77e9d6968b780564936d15B09805827C21fa',
         multisig: '0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68' // Safe
       },
+      eure: {
+        archethicPoolSigner: '0xf12bf6064165c24df79f268b7be7dc3213970df4',
+        token: '0x3231Cb76718CDeF2155FC47b5286d82e6eDA273f',
+        multisig: '0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68' // Safe
+      },
+      natif: {
+        archethicPoolSigner: '0xbd788947035dc3edee57f38c82b143c2c529470c',
+        multisig: '0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68' // Safe
+      },
+      wbtc: {
+        archethicPoolSigner: '0xd55ea84e7174b7514f51e5dd7f56d74c36a4dbab',
+        token: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+        multisig: '0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68' // Safe
+      },
     },
 
     // mumbai: {
