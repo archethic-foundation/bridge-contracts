@@ -140,11 +140,21 @@ module.exports = {
       ledgerAccounts: [
         "0xfD7C90fA69f76712239c733E564eE3D1EDCeCC12"
       ],
-      url: "https://bsc-dataseed.binance.org",
+      url: "https://bsc-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       timeout: 100000,
       uco: {
         archethicPoolSigner: '0x16c1c9f1abcf2ba9e8d853827339dbeceaa91077',
         token: '0xb001f1E7c8bda414aC7Cf7Ecba5469fE8d24B6de',
+        multisig: '0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8'
+      },
+      eth: {
+        archethicPoolSigner: '0xbd788947035dc3edee57f38c82b143c2c529470c',
+        token: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+        multisig: '0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8'
+      },
+      btcb: {
+        archethicPoolSigner: '0xd55ea84e7174b7514f51e5dd7f56d74c36a4dbab',
+        token: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
         multisig: '0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8'
       }
     }
