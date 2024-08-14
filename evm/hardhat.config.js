@@ -116,6 +116,11 @@ module.exports = {
         archethicPoolSigner: '0xf12bf6064165c24df79f268b7be7dc3213970df4',
         token: '0x18ec0A6E18E5bc3784fDd3a3634b31245ab704F6',
         multisig: '0x114F7a61F436f85f3Dba03da7a7c744689aA6a42'
+      },
+      wbtc: {
+        archethicPoolSigner: '0xd55ea84e7174b7514f51e5dd7f56d74c36a4dbab',
+        token: '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6',
+        multisig: '0x114F7a61F436f85f3Dba03da7a7c744689aA6a42'
       }
     },
 
