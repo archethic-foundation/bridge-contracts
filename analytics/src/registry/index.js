@@ -19,6 +19,6 @@ HtlcEVMSigned(sequelize);
 HtlcEVMChargeable(sequelize);
 KeyValue(sequelize);
 
-await sequelize.sync({ alter: true });
+await sequelize.sync();
 
 export default sequelize;
