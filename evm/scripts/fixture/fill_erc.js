@@ -4,12 +4,12 @@
 // await tokenInstance.transfer(recipientAddress, amountToSend, { from: accounts[0] });
 
 
-const { ethers }  = require("hardhat");
+const { ethers } = require("hardhat");
 
 
 async function main() {
-    const tokenInstance = await ethers.getContractAt("DummyToken", "0xBdEC1c3Bd0719DBa0B82a06C66EBab35dc71240B")
-    const ethPoolAddress = "0xaa74722D2cB78D4b5e52c2Ee7F12fe08851baa5F"
+    const tokenInstance = await ethers.getContractAt("DummyToken", "0x39C9DBD60B0eAF256Ebc509D2b837d508dD4F2Da")
+    const ethPoolAddress = "0x26F8C6DB23a4aa5293eEeEe8A3317773e849CF44"
     await tokenInstance.transfer(ethPoolAddress, ethers.parseEther("3000"))
 }
 
