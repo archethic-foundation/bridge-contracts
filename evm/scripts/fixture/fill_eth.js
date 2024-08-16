@@ -1,8 +1,8 @@
-const { ethers }  = require("hardhat");
+const { ethers } = require("hardhat");
 
 async function main() {
     const accounts = await ethers.getSigners()
-    const ethPoolAddress = "0x39C9DBD60B0eAF256Ebc509D2b837d508dD4F2Da"
+    const ethPoolAddress = "0x727a6097967815885c51551961e6c3f022616f6A"
     await accounts[0].sendTransaction({
         to: ethPoolAddress,
         value: ethers.parseEther("50"),
