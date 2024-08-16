@@ -125,32 +125,17 @@ actions triggered_by: transaction, on: request_secret_hash(htlc_genesis_address,
 
   fee_amount = amount * protocol_fee / 100
   evm_amount = amount - fee_amount
+  evm_big_amount = Math.bigint(evm_amount, decimals)
 
-  regex_res = Regex.scan(String.from_number(evm_amount), "(\\d+)")
-  decimals_to_add = nil
-  string_amount = nil
+  abi_data =
+    Evm.abi_encode("(bytes32, bytes32, uint, address, uint)", [
+      Crypto.hash(htlc_genesis_address),
+      secret_hash,
+      chain_id,
+      evm_user_address,
+      evm_big_amount
+    ])
 
-  # Determine if we need to add "0"
-  if List.size(regex_res) == 1 do
-    decimals_to_add = decimals
-    string_amount = List.at(regex_res, 0)
-  else
-    decimals_to_add = decimals - String.size(List.at(regex_res, 1))
-    string_amount = "#{List.at(regex_res, 0)}#{List.at(regex_res, 1)}"
-  end
-
-  # Adds "0"
-  if decimals_to_add > 0 do
-    decimal_string = ""
-    for _nb in 1..decimals_to_add do
-      decimal_string = "#{decimal_string}0"
-    end
-    string_amount = "#{string_amount}#{decimal_string}"
-  end
-
-  evm_big_amount = String.to_number(string_amount)
-
-  abi_data = Evm.abi_encode("(bytes32, bytes32, uint, address, uint)", [Crypto.hash(htlc_genesis_address), secret_hash, chain_id, evm_user_address, evm_big_amount])
   signature_data = Crypto.hash(abi_data, "keccak256")
 
   # Build signature for EVM verification
