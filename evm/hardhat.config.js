@@ -35,6 +35,9 @@ module.exports = {
       },
     },
     sepolia: {
+      ledgerAccounts: [
+        "0xeBa1db3E9B6384df08dE527300FfB904A38EF60e"
+      ],
       url: "https://sepolia.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       timeout: 100000,
       natif: {
@@ -53,7 +56,12 @@ module.exports = {
         archethicPoolSigner: "0xd2d423aa5ac8cc0e02319d82cea1aa0f7ba57c4f",
         token: "0xd58C5Db52B5B3Eb24EE38AF287d2cb0F424172A5",
         multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
-      }
+      },
+      wbtc: {
+        archethicPoolSigner: '0x5136bfce20b2972196aa6c67660d81f7ef009b33',
+        token: '0x29f2D40B0605204364af54EC677bD022dA425d03',
+        multisig: "0x301fBf74d415D0452E1D2Ea0679C9E0077AF5246" // Safe
+      },
     },
 
     ethereum: {

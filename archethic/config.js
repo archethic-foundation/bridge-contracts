@@ -50,6 +50,10 @@ export default {
         aeEURe: {
           proxyAddress: "0x15b9B55b3B96Ff49902F2B23cD46A8404F222058",
           decimals: 18
+        },
+        aeBTC: {
+          proxyAddress: "0x29f2D40B0605204364af54EC677bD022dA425d03",
+          decimals: 8
         }
       },
     },
@@ -203,6 +207,7 @@ export default {
     },
     aeBTC: {
       availableEvmNetworks: {
+        testnet: ["sepolia_ethereum"],
         mainnet: ["ethereum", "polygon_pos", "bnb_chain"]
       }
     }
