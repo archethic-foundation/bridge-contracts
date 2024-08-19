@@ -47,6 +47,11 @@ const builder = {
     demandOption: true,
     type: "string"
   },
+  chain_id: {
+    describe: "Chain ID",
+    demandOption: false,
+    type: "integer"
+  },
   access_seed: {
     describe: "the keychain access seed (default in env config)",
     demandOption: false,
