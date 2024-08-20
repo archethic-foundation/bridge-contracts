@@ -261,7 +261,7 @@ async function getChargedHTLCs(archethic, fundsCallss, poolGenesisAddress) {
     const htlc = {
       creationAddress: call.address,
       creationTime: call.validationStamp.timestamp,
-      amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
+      amount: Utils.parseBigInt(call.data.actionRecipients[0].args[1].toFixed(8)),
       evmContract: call.data.actionRecipients[0].args[5],
       evmChainID: call.data.actionRecipients[0].args[6],
       endTime,
@@ -350,7 +350,7 @@ function getHTLCDatas(htlcChain, endTime, withdrawAddresses, refundsAddresses) {
   const now = Date.now() / 1000
   let htlcStatus = 0, fee = 0, userAmount = 0, refundAmount = 0
 
-  const minAmountForFee = Utils.toBigInt(1e-8 / 0.003)
+  const minAmountForFee = Utils.parseBigInt((1e-8 / 0.003).toFixed(8))
 
   if (htlcChain.length == 1 && endTime <= now) {
     htlcStatus = 1
@@ -410,7 +410,7 @@ async function getSignedHTLCs(archethic, secretHashCalls, setSecretHashCalls, re
 
     const htlc = {
       creationTime: call.validationStamp.timestamp,
-      amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
+      amount: Utils.parseBigInt(call.data.actionRecipients[0].args[1].toFixed(8)),
       evmChainID: call.data.actionRecipients[0].args[3],
       creationAddress,
       evmContract,
@@ -523,7 +523,7 @@ function getHTLCsStats(htlcs) {
 }
 
 function formatFloat(float) {
-  return parseFloat(Utils.fromBigInt(float).toFixed(8))
+  return parseFloat(Utils.formatBigInt(float))
 }
 
 function createChargedHTLCSsFile(chargedHTLCs, signedHTLCs, savePath) {

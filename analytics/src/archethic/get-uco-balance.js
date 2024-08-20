@@ -1,6 +1,6 @@
 import { Utils } from "@archethicjs/sdk";
 
-export default async function (archethic, address) {
+export default async function(archethic, address) {
   const query = `query {
     balance (address: "${address}") {
       uco
@@ -11,5 +11,5 @@ export default async function (archethic, address) {
     balance: { uco: amount },
   } = await archethic.network.rawGraphQLQuery(query);
 
-  return Utils.fromBigInt(amount);
+  return parseFloat(Utils.formatBigInt(amount));
 }

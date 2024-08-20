@@ -18,7 +18,7 @@ const builder = {
   amount: {
     describe: "The amount to send to the htlc contract",
     demandOption: true,
-    type: "float"
+    type: "string"
   },
   chainID: {
     describe: "The chain ID of the destination EVM blockchain",
@@ -84,9 +84,9 @@ const handler = async function(argv) {
     .addRecipient(poolGenesisAddress, "request_secret_hash", [htlcGenesisAddress, amount, userAddress, chainId, evmUserAddress])
 
   if (tokenAddress == "UCO") {
-    tx.addUCOTransfer(htlcGenesisAddress, Utils.toBigInt(amount))
+    tx.addUCOTransfer(htlcGenesisAddress, Utils.parseBigInt(amount))
   } else {
-    tx.addTokenTransfer(htlcGenesisAddress, Utils.toBigInt(amount), tokenAddress)
+    tx.addTokenTransfer(htlcGenesisAddress, Utils.parseBigInt(amount), tokenAddress)
   }
 
   tx.build(env.userSeed, index)

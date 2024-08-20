@@ -64,7 +64,7 @@ async function updateSigned(archethic, res, poolGenesisAddress) {
             addressGenesis: call.data.actionRecipients[0].args[0].toUpperCase(),
             addressPool: poolGenesisAddress,
 
-            amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
+            amount: Utils.parseBigInt(call.data.actionRecipients[0].args[1].toFixed(8)),
 
             evmChainId: call.data.actionRecipients[0].args[3],
             status: "PENDING",
@@ -127,7 +127,7 @@ async function updateChargeable(archethic, res, poolGenesisAddress) {
             evmContract: call.data.actionRecipients[0].args[5],
             evmChainId: call.data.actionRecipients[0].args[6],
 
-            amount: Utils.toBigInt(call.data.actionRecipients[0].args[1]),
+            amount: Utils.parseBigInt(call.data.actionRecipients[0].args[1].toFixed(8)),
 
             status: "PENDING",
             timeCreation: call.validationStamp.timestamp,
@@ -293,7 +293,7 @@ function process_signed(
 
     const signedMatch = revealCall.data.actionRecipients[0].address
       ? revealCall.data.actionRecipients[0].address.toUpperCase() ==
-        htlc.addressGenesis.toUpperCase()
+      htlc.addressGenesis.toUpperCase()
       : false;
 
     return chargeableMatch || signedMatch;

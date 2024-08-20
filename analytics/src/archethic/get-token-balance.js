@@ -1,6 +1,6 @@
 import { Utils } from "@archethicjs/sdk";
 
-export default async function (archethic, address, tokenAddress) {
+export default async function(archethic, address, tokenAddress) {
   address = address.toUpperCase();
   tokenAddress = tokenAddress.toUpperCase();
 
@@ -21,7 +21,7 @@ export default async function (archethic, address, tokenAddress) {
   const relevantToken = tokens.filter((t) => t.address == tokenAddress);
 
   if (relevantToken.length == 1) {
-    return Utils.fromBigInt(relevantToken[0].amount);
+    return parseFloat(Utils.formatBigInt(relevantToken[0].amount));
   }
   return 0;
 }
