@@ -52,7 +52,7 @@ export default {
           decimals: 18
         },
         aeBTC: {
-          proxyAddress: "0x29f2D40B0605204364af54EC677bD022dA425d03",
+          proxyAddress: "0xaf80081b12cd6d6d1009364cc38b25f2d3b50a3f",
           decimals: 8
         }
       },
