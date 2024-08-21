@@ -8,14 +8,19 @@ import "./HTLCBase.sol";
 /// @title HTLC contract customized for ERC20 transfers
 /// @author Archethic Foundation
 contract HTLC_ERC is HTLCBase {
-
     /// @notice HTLC's ERC20 token
     IERC20 public token;
 
     /// @notice Throws when the token address is invalid
     error InvalidToken();
 
-    constructor(address _recipient, IERC20 _token, uint256 _amount, bytes32 _hash, uint _lockTime) HTLCBase(_recipient, _amount, _hash, _lockTime) {
+    constructor(
+        address _recipient,
+        IERC20 _token,
+        uint256 _amount,
+        bytes32 _hash,
+        uint _lockTime
+    ) HTLCBase(_recipient, _amount, _hash, _lockTime) {
         if (address(_token) == address(0)) {
             revert InvalidToken();
         }
@@ -23,16 +28,16 @@ contract HTLC_ERC is HTLCBase {
     }
 
     /// @dev Send ERC20 to the HTLC's recipient
-    function _transferAsWithdraw() internal override virtual {
+    function _transferAsWithdraw() internal virtual override {
         SafeERC20.safeTransfer(token, recipient, amount);
     }
 
     /// @dev Send back ERC20 to the HTLC's creator
-    function _transferAsRefund() internal override virtual {
+    function _transferAsRefund() internal virtual override {
         SafeERC20.safeTransfer(token, from, amount);
     }
 
-    function _enoughFunds() internal override virtual view returns (bool) {
+    function _enoughFunds() internal view virtual override returns (bool) {
         return token.balanceOf(address(this)) >= amount;
     }
- }
+}

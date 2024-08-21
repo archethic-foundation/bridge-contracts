@@ -10,7 +10,7 @@ import "../../interfaces/IPool.sol";
 /// @title HTLC contract where funds are delivered by the user
 /// @author Archethic Foundation
 contract ChargeableHTLC_ERC is HTLC_ERC {
-     /// @notice Returns the Archethic's pool signer address
+    /// @notice Returns the Archethic's pool signer address
     address public immutable poolSigner;
 
     /// @notice Throws when the Archethic's pool signature is invalid
@@ -35,7 +35,12 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
     }
 
     /// @notice Reveal secret and withdraw the locked funds by transferring them to the recipient address upon the Archethic's pool signature
-    function withdraw(bytes32 _secret, bytes32 _r, bytes32 _s, uint8 _v) override external {
+    function withdraw(
+        bytes32 _secret,
+        bytes32 _r,
+        bytes32 _s,
+        uint8 _v
+    ) external override {
         if (!_beforeLockTime(block.timestamp)) {
             revert TooLate();
         }
