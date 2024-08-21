@@ -6,12 +6,13 @@ async function main() {
         throw "PROXY_ADDRESS is not defined"
     }
 
-    const adminPrivateKey = process.env["ADMIN_PRIVATE_KEY"]
-    if (adminPrivateKey === undefined) {
-        throw "ADMIN_PRIVATE_KEY is not defined"
-    }
-
-    const signer = new ethers.Wallet(adminPrivateKey, ethers.provider)
+    // const adminPrivateKey = process.env["ADMIN_PRIVATE_KEY"]
+    // if (adminPrivateKey === undefined) {
+    //     throw "ADMIN_PRIVATE_KEY is not defined"
+    // }
+    //
+    // const signer = new ethers.Wallet(adminPrivateKey, ethers.provider)
+    const signer = await ethers.getSigners()[0]
     const pool = await ethers.getContractAt("ERCPool", proxyAddress)
 
     // Ensure this pool is a ERCPool by calling the token() function

@@ -5,6 +5,7 @@ import "./PoolBase.sol";
 import "../HTLC/ChargeableHTLC_ERC.sol";
 import "../HTLC/SignedHTLC_ERC.sol";
 import "../../interfaces/IHTLC.sol";
+import "../../interfaces/IERC20Mintable.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -17,6 +18,9 @@ contract ERCPool is PoolBase {
     ERC20 public token;
 
     mapping(address => Swap[]) _swapsByOwner;
+
+    /// @notice Returns if the token is mintable / burnable
+    bool public mintableToken;
 
     /// @notice Notifies a change about the pool's ERC20 token
     event TokenChanged(address indexed _token);
@@ -31,6 +35,7 @@ contract ERCPool is PoolBase {
         address _archPoolSigner,
         uint256 _lockTimePeriod,
         ERC20 _token,
+        bool _mintableToken,
         address _multisig
     ) external initializer {
         __Pool_Init(_archPoolSigner, _lockTimePeriod, _multisig);
@@ -38,15 +43,17 @@ contract ERCPool is PoolBase {
             revert InvalidToken();
         }
         token = _token;
+        mintableToken = _mintableToken;
     }
 
     /// @notice Update the pool's asset ERC20 (Restricted to the pool's owner)
     /// @dev TokenChanged event is emitted once done
-    function setToken(ERC20 _token) external onlyOwner {
+    function setToken(ERC20 _token, bool _mintableToken) external onlyOwner {
         if (address(_token) == address(0)) {
             revert InvalidToken();
         }
         token = _token;
+        mintableToken = _mintableToken;
         emit TokenChanged(address(_token));
     }
 
@@ -58,24 +65,44 @@ contract ERCPool is PoolBase {
         uint256 _amount,
         uint _lockTime
     ) internal override returns (IHTLC) {
-        ERC20 _token = token;
-        if (_token.balanceOf(address(this)) < _amount) {
-            revert InsufficientFunds();
-        }
-
         checkAmountWithDecimals(_amount);
 
-        SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(
-            msg.sender,
-            _token,
-            _amount,
-            _hash,
-            _lockTime,
-            archethicPoolSigner
-        );
-        SafeERC20.safeTransfer(_token, address(htlcContract), _amount);
+        if (mintableToken) {
+            IERC20Mintable _token = IERC20Mintable(address(token));
 
-        return htlcContract;
+            SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(
+                msg.sender,
+                _token,
+                true,
+                _amount,
+                _hash,
+                _lockTime,
+                archethicPoolSigner
+            );
+
+            _token.mint(address(htlcContract), _amount);
+
+            return htlcContract;
+        } else {
+            ERC20 _token = token;
+            if (_token.balanceOf(address(this)) < _amount) {
+                revert InsufficientFunds();
+            }
+
+            SignedHTLC_ERC htlcContract = new SignedHTLC_ERC(
+                msg.sender,
+                _token,
+                false,
+                _amount,
+                _hash,
+                _lockTime,
+                archethicPoolSigner
+            );
+
+            SafeERC20.safeTransfer(_token, address(htlcContract), _amount);
+
+            return htlcContract;
+        }
     }
 
     /// Check this method cannot receive ethers (opposite of ETHPool)
@@ -101,6 +128,7 @@ contract ERCPool is PoolBase {
     ) internal override returns (IHTLC) {
         ChargeableHTLC_ERC htlcContract = new ChargeableHTLC_ERC(
             token,
+            mintableToken,
             _amount,
             _hash,
             _lockTime,

@@ -7,14 +7,18 @@ const { hexToUintArray } = require("../utils")
 describe("ERC LiquidityPool", () => {
 
     async function deployPool() {
-        return doDeployPool("DummyToken")
+        return doDeployPool("DummyToken", false)
     }
 
     async function deployPoolFee() {
-        return doDeployPool("DummyTokenFee")
+        return doDeployPool("DummyTokenFee", false)
     }
 
-    async function doDeployPool(tokenImpl) {
+    async function deployPoolMintable() {
+        return doDeployPool("DummyTokenMintable", true)
+    }
+
+    async function doDeployPool(tokenImpl, tokenMintable) {
         const token = await ethers.deployContract(tokenImpl, [ethers.parseEther('1000')])
         const accounts = await ethers.getSigners()
         const archPoolSigner = ethers.Wallet.createRandom()
@@ -24,6 +28,7 @@ describe("ERC LiquidityPool", () => {
             archPoolSigner.address,
             60,
             await token.getAddress(),
+            tokenMintable,
             accounts[0].address
         )
 
@@ -51,13 +56,13 @@ describe("ERC LiquidityPool", () => {
         const anotherToken = await ethers.deployContract("DummyToken", [ethers.parseEther('2000000')])
         const anotherTokenAddress = await anotherToken.getAddress()
 
-        expect(await pool.setToken(anotherTokenAddress))
+        expect(await pool.setToken(anotherTokenAddress, false))
             .to.emit(pool, "TokenChanged").withArgs(anotherTokenAddress)
 
         expect(await pool.token()).to.equal(anotherTokenAddress)
     })
 
-    it("should create HTLC and provision ERC20 to the HTLC contract after verifying the signature", async () => {
+    it("should create HTLC and provision ERC20 to the HTLC contract after verifying the signature with non mintable token", async () => {
         const { pool, tokenInstance, archPoolSigner, accounts } = await loadFixture(deployPool)
 
         await tokenInstance.transfer(await pool.getAddress(), ethers.parseEther("2"))
@@ -79,7 +84,7 @@ describe("ERC LiquidityPool", () => {
 
         const tx = pool.provisionHTLC(
             "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-            ethers.parseEther('1'),
+            amount,
             lockTime,
             `0x${archethicHtlcAddress}`,
             signature.r,
@@ -91,14 +96,61 @@ describe("ERC LiquidityPool", () => {
 
         const htlcAddress = await pool.provisionedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
 
-        await expect(tx)
-            .to.changeTokenBalance(tokenInstance, htlcAddress, ethers.parseEther("1"))
+        await expect(tx).to.emit(tokenInstance, "Transfer").withArgs(await pool.getAddress(), htlcAddress, amount)
+        await expect(tx).to.changeTokenBalance(tokenInstance, htlcAddress, amount)
 
         const HTLCInstance = await ethers.getContractAt("SignedHTLC_ERC", htlcAddress)
         expect(await HTLCInstance.poolSigner()).to.equal(archPoolSigner.address)
         expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         expect(await HTLCInstance.recipient()).to.equal(accounts[0].address);
-        expect(await HTLCInstance.amount()).to.equal(ethers.parseEther("1.0"))
+        expect(await HTLCInstance.amount()).to.equal(amount)
+        expect(await HTLCInstance.lockTime()).to.equal(lockTime)
+        expect(await HTLCInstance.token()).to.equal(await tokenInstance.getAddress())
+        expect(await HTLCInstance.from()).to.equal(await pool.getAddress())
+    })
+
+    it("should create HTLC and provision ERC20 to the HTLC contract after verifying the signature with mintable token", async () => {
+        const { pool, tokenInstance, archPoolSigner, accounts } = await loadFixture(deployPoolMintable)
+
+        await tokenInstance.transfer(await pool.getAddress(), ethers.parseEther("2"))
+
+        const archethicHtlcAddress = "00004970e9862b17e9b9441cdbe7bc13aeb4c906a75030bb261df1f87b4af9ee11a5"
+        const archethicHtlcAddressHash = ethers.sha256(`0x${archethicHtlcAddress}`)
+
+        const senderAddress = await accounts[0].getAddress()
+        const amount = ethers.parseEther('1');
+
+        const abiEncoder = new ethers.AbiCoder()
+        const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [archethicHtlcAddressHash, "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", networkConfig.chainId, senderAddress, amount])
+
+        const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
+        const signature = ethers.Signature.from(await archPoolSigner.signMessage(hashedSigPayload2))
+
+        const blockTimestamp = await time.latest()
+        const lockTime = blockTimestamp + 60
+
+        const tx = pool.provisionHTLC(
+            "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+            amount,
+            lockTime,
+            `0x${archethicHtlcAddress}`,
+            signature.r,
+            signature.s,
+            signature.v
+        )
+
+        await expect(tx).to.emit(pool, "ContractProvisioned")
+
+        const htlcAddress = await pool.provisionedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
+
+        await expect(tx).to.emit(tokenInstance, "Transfer").withArgs(ethers.ZeroAddress, htlcAddress, amount)
+        await expect(tx).to.changeTokenBalance(tokenInstance, htlcAddress, amount)
+
+        const HTLCInstance = await ethers.getContractAt("SignedHTLC_ERC", htlcAddress)
+        expect(await HTLCInstance.poolSigner()).to.equal(archPoolSigner.address)
+        expect(await HTLCInstance.hash()).to.equal("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
+        expect(await HTLCInstance.recipient()).to.equal(accounts[0].address);
+        expect(await HTLCInstance.amount()).to.equal(amount)
         expect(await HTLCInstance.lockTime()).to.equal(lockTime)
         expect(await HTLCInstance.token()).to.equal(await tokenInstance.getAddress())
         expect(await HTLCInstance.from()).to.equal(await pool.getAddress())
@@ -115,11 +167,11 @@ describe("ERC LiquidityPool", () => {
 
         const abiEncoder = new ethers.AbiCoder()
         const sigPayload = abiEncoder.encode(["bytes32", "bytes32", "uint", "address", "uint"], [
-          archethicHtlcAddressHash,
-          "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
-          networkConfig.chainId,
-          senderAddress,
-          amount
+            archethicHtlcAddressHash,
+            "0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a",
+            networkConfig.chainId,
+            senderAddress,
+            amount
         ])
 
         const hashedSigPayload2 = hexToUintArray(ethers.keccak256(sigPayload).slice(2))
@@ -147,11 +199,9 @@ describe("ERC LiquidityPool", () => {
         const amount = ethers.parseEther('3')
         await tokenInstance.approve(await pool.getAddress(), amount)
 
-        const tx = pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
-        await tx
+        const tx = await pool.mintHTLC("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a", amount)
 
-        await expect(tx)
-            .to.emit(pool, "ContractMinted")
+        await expect(tx).to.emit(pool, "ContractMinted")
 
         const htlcAddress = await pool.mintedSwap("0xbd1eb30a0e6934af68c49d5dd5ad3e3c3d950ff977a730af56b55af55a54673a")
         const HTLCInstance = await ethers.getContractAt("ChargeableHTLC_ERC", htlcAddress)

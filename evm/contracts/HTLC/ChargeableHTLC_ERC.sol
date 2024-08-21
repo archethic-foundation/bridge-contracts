@@ -21,12 +21,23 @@ contract ChargeableHTLC_ERC is HTLC_ERC {
 
     constructor(
         IERC20 _token,
+        bool _mintableToken,
         uint256 _amount,
         bytes32 _hash,
         uint _lockTime,
         address _recipient,
         address _poolSigner
-    ) HTLC_ERC(_recipient, _token, _amount, _hash, _lockTime) {
+    )
+        HTLC_ERC(
+            _recipient,
+            _token,
+            _mintableToken,
+            false,
+            _amount,
+            _hash,
+            _lockTime
+        )
+    {
         if (_poolSigner == address(0)) {
             revert InvalidPoolSigner();
         }

@@ -4,7 +4,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "start-node": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/deploy/deploy_eth_pool.js --network localhost && npx hardhat run scripts/deploy/deploy_erc_pool.js --network localhost",
+    "deploy": "npx hardhat run scripts/deploy/deploy_eth_pool.js --network localhost && npx hardhat run scripts/deploy/deploy_erc_pool.js --network localhost && npx hardhat run scripts/deploy/deploy_erc_mintable_pool.js --network localhost",
     "fill-erc": "npx hardhat run scripts/fixture/fill_erc.js --network localhost",
     "fill-eth": "npx hardhat run scripts/fixture/fill_eth.js --network localhost"
   },
