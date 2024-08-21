@@ -91,18 +91,18 @@ module.exports = {
       },
     },
 
-    // mumbai: {
-    //   url: "https://polygon-mumbai.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
-    //   timeout: 100000,
-    //   natif: {
-    //     pool: "0x56c86b45fCe906af9dF535EB27968aE46CBF170E",
-    //     archethicPoolSigner: '0x4e57f0bf5813f5a516d23a59df1c767c4a3e8eef',
-    //   },
-    //   uco: {
-    //     pool: "0xe55915D112711127339f073e75185E6311Dd72C8",
-    //     token: "0x51279e98d99AA8D65763a885BEFA5463dCd84Af6",
-    //   },
-    // },
+    amoy: {
+      ledgerAccounts: [
+        "0xeBa1db3E9B6384df08dE527300FfB904A38EF60e"
+      ],
+      url: "https://polygon-amoy.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
+      timeout: 100000,
+      uco: {
+        archethicPoolSigner: '0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69',
+        token: '0xb10BAF68bECf95AB954198Bc2F467FA04264Ab34',
+        multisig: '0xeBa1db3E9B6384df08dE527300FfB904A38EF60e'
+      },
+    },
 
     polygon: {
       ledgerAccounts: [
