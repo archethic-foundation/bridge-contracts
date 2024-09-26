@@ -1,0 +1,74 @@
+{
+  "network": "Mainnet",
+  "chains": {
+    "Bsc": {
+      "version": "1.1.0",
+      "mode": "burning",
+      "paused": false,
+      "owner": "0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8",
+      "manager": "0x01c07123229a583168536E2061A461602F0C1f79",
+      "token": "0xf1e5bbd997501a8439619266A09a54b2b499eAA3",
+      "transceivers": {
+        "threshold": 1,
+        "wormhole": {
+          "address": "0x6B13D454b86e32d2C0eda1738c56327e28b1784F",
+          "pauser": "0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8"
+        }
+      },
+      "limits": {
+        "outbound": "184467440737.09551615",
+        "inbound": {
+          "Ethereum": "184467440737.09551615",
+          "Polygon": "184467440737.09551615"
+        }
+      },
+      "pauser": "0x9D1392165debAAA889dE2328b0626aD1BCd9F6a8"
+    },
+    "Ethereum": {
+      "version": "1.1.0",
+      "mode": "burning",
+      "paused": false,
+      "owner": "0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68",
+      "manager": "0xB16Bf54398A913799D537C0c472394AeA4Fb8EfC",
+      "token": "0x1A688D3d294ee7BcC1f59011DE93d608Dc21c377",
+      "transceivers": {
+        "threshold": 1,
+        "wormhole": {
+          "address": "0xC8d43BA20c6CE5F3dB8bF66F547940D422225b7c",
+          "pauser": "0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68"
+        }
+      },
+      "limits": {
+        "outbound": "184467440737.09551615",
+        "inbound": {
+          "Bsc": "184467440737.09551615",
+          "Polygon": "184467440737.09551615"
+        }
+      },
+      "pauser": "0xEcA37F68c9ca7964fC0b3A7aB4f0D6e964f8FD68"
+    },
+    "Polygon": {
+      "version": "1.1.0",
+      "mode": "burning",
+      "paused": false,
+      "owner": "0x114F7a61F436f85f3Dba03da7a7c744689aA6a42",
+      "manager": "0x7BD106409a543B8Ca77Ef618754aA9c913B89011",
+      "token": "0xaa53B93608C88EE55fAD8db4C504Fa20E52642aD",
+      "transceivers": {
+        "threshold": 1,
+        "wormhole": {
+          "address": "0x5183A428785f7d6aF139C7E68962FE203Cb141Dd",
+          "pauser": "0x114F7a61F436f85f3Dba03da7a7c744689aA6a42"
+        }
+      },
+      "limits": {
+        "outbound": "184467440737.09551615",
+        "inbound": {
+          "Bsc": "184467440737.09551615",
+          "Ethereum": "184467440737.09551615"
+        }
+      },
+      "pauser": "0x114F7a61F436f85f3Dba03da7a7c744689aA6a42"
+    }
+  }
+}
