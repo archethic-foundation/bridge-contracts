@@ -44,7 +44,7 @@ module.exports = {
         archethicPoolSigner: '0x28c9efc42e2cbdfb581c212fe1e918a480ca1421'
       },
       uco: {
-        token: "0xCBBd3374090113732393DAE1433Bc14E5233d5d7",
+        token: "0x4dB84dCd2140C6BE78ae42BDDce1467E3A7c42DE",
         archethicPoolSigner: "0x85d7e244e533c7c71ef80f9a56fd1115bb9e5c69"
       },
       usdc: {
