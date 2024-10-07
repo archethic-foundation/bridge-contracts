@@ -96,7 +96,7 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0xE01F0ee653648192812B2D23CBfe7E147727B672",
-          decimals: 18,
+          decimals: 8,
         },
         aeETH: {
           proxyAddress: "0x947DE182C16C8ee2851529aE574058D5837D47c9",
@@ -117,7 +117,7 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0x346Dba8b51485FfBd4b07B0BCb84F48117751AD9",
-          decimals: 18,
+          decimals: 8,
         },
         aeETH: {
           proxyAddress: "0x37A57dB56F558435a16C31dBeDe48F278545A37e",
@@ -142,7 +142,7 @@ export default {
       tokens: {
         UCO: {
           proxyAddress: "0xd5cA9F76495b853a5054814A10b6365ee8ed745B",
-          decimals: 18,
+          decimals: 8,
         },
         aeETH: {
           proxyAddress: "0xbc6df50b5c5DD12c93c2B98828Befdd8095388ca",
