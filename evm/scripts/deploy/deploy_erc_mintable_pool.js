@@ -18,12 +18,12 @@ async function main() {
     archethicPoolSigner,
     lockTimePeriod,
     tokenAddress,
-    false,
+    true,
     multisigAddress || accounts[0].address
   ]);
 
   console.log("Transaction:", instance.deploymentTransaction().hash)
-  console.log(`ERC pool deployed at: ${await instance.getAddress()}`)
+  console.log(`ERC mintable pool deployed at: ${await instance.getAddress()}`)
   if (multisigAddress) {
     console.log(`You have to accept the ownership using the multisig wallet (${multisigAddress}) to allow further upgrades`)
   }
@@ -31,8 +31,8 @@ async function main() {
 
 async function poolConfiguration(tokenSymbol) {
   if (network.name == "localhost") {
-    const contract = await ethers.deployContract("DummyToken", [ethers.parseEther('200000')])
-    console.log(`Deployed token at: ${await contract.getAddress()}`)
+    const contract = await ethers.deployContract("DummyTokenMintable", [ethers.parseEther('200000')])
+    console.log(`Deployed mintable token at: ${await contract.getAddress()}`)
 
     return {
       archethicPoolSigner: '0xcb2276e4760757976438922aaeb0e03114d5b45f',

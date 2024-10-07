@@ -11,8 +11,12 @@ import "../../interfaces/IHTLC.sol";
 
 /// @title Pool to manage assets for Archethic's bridge on EVM's side
 /// @author Archethic Foundation
-abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2StepUpgradeable {
-
+abstract contract PoolBase is
+    IPool,
+    Initializable,
+    UUPSUpgradeable,
+    Ownable2StepUpgradeable
+{
     /// @inheritdoc IPool
     bool public locked;
 
@@ -91,11 +95,16 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @notice Initizalize the pool with all the given properties
     /// @param _archPoolSigner The address of the Archethic's pool signer
     /// @param _lockTimePeriod The locktime period of the new HTLC contracts
-    function __Pool_Init(address _archPoolSigner, uint256 _lockTimePeriod, address _multisig) onlyInitializing virtual internal {
+    /// @param _multisig The address of the owner multisig
+    function __Pool_Init(
+        address _archPoolSigner,
+        uint256 _lockTimePeriod,
+        address _multisig
+    ) internal virtual onlyInitializing {
         __UUPSUpgradeable_init();
         __Ownable2Step_init();
 
-        if(_archPoolSigner == address(0)) {
+        if (_archPoolSigner == address(0)) {
             revert InvalidArchethicPoolSigner();
         }
 
@@ -120,9 +129,9 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
 
     /// @inheritdoc IPool
     /// @dev ArchethicPoolSignerChanged event is emitted once done
-    function setArchethicPoolSigner(address _archPoolSigner) virtual external {
+    function setArchethicPoolSigner(address _archPoolSigner) external virtual {
         _checkOwner();
-        if(_archPoolSigner == address(0)) {
+        if (_archPoolSigner == address(0)) {
             revert InvalidArchethicPoolSigner();
         }
         archethicPoolSigner = _archPoolSigner;
@@ -131,7 +140,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
 
     /// @inheritdoc IPool
     /// @dev Unlock event is emitted once done
-    function unlock() virtual external {
+    function unlock() external virtual {
         _checkOwner();
         locked = false;
         emit Unlock();
@@ -139,7 +148,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
 
     /// @inheritdoc IPool
     /// @dev Lock event is emitted once done
-    function lock() virtual external {
+    function lock() external virtual {
         _checkOwner();
         locked = true;
         emit Lock();
@@ -147,7 +156,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
 
     /// @inheritdoc IPool
     /// @dev LockTimePeriodChanged event is emitted once done
-    function setLockTimePeriod(uint _lockTimePeriod) virtual external {
+    function setLockTimePeriod(uint _lockTimePeriod) external virtual {
         _checkOwner();
         if (_lockTimePeriod == 0) {
             revert InvalidLockTimePeriod();
@@ -173,7 +182,15 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @dev The secret's hash cannot be reused
     /// @dev ContractProvisioned event is emitted once done
     /// @dev An error is thrown whether the locktime is invalid, the swap already provisioned or the signature from Archethic's pool is invalid
-    function provisionHTLC(bytes32 _hash, uint256 _amount, uint _lockTime, bytes memory _archethicHTLCAddress, bytes32 _r, bytes32 _s, uint8 _v) external {
+    function provisionHTLC(
+        bytes32 _hash,
+        uint256 _amount,
+        uint _lockTime,
+        bytes memory _archethicHTLCAddress,
+        bytes32 _r,
+        bytes32 _s,
+        uint8 _v
+    ) external {
         checkUnlocked();
 
         if (_hash == bytes32(0)) {
@@ -188,17 +205,31 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         // - be zero
         // - be more than 1 day or less than the lockTime
         // - be before the block's timestamp
-        if (_lockTime == 0 || _lockTime < block.timestamp || (_lockTime - block.timestamp) > 86400) {
+        if (
+            _lockTime == 0 ||
+            _lockTime < block.timestamp ||
+            (_lockTime - block.timestamp) > 86400
+        ) {
             revert InvalidLockTime();
         }
 
-        if(address(_refProvisionedSwaps[_hash]) != address(0)) {
+        if (address(_refProvisionedSwaps[_hash]) != address(0)) {
             revert AlreadyProvisioned();
         }
 
         bytes32 _archethicHTLCAddressHash = sha256(_archethicHTLCAddress);
-        bytes32 messagePayloadHash = keccak256(abi.encode(_archethicHTLCAddressHash, _hash, block.chainid, msg.sender, _amount));
-        bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(messagePayloadHash);
+        bytes32 messagePayloadHash = keccak256(
+            abi.encode(
+                _archethicHTLCAddressHash,
+                _hash,
+                block.chainid,
+                msg.sender,
+                _amount
+            )
+        );
+        bytes32 signedMessageHash = ECDSA.toEthSignedMessageHash(
+            messagePayloadHash
+        );
 
         address signer = ECDSA.recover(signedMessageHash, _v, _r, _s);
         if (signer != archethicPoolSigner) {
@@ -213,7 +244,12 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         _refProvisionedSwaps[_hash] = htlcContract;
 
         _provisionedSwaps.push(address(htlcContract));
-        setSwapByOwner(msg.sender, address(htlcContract), _archethicHTLCAddress, SwapType.SIGNED_HTLC);
+        setSwapByOwner(
+            msg.sender,
+            address(htlcContract),
+            _archethicHTLCAddress,
+            SwapType.SIGNED_HTLC
+        );
         emit ContractProvisioned(htlcContract, _amount);
     }
 
@@ -231,7 +267,7 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
     /// @dev ContractMinted event is emitted once done
     /// @dev An error is thrown whether the secret's hash is already taken by a previous swap
     /// @dev The HTLC locktime is determined by the pool's locktime period
-    function mintHTLC(bytes32 _hash, uint256 _amount) payable virtual external {
+    function mintHTLC(bytes32 _hash, uint256 _amount) external payable virtual {
         checkUnlocked();
 
         if (_hash == bytes32(0)) {
@@ -245,29 +281,55 @@ abstract contract PoolBase is IPool, Initializable, UUPSUpgradeable, Ownable2Ste
         _mintHTLC(_hash, _amount, _chargeableHTLCLockTime());
     }
 
-    function _mintHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) internal {
-        if(address(_refMintedSwaps[_hash]) != address(0)) {
+    function _mintHTLC(
+        bytes32 _hash,
+        uint256 _amount,
+        uint _lockTime
+    ) internal {
+        if (address(_refMintedSwaps[_hash]) != address(0)) {
             revert AlreadyMinted();
         }
         IHTLC htlcContract = _createChargeableHTLC(_hash, _amount, _lockTime);
         _refMintedSwaps[_hash] = htlcContract;
         _mintedSwaps.push(address(htlcContract));
-        setSwapByOwner(msg.sender, address(htlcContract), "", SwapType.CHARGEABLE_HTLC);
+        setSwapByOwner(
+            msg.sender,
+            address(htlcContract),
+            "",
+            SwapType.CHARGEABLE_HTLC
+        );
         emit ContractMinted(htlcContract, _amount);
     }
 
-    function _createSignedHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
-    function _createChargeableHTLC(bytes32 _hash, uint256 _amount, uint _lockTime) virtual internal returns (IHTLC) {}
+    function _createSignedHTLC(
+        bytes32 _hash,
+        uint256 _amount,
+        uint _lockTime
+    ) internal virtual returns (IHTLC) {}
+
+    function _createChargeableHTLC(
+        bytes32 _hash,
+        uint256 _amount,
+        uint _lockTime
+    ) internal virtual returns (IHTLC) {}
 
     function _chargeableHTLCLockTime() internal view returns (uint256) {
         // We need to round to the minute as Archethic's smart contract self trigger feature restrict timestamp to rounded minute
-        uint256 minuteRoundedBlockTimestamp = block.timestamp - (block.timestamp % (60));
+        uint256 minuteRoundedBlockTimestamp = block.timestamp -
+            (block.timestamp % (60));
         return minuteRoundedBlockTimestamp + lockTimePeriod;
     }
 
-    function setSwapByOwner(address _owner, address _htlcContract, bytes memory _archethicHTLCAddress, SwapType _swapType) internal virtual{}
+    function setSwapByOwner(
+        address _owner,
+        address _htlcContract,
+        bytes memory _archethicHTLCAddress,
+        SwapType _swapType
+    ) internal virtual {}
 
-    function getSwapsByOwner(address owner) external virtual view returns (Swap[] memory swaps) {}
+    function getSwapsByOwner(
+        address owner
+    ) external view virtual returns (Swap[] memory swaps) {}
 
     // @dev Upgrades the implementation of the proxy to new address.
     function _authorizeUpgrade(address) internal override onlyOwner {}

@@ -1,6 +1,6 @@
 build
 node_modules
-.openzeppelin/unknown-*.json
+.openzeppelin/unknown-1337.json
 test/.openzeppelin
 .DS_Store
 cache
