@@ -13,22 +13,22 @@
   "description": "",
   "devDependencies": {
     "@nomicfoundation/hardhat-ledger": "^1.0.3",
-    "@nomicfoundation/hardhat-verify": "^1.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0",
     "@openzeppelin/contracts": "^4.9.2",
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
-    "@openzeppelin/hardhat-upgrades": "^2.3.2",
+    "@openzeppelin/hardhat-upgrades": "^3.0",
     "bars": "github:jstrace/bars",
     "ethers": "^6.6.2",
     "fs-extra": "^11.1.1",
-    "hardhat": "^2.18.0",
+    "hardhat": "^2.22",
     "hardhat-contract-sizer": "^2.10.0",
-    "hardhat-tracer": "^2.7.0",
+    "hardhat-tracer": "^3.1",
     "keccak256": "^1.0.6",
     "openzeppelin-solidity": "^3.4.2",
     "secp256k1": "^5.0.0"
   },
   "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "dotenv": "^16.4.5"
   }
 }
