@@ -4,6 +4,9 @@
   "dbFolder": "./db-mainnet",
   "dbFile": "./mainnet.sqlite",
   "since": -1,
+  "decimals": {
+    "WBTC": 8
+  },
   "evm": {
     "ethereum": {
       "coin": "ETH",

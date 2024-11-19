@@ -5,6 +5,7 @@ import registry from "../registry/index.js";
 
 const ARCHETHIC_ENDPOINT = config.get("archethic.endpoint");
 const EVM_NETWORKS = config.get("evm");
+const DECIMALS = config.get("decimals");
 
 export default function () {
   return async (req, res) => {
@@ -26,6 +27,7 @@ export default function () {
       formatArchethicAddr,
       formatArchethicAmount,
       formatEvmAddr,
+      formatEvmAmount,
       ARCHETHIC_ENDPOINT,
       ethers,
       poolToAsset,
@@ -64,6 +66,10 @@ function formatEvmAddr(addr) {
   }
 }
 
+function formatEvmAmount(amount, tokenName, time) {
+  return ethers.formatUnits(amount, getEvmDecimals(tokenName, time));
+}
+
 function formatChainId(chainID) {
   for (const [networkName, value] of Object.entries(EVM_NETWORKS)) {
     if (value.chainID == chainID) return networkName;
@@ -79,6 +85,19 @@ function urlExplorerContract(evmHtlc) {
     if (value.chainID == evmHtlc.chainId)
       return `${value.explorer}address/${evmHtlc.addressCreation}`;
   }
+}
+
+function getEvmDecimals(pTokenName, time) {
+  // 2024-10-07 bridge switch to token v2 (8 decimals)
+  if (pTokenName == "UCO")
+    return (time > 1728295200) ? 8 : 18;
+
+
+  for (const [tokenName, value] of Object.entries(DECIMALS))
+    if (pTokenName == tokenName)
+      return value;
+
+  return 18;
 }
 
 function urlExplorerUser(evmHtlc) {

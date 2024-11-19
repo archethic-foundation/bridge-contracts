@@ -49,7 +49,7 @@ html(lang="en")
                         td
                             a(href=`${urlExplorerUser(htlc.evmHtlc)}` target="_blank") #{formatEvmAddr(htlc.evmHtlc.addressUser)}
 
-                        td #{ethers.formatEther(BigInt(htlc.evmHtlc.amount))}
+                        td #{formatEvmAmount(BigInt(htlc.evmHtlc.amount), poolToAsset("evm", htlc.evmHtlc.addressPool), htlc.evmHtlc.timeLockEnd - 2 * 60 * 60 )}
                         td #{htlc.evmHtlc.status}
                         td #{formatChainId(htlc.evmHtlc.chainId)}
                     else
