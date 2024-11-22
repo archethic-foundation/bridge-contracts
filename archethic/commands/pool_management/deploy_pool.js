@@ -26,12 +26,18 @@ const builder = {
     describe: "The environment config to use (default to local)",
     demandOption: false,
     type: "string"
+  },
+  with_funding: {
+    describe: "Determine if we need to fund the transaction with keychain' master",
+    demandOption: false,
+    type: "boolean"
   }
 }
 
 const handler = async function(argv) {
   const envName = argv["env"] ? argv["env"] : "local"
   const env = config.environments[envName]
+  const withFunding = argv["with_funding"] == false ? false : true
 
   const keychainAccessSeed = argv["access_seed"] ? argv["access_seed"] : env.keychainAccessSeed
 
@@ -84,11 +90,32 @@ const handler = async function(argv) {
   poolTx = keychain.buildTransaction(poolTx, serviceName, index).originSign(Utils.originPrivateKey)
 
   updateKeychain(keychain, archethic)
-    .then(() => sendTransactionWithFunding(poolTx, keychain, archethic))
+    .then(() => {
+      if (withFunding) {
+        return sendTransactionWithFunding(poolTx, keychain, archethic)
+      }
+      return sendTransactionWithoutFunding(poolTx, archethic)
+    })
     .then(() => process.exit(0))
     .catch(() => process.exit(1))
 }
 
+function sendTransactionWithoutFunding(poolTx, archethic) {
+  return new Promise((resolve, reject) => {
+    poolTx.on("fullConfirmation", async (_confirmations) => {
+      const txAddress = Utils.uint8ArrayToHex(poolTx.address)
+      console.log("Transaction validated !")
+      console.log("Address:", txAddress)
+      console.log(archethic.endpoint.nodeEndpoint + "/explorer/transaction/" + txAddress)
+      resolve()
+    }).on("error", (context, reason) => {
+      console.log("Error while sending transaction")
+      console.log("Contest:", context)
+      console.log("Reason:", reason)
+      reject()
+    }).send()
+  })
+}
 
 
 export default {
