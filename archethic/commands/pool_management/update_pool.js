@@ -84,8 +84,11 @@ const handler = async function(argv) {
           state
         }
       }`)
-      const { state: oldState} = res.chainUnspentOutputs.find(x => x.state != null)
-      const nextTxID = oldState.transaction_id + 1
+      const resState = res.chainUnspentOutputs.find(x => x.state != null)
+      let nextTxID = 1
+      if (resState && resState.state) {
+        nextTxID = resState.state.transaction_id + 1
+      }
 
       if(archethic.rpcWallet) {
         const { transactionAddress } = await archethic.rpcWallet.sendTransaction(updateTx)
