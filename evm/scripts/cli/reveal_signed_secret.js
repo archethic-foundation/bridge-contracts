@@ -44,7 +44,10 @@ async function main() {
     const htlc = await ethers.getContractAt("SignedHTLC_ETH", contractAddress)
 
     return htlc.withdraw(secret, secretSignature.r, secretSignature.s, secretSignature.v)
-        .then(() => console.log("Withdraw successful"))
+        .then(res => {
+            console.log("Withdraw successful")
+            console.log(res)
+        })
         .catch(er => console.log(er.message))
 }
 

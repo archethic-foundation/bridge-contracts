@@ -108,7 +108,7 @@ module.exports = {
       ledgerAccounts: [
         "0xfD7C90fA69f76712239c733E564eE3D1EDCeCC12"
       ],
-      url: "https://polygon-mainnet.g.alchemy.com/v2/DynWKvz6PUFaeZNmlxPXNiV1nK4Ac_2D",
+      url: "https://polygon-mainnet.infura.io/v3/3a7a2dbdbec046a4961550ddf8c7d78a",
       timeout: 100000,
       uco: {
         archethicPoolSigner: '0x16c1c9f1abcf2ba9e8d853827339dbeceaa91077',
