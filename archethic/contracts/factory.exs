@@ -5,7 +5,7 @@
 # ]
 
 export fun(get_protocol_fee()) do
-  0.3
+  0
 end
 
 export fun(get_protocol_fee_address()) do
@@ -237,7 +237,7 @@ export fun(get_signed_htlc(user_address, pool_address, token, amount)) do
       "Contract.add_token_transfer to: 0x#{user_address}, amount: #{amount}, token_address: 0x#{token}"
   end
 
-  fee_amount = amount * 0.003
+  fee_amount = 0
   user_amount = amount - fee_amount
 
   fee_transfer_code = ""
